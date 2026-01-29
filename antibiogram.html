@@ -14,34 +14,27 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .aurora-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(15, 118, 110, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 100%); }
-        .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
-        select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
+        select option { background-color: #1e293b; color: #e2e8f0; padding: 8px; }
         
-        /* Specimen Container with Scroll */
+        /* Specimen Scroll Fix */
         .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 4px; max-height: 120px; overflow-y: auto; align-content: flex-start; }
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
         .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
         
-        /* Drug Group Accordion */
-        .drug-group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .drug-group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
-        .drug-group-header.active { color: #22d3ee; }
-        .drug-group-body { display: none; padding-left: 8px; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-        .drug-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; width: 48%; }
-        .drug-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
-
         .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
         .table-normal td { padding: 10px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; }
         .table-normal td:hover { background: rgba(255,255,255,0.1); }
-        .cell-disabled { cursor: not-allowed; opacity: 0.5; background: rgba(0,0,0,0.2) !important; }
-        
+        .cell-disabled { cursor: not-allowed; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent; }
+        .n-badge { font-size: 0.65rem; background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 4px; margin-left: 4px; opacity: 0.8; vertical-align: middle; }
+
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
@@ -52,11 +45,15 @@
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-content { background: #1e293b; width: 90%; max-width: 650px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
+        .modal-content { background: #1e293b; width: 90%; max-width: 700px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
         
-        .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
+        .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
+        
+        /* OptGroup Styling */
+        optgroup { font-weight: bold; background: #0f172a; color: #94a3b8; }
+        
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -88,12 +85,12 @@
             <div class="glass p-5 h-full flex flex-col">
                 <div class="mb-4 pb-2 border-b border-white/5">
                     <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> ตัวเลือกข้อมูล
+                        <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> Filters
                     </h2>
                 </div>
 
                 <div class="space-y-6 flex-grow custom-scrollbar overflow-y-auto" style="max-height: 70vh;">
-                    <!-- 1. Site (Scrollable) -->
+                    <!-- 1. Site -->
                     <div>
                         <div class="flex justify-between items-end mb-2">
                             <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
@@ -104,18 +101,16 @@
                         </div>
                     </div>
 
-                    <!-- 2. Time Period (Fixed 3) -->
+                    <!-- 2. Time Period -->
                     <div>
                         <label class="text-xs text-slate-400 mb-2 block font-medium">Time Period</label>
-                        <div id="quarter-radios" class="flex flex-col gap-2">
-                            <!-- Radios injected -->
-                        </div>
+                        <div id="quarter-radios" class="flex flex-col gap-2"></div>
                     </div>
 
-                    <!-- 3. Organism -->
+                    <!-- 3. Organism (Grouped) -->
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block font-medium">Organism</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- แสดงทั้งหมด (All) --</option></select>
+                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- Loading --</option></select>
                         <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -128,12 +123,10 @@
                         </div>
                     </div>
 
-                    <!-- 4. Drug Selector (Grouped) -->
+                    <!-- 4. Drug Groups -->
                     <div>
                         <label class="text-xs text-slate-400 mb-2 block font-medium">Antibiotic Groups</label>
-                        <div id="drug-groups-container" class="space-y-1">
-                            <!-- Groups injected -->
-                        </div>
+                        <div id="drug-groups-container" class="space-y-1"></div>
                     </div>
                 </div>
 
@@ -176,10 +169,9 @@
         </div>
     </main>
 
-    <!-- FAB -->
+    <!-- FAB: AI Chat -->
     <div class="fab-btn" onclick="openChatModal()" title="Ask IC SW-1">
         🍍
-        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-[#0f172a] rounded-full animate-ping"></div>
     </div>
 
     <!-- Chat Modal -->
@@ -212,9 +204,9 @@
                 <div class="flex gap-3">
                     <div class="ai-avatar min-w-[40px] flex-shrink-0">🍍</div>
                     <div class="chat-bubble chat-ai">
-                        สวัสดีครับ... สวีวันพร้อมปฏิบัติการ... <br>
+                        สวัสดีค่ะ... สวีวันพร้อมปฏิบัติการ... <br>
                         ข้อมูลล่าสุดจากหน้าจอ: <span id="ai-context-label" class="text-emerald-400 font-bold">...</span><br>
-                        กดส่งเพื่อรับการวิเคราะห์ หรือพิมพ์คำถามเพิ่มได้เลย...
+                        กดส่งเพื่อรับการวิเคราะห์ หรือพิมพ์คำถามเพิ่มได้เลยค่ะ...
                     </div>
                 </div>
             </div>
@@ -232,10 +224,25 @@
             <div class="p-4 border-b border-white/10 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-cyan-300" id="trend-title">Susceptibility Trend</h3>
-                    <p class="text-xs text-slate-400 mt-1" id="trend-subtitle">Loading stats...</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="trend-subtitle" class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Loading...</span>
+                        <span id="trend-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700"></span>
+                    </div>
                 </div>
-                <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <div class="flex gap-2">
+                    <button onclick="askAIChart()" class="glass px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-500/20 flex items-center gap-1">
+                        <i data-lucide="bot" class="w-3 h-3"></i> 🤖 วิเคราะห์กราฟ
+                    </button>
+                    <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
             </div>
+            
+            <!-- AI Analysis Box (Hidden initially) -->
+            <div id="chart-ai-box" class="hidden bg-emerald-900/20 p-3 mx-6 mt-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
+                <div id="chart-ai-text">Analyzing...</div>
+                <button onclick="this.parentElement.classList.add('hidden')" class="absolute top-1 right-1 text-emerald-500 hover:text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>
+
             <div class="p-6 h-[300px]">
                 <canvas id="trendChart"></canvas>
             </div>
@@ -251,8 +258,9 @@
         let cachedData = null;
         let selectedSpecimens = new Set();
         let trendChartInstance = null;
+        let currentChartContext = {}; // Stores info for AI
 
-        // Drug Groups Definition
+        // Drug Groups
         const DRUG_GROUPS = {
             "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla", "Ampicillin/Sulb", "Piperacillin", "Piperacillin/Ta"],
             "Cephalosporins": ["Cefazolin", "Cefotaxime", "Ceftazidime", "Ceftriaxone", "Cefepime"],
@@ -278,14 +286,14 @@
             for (const [group, drugs] of Object.entries(DRUG_GROUPS)) {
                 const html = `
                     <div>
-                        <div class="drug-group-header" onclick="toggleGroup(this)">
-                            <span>${group}</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform"></i>
+                        <div class="drug-group-header flex justify-between items-center text-slate-400 hover:text-white cursor-pointer p-1.5 rounded hover:bg-slate-800" onclick="toggleGroup(this)">
+                            <span class="text-xs font-semibold">${group}</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
                         </div>
-                        <div class="drug-group-body">
+                        <div class="drug-group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">
                             ${drugs.map(d => `
-                                <label class="drug-checkbox">
-                                    <input type="checkbox" value="${d}" class="drug-check" checked onchange="updateTableVisibility()">
+                                <label class="flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer hover:bg-slate-800/50 p-1 rounded">
+                                    <input type="checkbox" value="${d}" class="drug-check accent-cyan-500" checked onchange="updateTableVisibility()">
                                     <span>${d}</span>
                                 </label>
                             `).join('')}
@@ -299,11 +307,19 @@
         function toggleGroup(header) {
             const body = header.nextElementSibling;
             const icon = header.querySelector('i');
-            const isVisible = body.style.display === 'flex';
+            const isHidden = body.classList.contains('hidden');
             
-            body.style.display = isVisible ? 'none' : 'flex';
-            icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
-            header.classList.toggle('active', !isVisible);
+            if (isHidden) {
+                body.classList.remove('hidden');
+                body.style.display = 'grid'; // Force grid
+                icon.style.transform = 'rotate(180deg)';
+                header.classList.add('text-cyan-400');
+            } else {
+                body.classList.add('hidden');
+                body.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+                header.classList.remove('text-cyan-400');
+            }
         }
 
         async function loadOptions() {
@@ -324,9 +340,6 @@
             }
         }
 
-        // --- UI HELPERS ---
-        const specimenIcons = { 'Urine': 'droplets', 'Sputum': 'wind', 'Blood': 'syringe', 'Hemoculture': 'syringe', 'Pus': 'bandage', 'Stool': 'circle-dot', 'Vaginal': 'user', 'Discharge': 'activity' };
-        
         function initSpecimenGrid(specimens) {
             const container = document.getElementById('specimen-container');
             container.innerHTML = '';
@@ -337,8 +350,9 @@
                 btn.dataset.value = spec;
                 btn.onclick = () => toggleSpecimen(btn, spec);
                 let iconName = 'activity';
-                for (const k in specimenIcons) if (spec.includes(k)) iconName = specimenIcons[k];
-                btn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>${spec}`;
+                if(spec.includes('Urine')) iconName='droplets';
+                if(spec.includes('Blood') || spec.includes('Hemo')) iconName='syringe';
+                btn.innerHTML = `<i data-lucide="${iconName}" class="w-3 h-3"></i>${spec}`;
                 container.appendChild(btn);
             });
             lucide.createIcons();
@@ -358,24 +372,34 @@
             });
         }
 
-        function initOrganismDropdown(list) {
-            const baseNames = new Set(list.map(n => n.split(' (')[0].trim()).filter(Boolean));
-            document.getElementById('sel-organism').innerHTML = ['<option value="">-- แสดงทั้งหมด (All) --</option>', ...Array.from(baseNames).sort().map(o => `<option value="${o}">${o}</option>`)].join('');
+        function initOrganismDropdown(orgData) {
+            // Grouped Options
+            let html = '<option value="">-- แสดงทั้งหมด (All) --</option>';
+            for (const [type, groups] of Object.entries(orgData)) {
+                html += `<optgroup label="${type}">`;
+                for (const [groupName, list] of Object.entries(groups)) {
+                    // html += `<option disabled class="bg-slate-800 text-slate-500">-- ${groupName} --</option>`;
+                    list.forEach(org => {
+                        html += `<option value="${org}">${org}</option>`;
+                    });
+                }
+                html += `</optgroup>`;
+            }
+            document.getElementById('sel-organism').innerHTML = html;
         }
 
         function initQuarterRadio(list) {
             const container = document.getElementById('quarter-radios');
-            // Hardcode specific logic requested: Latest, 4 Latest, All
-            // Assuming list[0] is latest
             const options = [];
+            // Assuming sorted descending
             if(list.length > 0) options.push({val: list[0], label: "ไตรมาสล่าสุด"});
             if(list.length >= 4) options.push({val: "4 ไตรมาสล่าสุด", label: "4 ไตรมาสล่าสุด"});
             options.push({val: "ข้อมูลทั้งหมด", label: "ข้อมูลทั้งหมด"});
 
             container.innerHTML = options.map((opt, idx) => `
-                <label class="radio-item text-xs">
-                    <input type="radio" name="quarter" value="${opt.val}" ${idx === 0 ? 'checked' : ''}>
-                    <span>${opt.label}</span>
+                <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-800 cursor-pointer">
+                    <input type="radio" name="quarter" value="${opt.val}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-4 h-4">
+                    <span class="text-xs text-slate-300">${opt.label}</span>
                 </label>
             `).join('');
         }
@@ -392,16 +416,23 @@
             const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
             const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
             
-            // Update Context Label for AI
-            const specText = selectedSpecimens.size === cachedData.specimens.length ? "ทุกจุด" : Array.from(selectedSpecimens).join(', ');
-            document.getElementById('ai-context-label').innerText = `Specimen: ${specText} | Org: ${orgBase||"ทั้งหมด"}`;
+            // AI Context
+            const specText = selectedSpecimens.size === cachedData.specimens.length ? "All" : Array.from(selectedSpecimens).join(', ');
+            document.getElementById('ai-context-label').innerText = `Specimen: ${specText} | Org: ${orgBase||"All"}`;
 
             let namesToSend = [];
+            // If specific org selected, filter related strains based on mode
             if (orgBase) {
-                namesToSend = cachedData.organisms.filter(f => {
-                    const isBase = f.split(' (')[0].trim() === orgBase;
+               // We need to find all related names from cached raw data (flattened)
+               const allOrgs = [];
+               for(const t in cachedData.organisms) 
+                 for(const g in cachedData.organisms[t]) 
+                   allOrgs.push(...cachedData.organisms[t][g]);
+
+               namesToSend = allOrgs.filter(f => {
+                    const isBase = f.split(' (')[0].trim() === orgBase.split(' (')[0].trim();
                     return isBase && (orgMode === 'total' || (orgMode === 'resistant' && f.includes('(')));
-                });
+               });
             }
 
             const allSpecimensSelected = selectedSpecimens.size === cachedData.specimens.length;
@@ -434,7 +465,6 @@
             rawData.forEach(row => {
                 const key = row.name; 
                 if (!groups[key]) groups[key] = { name: row.name, drugData: {} };
-                
                 for (const [d, v] of Object.entries(row.drugResults)) {
                     if (!groups[key].drugData[d]) groups[key].drugData[d] = { s: 0, t: 0, isR: false };
                     const p = parseDrugValue(v);
@@ -444,7 +474,9 @@
             });
             return Object.values(groups).map(g => {
                 const finalDrugs = {};
-                for (const [d, c] of Object.entries(g.drugData)) finalDrugs[d] = { pct: formatDrugValue(c.s, c.t, c.isR), n: c.t, isR: c.isR };
+                for (const [d, c] of Object.entries(g.drugData)) {
+                    finalDrugs[d] = { pct: formatDrugValue(c.s, c.t, c.isR), n: c.t, isR: c.isR };
+                }
                 return { name: g.name, drugResults: finalDrugs };
             });
         }
@@ -474,12 +506,11 @@
                 return; 
             }
             
-            // Get visible drugs
             const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
             
             thead.innerHTML = `
-                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>
-                ${activeDrugs.map(d => `<th class="min-w-[70px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}
+                <th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>
+                ${activeDrugs.map(d => `<th class="min-w-[75px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}
             `;
             
             data.forEach(row => {
@@ -497,16 +528,17 @@
                     
                     let cellClass = 'bg-na text-slate-600';
                     let clickAction = '';
+                    let display = v;
                     
                     if (obj.isR) {
-                        cellClass = 'bg-sens-low text-xs cursor-not-allowed opacity-50'; // R*
+                        cellClass = 'cell-disabled text-xs'; 
+                        display = 'R*';
                     } else if (v !== '-') {
                         const c = (num < 50) ? 'bg-sens-low' : (num >= 76 ? 'bg-sens-high' : 'bg-sens-med');
                         cellClass = `${c} hover:opacity-80`;
                         clickAction = `onclick="showTrend('${row.name}', '${d}')"`;
+                        display = `${v}% <span class="n-badge">(${obj.n})</span>`;
                     }
-                    
-                    const display = v === 'R*' ? 'R*' : (v === '-' ? '-' : `${v}% <span class="text-[9px] opacity-70">(${obj.n})</span>`);
                     
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
                 });
@@ -515,18 +547,17 @@
             });
         }
         
-        function updateTableVisibility() {
-            // Trigger Re-render if data exists, simplified by re-fetching or storing raw data globally
-            // Since we process data in aggregateData, we need to re-run renderTable with last data
-            // For now, let's just trigger fetch to be safe/simple, or implementing a local cache would be better.
-            fetchTableData();
-        }
+        function updateTableVisibility() { fetchTableData(); }
 
         // --- TREND CHART ---
         async function showTrend(organism, drug) {
             const modal = document.getElementById('trend-modal');
             const loading = document.getElementById('trend-loading');
+            
+            currentChartContext = { organism, drug }; // Save for AI
+            
             document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
+            document.getElementById('chart-ai-box').classList.add('hidden'); // Hide old AI msg
             modal.style.display = 'flex';
             loading.classList.remove('hidden');
 
@@ -543,6 +574,7 @@
                 const json = await res.json();
                 loading.classList.add('hidden');
                 if (json.status === 'success') {
+                    currentChartContext.data = json.data; // Save data for AI
                     renderTrendChart(json.data);
                 } else {
                     alert('No trend data');
@@ -554,25 +586,28 @@
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
 
-            // Calc Stats
             const totalN = data.reduce((acc, d) => acc + d.total, 0);
             const weightedAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
-            document.getElementById('trend-subtitle').innerText = `Avg: ${weightedAvg.toFixed(1)}% | Total N: ${totalN}`;
+            
+            const badgeColor = weightedAvg >= 76 ? 'bg-emerald-500' : (weightedAvg < 50 ? 'bg-red-500' : 'bg-yellow-500');
+            document.getElementById('trend-badge').className = `text-xs font-bold px-2 py-0.5 rounded text-white ${badgeColor}`;
+            document.getElementById('trend-badge').innerText = `Avg: ${weightedAvg.toFixed(0)}%`;
+            document.getElementById('trend-subtitle').innerText = `Total N: ${totalN} (All Periods)`;
 
             const labels = data.map(d => d.quarter);
             const values = data.map(d => d.percent);
 
-            // Gradient
+            // Gradient Fill
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(34, 211, 238, 0.5)');
+            gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
             gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
 
-            // Segment Colors
+            // Color Segments
             const segmentColor = (ctx) => {
                 const val = ctx.p0.parsed.y;
-                if (val < 50) return '#f87171'; // Red
-                if (val < 76) return '#facc15'; // Yellow
-                return '#34d399'; // Green
+                if (val < 50) return '#f87171'; 
+                if (val < 76) return '#facc15'; 
+                return '#34d399'; 
             };
 
             trendChartInstance = new Chart(ctx, {
@@ -580,27 +615,54 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '% Susceptibility',
+                        label: '% S',
                         data: values,
                         backgroundColor: gradient,
-                        borderColor: '#22d3ee', // Default fallback
+                        borderColor: '#22d3ee',
                         segment: { borderColor: segmentColor },
                         borderWidth: 3,
                         tension: 0.3,
                         fill: true,
-                        pointBackgroundColor: '#fff'
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#fff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
                     },
                     plugins: { legend: { display: false } }
                 }
             });
+        }
+
+        async function askAIChart() {
+            const aiBox = document.getElementById('chart-ai-box');
+            const aiText = document.getElementById('chart-ai-text');
+            aiBox.classList.remove('hidden');
+            aiText.innerHTML = '<span class="animate-pulse">🤖 กำลังวิเคราะห์กราฟ...</span>';
+
+            const params = new URLSearchParams({
+                action: 'analyze_chart',
+                organism: currentChartContext.organism,
+                drug: currentChartContext.drug,
+                trendData: JSON.stringify(currentChartContext.data)
+            });
+
+            try {
+                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    aiText.innerHTML = json.answer.replace(/\n/g, '<br>');
+                } else {
+                    aiText.innerText = "Error analyzing chart.";
+                }
+            } catch (e) {
+                aiText.innerText = "Connection failed.";
+            }
         }
 
         // --- CHATBOT ---
@@ -624,7 +686,7 @@
             container.scrollTop = container.scrollHeight;
 
             const loadingId = 'loading-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px]"><span class="text-xl animate-spin">🍍</span></div><div class="chat-bubble chat-ai">กำลังประมวลผล... อย่าเพิ่งขยับ...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px]"><span class="text-xl animate-spin">🍍</span></div><div class="chat-bubble chat-ai">กำลังประมวลผล...</div></div>`;
             container.scrollTop = container.scrollHeight;
 
             const params = new URLSearchParams({
