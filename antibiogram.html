@@ -4,66 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sawee Hospital Smart Antibiogram</title>
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦠</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
     
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .aurora-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(15, 118, 110, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 100%); }
         .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        .gradient-text { background: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
-        /* Inputs & Dropdowns */
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
-        select:focus { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1); }
-
-        /* Specimen Flex Buttons (Dynamic Width) */
-        .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 2px; }
-        .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; }
+        
+        .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
         .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
         
-        /* Radio Buttons */
-        .radio-group { display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding-right: 4px; }
-        .radio-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8rem; color: #cbd5e1; padding: 6px; border-radius: 6px; transition: background 0.2s; background: rgba(30, 41, 59, 0.4); border: 1px solid transparent; }
-        .radio-item:hover { background: rgba(255,255,255,0.05); }
-        .radio-item:has(input:checked) { border-color: #22d3ee; background: rgba(34, 211, 238, 0.1); color: #22d3ee; }
-        .radio-item input { accent-color: #22d3ee; width: 14px; height: 14px; margin: 0; }
-
-        /* Table Modes */
-        .table-normal th { padding: 12px; font-size: 0.9rem; }
-        .table-normal td { padding: 10px; font-size: 0.9rem; }
+        .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
+        .table-normal td { padding: 10px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; }
+        .table-normal td:hover { background: rgba(255,255,255,0.1); }
         
-        /* Tiny Heatmap Mode */
-        .table-tiny th { padding: 4px 2px; font-size: 0.65rem; height: 100px; vertical-align: bottom; white-space: nowrap; writing-mode: vertical-rl; transform: rotate(180deg); }
-        .table-tiny td { padding: 0; font-size: 0; height: 12px; border: 1px solid rgba(0,0,0,0.1); } 
-        .table-tiny td.text-col { font-size: 0.7rem; text-align: left; padding: 0 4px; height: auto; border: none; width: 150px; background: transparent; }
-
-        /* Colors */
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
         .bg-na { color: #64748b; }
-        
-        .table-tiny .bg-sens-high { background-color: #10b981; }
-        .table-tiny .bg-sens-med { background-color: #eab308; }
-        .table-tiny .bg-sens-low { background-color: #ef4444; }
-        .table-tiny .bg-na { background-color: #1e293b; }
 
-        /* Chat & Loader */
-        .chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; line-height: 1.5; font-size: 0.95rem; }
+        /* FAB Button */
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 64px; height: 64px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.4); display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: transform 0.2s; z-index: 50; border: 2px solid #34d399; }
+        .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
+        
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: #1e293b; width: 90%; max-width: 600px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 85vh; }
+        .modal-body { overflow-y: auto; padding: 1.5rem; }
+        
+        .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.5; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
-        .ai-avatar { width: 40px; height: 40px; background: #064e3b; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #34d399; }
-        
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -79,20 +63,13 @@
                 <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             </div>
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold gradient-text">SAWEE SMART IC</h1>
+                <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400">SAWEE SMART IC</h1>
                 <p class="text-slate-400 text-sm">Antibiogram & AI Surveillance System</p>
             </div>
         </div>
         
-        <!-- Action Buttons Group -->
-        <div class="flex gap-3">
-            <button onclick="switchTab('search')" id="tab-search" class="glass px-5 py-2.5 rounded-xl font-medium border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:bg-cyan-500/10 transition-all flex items-center gap-2">
-                <i data-lucide="table" class="w-4 h-4"></i> ค้นหาข้อมูล (Data)
-            </button>
-            <button onclick="switchTab('ai')" id="tab-ai" class="glass px-5 py-2.5 rounded-xl font-medium border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-emerald-500/10 transition-all flex items-center gap-2">
-                <i data-lucide="message-square" class="w-4 h-4"></i> ถาม AI (IC SW-1)
-            </button>
-        </div>
+        <!-- Preloader for Main Data -->
+        <div id="db-status" class="text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700">Loading DB...</div>
     </header>
 
     <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
@@ -100,29 +77,28 @@
         <!-- Sidebar Controls -->
         <aside class="lg:col-span-3 space-y-4">
             <div class="glass p-5 h-full flex flex-col">
-                <div class="mb-4 pb-4 border-b border-white/5">
+                <div class="mb-4 pb-2 border-b border-white/5">
                     <h2 class="text-lg font-semibold text-white flex items-center gap-2">
                         <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> ตัวเลือกข้อมูล
                     </h2>
-                    <p class="text-xs text-slate-500 mt-1" id="db-status">Loading database...</p>
                 </div>
 
                 <div class="space-y-6 flex-grow">
-                    <!-- 1. Site of Infection (Flex Buttons) -->
+                    <!-- 1. Site of Infection -->
                     <div>
                         <div class="flex justify-between items-end mb-2">
                             <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
-                            <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">เลือกทั้งหมด</button>
+                            <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Select All</button>
                         </div>
-                        <div id="specimen-container" class="specimen-container">
+                        <div id="specimen-container" class="flex flex-wrap gap-2">
                             <div class="text-xs text-slate-500 italic p-2">Loading...</div>
                         </div>
                     </div>
 
                     <!-- 2. Organism -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block font-medium">Organism (ชื่อเชื้อ)</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- เลือกเชื้อ (หรือปล่อยว่าง) --</option></select>
+                        <label class="text-xs text-slate-400 mb-1 block font-medium">Organism</label>
+                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- แสดงทั้งหมด (All) --</option></select>
                         <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -135,55 +111,30 @@
                         </div>
                     </div>
 
-                    <!-- 3. Time Period (Radio) -->
+                    <!-- 3. Time Period -->
                     <div>
                         <label class="text-xs text-slate-400 mb-2 block font-medium">Time Period</label>
-                        <div id="quarter-radios" class="radio-group custom-scrollbar">
-                            <!-- Radio options will be injected here -->
-                        </div>
-                    </div>
-                    
-                    <!-- AI Options -->
-                    <div id="ai-options" class="hidden pt-4 border-t border-white/5">
-                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="chk-available" checked class="accent-emerald-500 w-4 h-4">
-                            <label for="chk-available" class="text-xs text-slate-300">ซ่อนยาที่ไม่มีใน รพ.</label>
-                         </div>
+                        <div id="quarter-radios" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1"></div>
                     </div>
                 </div>
 
-                <!-- Main Action Button (Search Mode) -->
                 <div class="mt-6">
-                    <button id="btn-action" onclick="fetchTableData()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="search" class="w-5 h-5"></i> ค้นหาข้อมูล
+                    <button onclick="fetchTableData()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5"></i> Update Table
                     </button>
                 </div>
             </div>
         </aside>
 
-        <!-- Display Area -->
+        <!-- Main Table Area -->
         <div class="lg:col-span-9">
-            
-            <!-- VIEW 1: TABLE -->
-            <div id="view-search" class="glass p-1 h-full min-h-[500px] flex flex-col relative">
+            <div class="glass p-1 h-full min-h-[500px] flex flex-col relative">
                 <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50 rounded-t-xl">
                     <div>
-                        <h3 class="font-semibold text-cyan-100">ผลการทดสอบความไว (Antibiogram)</h3>
-                        <p class="text-[10px] text-slate-400 mt-0.5">*ข้อมูลรวมตามช่วงเวลาที่เลือก</p>
+                        <h3 class="font-semibold text-cyan-100">Antibiogram Result</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">*คลิกที่ช่อง % เพื่อดูกราฟแนวโน้ม</p>
                     </div>
-                    
-                    <!-- View Controls -->
-                    <div class="flex items-center gap-3">
-                        <div class="bg-slate-800 rounded-lg p-1 flex gap-1">
-                            <button onclick="setTableSize('normal')" id="view-normal" class="p-1.5 rounded bg-cyan-500/20 text-cyan-300" title="Normal View">
-                                <i data-lucide="grid" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="setTableSize('tiny')" id="view-tiny" class="p-1.5 rounded hover:bg-white/5 text-slate-400" title="Heatmap View">
-                                <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 รายการ</span>
-                    </div>
+                    <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 Isolates</span>
                 </div>
                 
                 <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative">
@@ -198,67 +149,83 @@
                             </tr>
                         </tbody>
                     </table>
-                    
-                    <!-- Preloader Overlay (Correctly positioned below header) -->
-                    <!-- Header is approx 56px -->
+                    <!-- Loader -->
                     <div id="search-loading" class="hidden absolute inset-0 bg-slate-900/80 z-20 flex flex-col items-center justify-center text-slate-400 top-[56px]">
-                        <div class="loader mb-3"></div> กำลังประมวลผลข้อมูล...
+                        <div class="loader mb-3"></div> Processing Data...
                     </div>
                 </div>
             </div>
-
-            <!-- VIEW 2: AI CHATBOT (IC SW-1) -->
-            <div id="view-ai" class="hidden glass h-full min-h-[500px] flex flex-col relative overflow-hidden">
-                <!-- Chat Header -->
-                <div class="p-4 bg-slate-800/50 border-b border-white/5 flex items-center gap-3">
-                    <div class="ai-avatar relative">
-                        <span class="text-xl">🍍</span>
-                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-emerald-400">IC SW-1 (สวีวัน)</h3>
-                        <p class="text-[10px] text-slate-400">หุ่นยนต์เฝ้าระวังเชื้อดื้อยา (Paranoid Mode: ON)</p>
-                    </div>
-                    <button onclick="toggleSound()" id="sound-btn" class="ml-auto p-2 rounded-full hover:bg-slate-700 text-cyan-400">
-                        <i data-lucide="volume-2" class="w-5 h-5"></i>
-                    </button>
-                </div>
-
-                <!-- Chat Area -->
-                <div id="chat-container" class="flex-grow p-4 overflow-y-auto custom-scrollbar space-y-4">
-                    <div class="flex gap-3">
-                        <div class="ai-avatar min-w-[40px]"><span class="text-xl">🍍</span></div>
-                        <div class="chat-bubble chat-ai">
-                            สวัสดีครับ... ผม <b>IC SW-1</b>... ตาของผมเห็นเชื้อโรคทุกที่... <br>
-                            ระบุ <b>Specimen</b> และ <b>ชื่อเชื้อ</b> ทางซ้ายมือ แล้วถามผมมาได้เลย... <br>
-                            แต่อย่าเสียงดังไป... พวกเชื้อดื้อยามันแอบฟังอยู่...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Input Area -->
-                <div class="p-4 bg-slate-900/50 border-t border-white/5">
-                    <div class="relative">
-                        <input type="text" id="chat-input" placeholder="ถามเกี่ยวกับยาที่เหมาะสม หรือแนวโน้มการดื้อยา..." 
-                               class="w-full bg-slate-800 border-slate-700 rounded-full pl-5 pr-12 py-3 focus:ring-2 focus:ring-emerald-500 text-sm">
-                        <button onclick="sendMessage()" class="absolute right-2 top-2 p-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-full transition-colors text-white">
-                            <i data-lucide="send" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
+    <!-- FAB: AI Chat -->
+    <div class="fab-btn" onclick="openChatModal()">
+        🍍
+        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-[#0f172a] rounded-full animate-ping"></div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="chat-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="ai-avatar text-xl">🍍</div>
+                    <div>
+                        <h3 class="font-bold text-emerald-400">IC SW-1 (สวีวัน)</h3>
+                        <p class="text-[10px] text-slate-400">AI Consultant (Paranoid Mode)</p>
+                    </div>
+                </div>
+                <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            
+            <!-- Clinical Context -->
+            <div class="p-3 bg-slate-900/50 border-b border-white/5 flex gap-2 overflow-x-auto text-xs">
+                <select id="chat-origin" class="bg-slate-800 border-slate-700 rounded px-2 py-1 w-auto">
+                    <option value="CAI">Community (CAI)</option>
+                    <option value="HAI">Hospital (HAI)</option>
+                </select>
+                <label class="flex items-center gap-2 bg-red-500/10 px-2 py-1 rounded border border-red-500/20 cursor-pointer">
+                    <input type="checkbox" id="chat-sepsis" class="accent-red-500">
+                    <span class="text-red-300">Sepsis/Shock</span>
+                </label>
+            </div>
+
+            <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
+                <div class="flex gap-3">
+                    <div class="ai-avatar min-w-[40px]">🍍</div>
+                    <div class="chat-bubble chat-ai">สวัสดีครับ... ผมสวีวัน... เชื้อดื้อยากำลังจ้องมองเราอยู่... ระบุอาการคนไข้แล้วถามผมมาได้เลย...</div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-800 border-t border-white/10 relative">
+                <input type="text" id="chat-input" placeholder="พิมพ์คำถาม..." class="w-full bg-slate-900 border-slate-700 rounded-full pl-4 pr-12 py-3 text-sm focus:ring-emerald-500">
+                <button onclick="sendMessage()" class="absolute right-4 top-4 p-1.5 text-emerald-400 hover:text-emerald-300"><i data-lucide="send" class="w-5 h-5"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend Chart Modal -->
+    <div id="trend-modal" class="modal-overlay">
+        <div class="modal-content bg-slate-900" style="max-width: 700px;">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-bold text-cyan-300" id="trend-title">Susceptibility Trend</h3>
+                <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 h-[300px]">
+                <canvas id="trendChart"></canvas>
+            </div>
+            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- CONFIG ---
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLiywZpQExJgvwau_8fGo1npIXEWrgBVI7fy05uq8_f_juT_6RvS71K20jmJGrVgitvg/exec';
-        let currentTab = 'search';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZQ5bn3aLOL91zI79UzCoNfpfqlY3L6WryFeXMa5wDENl6rbbBUJVU2fW1cuKR1W1K/exec';
         let cachedData = null;
         let selectedSpecimens = new Set();
-        let soundEnabled = true;
-        let tableMode = 'normal'; // 'normal' or 'tiny'
+        let trendChartInstance = null;
 
         // --- INIT ---
         window.onload = async () => {
@@ -269,7 +236,6 @@
             });
         };
 
-        // --- COMMON LOGIC ---
         async function loadOptions() {
             try {
                 document.getElementById('db-status').innerText = 'Syncing...';
@@ -281,31 +247,28 @@
                     initOrganismDropdown(json.data.organisms);
                     initQuarterRadio(json.data.quarters);
                     document.getElementById('db-status').innerText = 'Database Ready';
-                    document.getElementById('db-status').className = 'text-xs text-emerald-400 mt-1';
+                    document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30';
                 }
             } catch (e) {
-                document.getElementById('db-status').innerText = 'Connection Failed';
-                document.getElementById('db-status').className = 'text-xs text-red-400 mt-1';
+                document.getElementById('db-status').innerText = 'Offline Mode';
             }
         }
 
-        // --- UI COMPONENTS ---
+        // --- UI HELPERS ---
         const specimenIcons = { 'Urine': 'droplets', 'Sputum': 'wind', 'Blood': 'syringe', 'Hemoculture': 'syringe', 'Pus': 'bandage', 'Stool': 'circle-dot', 'Vaginal': 'user', 'Discharge': 'activity' };
         
         function initSpecimenGrid(specimens) {
             const container = document.getElementById('specimen-container');
             container.innerHTML = '';
             specimens.forEach(spec => {
-                selectedSpecimens.add(spec); // Default select all
+                selectedSpecimens.add(spec);
                 const btn = document.createElement('button');
                 btn.className = 'specimen-btn active';
                 btn.dataset.value = spec;
                 btn.onclick = () => toggleSpecimen(btn, spec);
-                
                 let iconName = 'activity';
                 for (const k in specimenIcons) if (spec.includes(k)) iconName = specimenIcons[k];
-                
-                btn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 flex-shrink-0"></i><span class="truncate">${spec}</span>`;
+                btn.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>${spec}`;
                 container.appendChild(btn);
             });
             lucide.createIcons();
@@ -327,7 +290,7 @@
 
         function initOrganismDropdown(list) {
             const baseNames = new Set(list.map(n => n.split(' (')[0].trim()).filter(Boolean));
-            document.getElementById('sel-organism').innerHTML = ['<option value="">-- เลือกเชื้อ (หรือปล่อยว่าง) --</option>', ...Array.from(baseNames).sort().map(o => `<option value="${o}">${o}</option>`)].join('');
+            document.getElementById('sel-organism').innerHTML = ['<option value="">-- แสดงทั้งหมด (All) --</option>', ...Array.from(baseNames).sort().map(o => `<option value="${o}">${o}</option>`)].join('');
         }
 
         function initQuarterRadio(list) {
@@ -340,54 +303,7 @@
             `).join('');
         }
 
-        function switchTab(tab) {
-            currentTab = tab;
-            const searchView = document.getElementById('view-search');
-            const aiView = document.getElementById('view-ai');
-            const btnSearch = document.getElementById('tab-search');
-            const btnAi = document.getElementById('tab-ai');
-            const aiOptions = document.getElementById('ai-options');
-            const btnAction = document.getElementById('btn-action');
-
-            if (tab === 'search') {
-                searchView.classList.remove('hidden');
-                aiView.classList.add('hidden');
-                aiOptions.classList.add('hidden');
-                btnAction.classList.remove('hidden'); 
-                
-                btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:bg-cyan-500/10 transition-all flex items-center gap-2";
-                btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-2";
-            } else {
-                searchView.classList.add('hidden');
-                aiView.classList.remove('hidden');
-                aiOptions.classList.remove('hidden');
-                btnAction.classList.add('hidden');
-
-                btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-emerald-500/10 transition-all flex items-center gap-2";
-                btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-2";
-            }
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        // --- TABLE VIEW SIZE CONTROL ---
-        function setTableSize(mode) {
-            tableMode = mode;
-            const table = document.getElementById('resultTable');
-            const btnNormal = document.getElementById('view-normal');
-            const btnTiny = document.getElementById('view-tiny');
-            
-            if (mode === 'normal') {
-                table.className = "w-full text-center border-collapse table-normal";
-                btnNormal.className = "p-1.5 rounded bg-cyan-500/20 text-cyan-300";
-                btnTiny.className = "p-1.5 rounded hover:bg-white/5 text-slate-400";
-            } else {
-                table.className = "w-full text-center border-collapse table-tiny";
-                btnNormal.className = "p-1.5 rounded hover:bg-white/5 text-slate-400";
-                btnTiny.className = "p-1.5 rounded bg-cyan-500/20 text-cyan-300";
-            }
-        }
-
-        // --- SEARCH LOGIC (TABLE) ---
+        // --- FETCH TABLE ---
         async function fetchTableData() {
             const tbody = document.getElementById('table-body');
             const loader = document.getElementById('search-loading');
@@ -407,9 +323,13 @@
                 });
             }
 
+            // If Select All specimens, send empty string to fetch all
+            const allSpecimensSelected = selectedSpecimens.size === cachedData.specimens.length;
+            const specimensParam = allSpecimensSelected ? "" : Array.from(selectedSpecimens).join(',');
+
             const params = new URLSearchParams({
                 action: 'search',
-                specimens: Array.from(selectedSpecimens).join(','),
+                specimens: specimensParam,
                 years: selectedQuarter,
                 names: namesToSend.join(',')
             });
@@ -432,9 +352,10 @@
         function aggregateData(rawData) {
             const groups = {};
             rawData.forEach(row => {
-                const key = `${row.name}|${row.specimen}`;
-                if (!groups[key]) groups[key] = { name: row.name, specimen: row.specimen, years: new Set(), drugData: {} };
-                groups[key].years.add(row.year);
+                // Group by Organism Only (Ignore Specimen/Year for Table View)
+                const key = row.name; 
+                if (!groups[key]) groups[key] = { name: row.name, drugData: {} };
+                
                 for (const [d, v] of Object.entries(row.drugResults)) {
                     if (!groups[key].drugData[d]) groups[key].drugData[d] = { s: 0, t: 0, isR: false };
                     const p = parseDrugValue(v);
@@ -445,7 +366,7 @@
             return Object.values(groups).map(g => {
                 const finalDrugs = {};
                 for (const [d, c] of Object.entries(g.drugData)) finalDrugs[d] = formatDrugValue(c.s, c.t, c.isR);
-                return { name: g.name, specimen: g.specimen, year: Array.from(g.years).sort().join(', '), drugResults: finalDrugs };
+                return { name: g.name, drugResults: finalDrugs };
             });
         }
 
@@ -456,16 +377,17 @@
             if (m) { const t = parseInt(m[2]); return { s: Math.round((parseFloat(m[1])/100)*t), t: t, r: false }; }
             return { s: 0, t: 0, r: false };
         }
+        
         function formatDrugValue(s, t, isR) {
             if (isR && t === 0) return 'R*';
             if (t === 0) return '-';
-            return `${((s/t)*100).toFixed(0)}% (${t})`;
+            return `${((s/t)*100).toFixed(0)}%`; // Removed (n) for cleaner cell, trend shows detail
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             const thead = document.getElementById('table-header');
-            document.getElementById('result-count').innerText = `${data.length} รายการ`;
+            document.getElementById('result-count').innerText = `${data.length} Organisms`;
             tbody.innerHTML = ''; 
 
             if (data.length === 0) { 
@@ -476,10 +398,8 @@
             const drugs = Object.keys(data[0].drugResults);
             
             thead.innerHTML = `
-                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">ชื่อเชื้อ</th>
-                <th>Specimen</th>
-                <th>ช่วงเวลา</th>
-                ${drugs.map(d => `<th class="min-w-[40px]">${d.substring(0,4)}..</th>`).join('')}
+                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>
+                ${drugs.map(d => `<th class="min-w-[60px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}
             `;
             
             data.forEach(row => {
@@ -487,22 +407,91 @@
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50";
                 
                 let html = `
-                    <td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 ${tableMode==='tiny'?'text-col':''}">${row.name}</td>
-                    <td class="text-slate-300 ${tableMode==='tiny'?'hidden':''}">${row.specimen}</td>
-                    <td class="text-slate-400 text-[10px] max-w-[100px] truncate ${tableMode==='tiny'?'hidden':''}">${row.year}</td>
+                    <td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700">${row.name}</td>
                 `;
 
                 drugs.forEach(d => {
                     const v = row.drugResults[d];
-                    const c = (v === 'R*' || v.startsWith('0%') || (parseFloat(v) < 50)) ? 'bg-sens-low' : (parseFloat(v) >= 80 ? 'bg-sens-high' : 'bg-sens-med');
-                    html += `<td class="${v === '-' ? 'bg-na' : c} ${v !== '-' ? 'has-data' : ''}" title="${d}: ${v}">${v}</td>`;
+                    const num = parseFloat(v);
+                    const c = (v === 'R*' || v.startsWith('0%') || (num < 50)) ? 'bg-sens-low' : (num >= 80 ? 'bg-sens-high' : 'bg-sens-med');
+                    const cellClass = v === '-' ? 'bg-na text-slate-600' : c;
+                    const clickAction = v !== '-' ? `onclick="showTrend('${row.name}', '${d}')"` : '';
+                    
+                    html += `<td class="${cellClass} hover:opacity-80" ${clickAction}>${v}</td>`;
                 });
                 tr.innerHTML = html;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- CHATBOT & VOICE LOGIC ---
+        // --- TREND CHART ---
+        async function showTrend(organism, drug) {
+            const modal = document.getElementById('trend-modal');
+            const loading = document.getElementById('trend-loading');
+            document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
+            modal.style.display = 'flex';
+            loading.classList.remove('hidden');
+
+            // Send all specimens to trend to match user selection
+            const specimensParam = Array.from(selectedSpecimens).join(',');
+
+            const params = new URLSearchParams({
+                action: 'trend',
+                organism: organism,
+                drug: drug,
+                specimens: specimensParam
+            });
+
+            try {
+                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const json = await res.json();
+                loading.classList.add('hidden');
+                if (json.status === 'success') {
+                    renderTrendChart(json.data, drug);
+                } else {
+                    alert('No trend data');
+                }
+            } catch (e) { loading.classList.add('hidden'); }
+        }
+
+        function renderTrendChart(data, drugLabel) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            const labels = data.map(d => d.quarter);
+            const values = data.map(d => d.percent);
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '% Susceptibility',
+                        data: values,
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // --- CHATBOT ---
+        function openChatModal() { document.getElementById('chat-modal').style.display = 'flex'; }
+        function closeChatModal() { document.getElementById('chat-modal').style.display = 'none'; }
+
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const container = document.getElementById('chat-container');
@@ -510,9 +499,10 @@
             const spec = Array.from(selectedSpecimens)[0];
             const org = document.getElementById('sel-organism').value;
             const quarter = document.querySelector('input[name="quarter"]:checked').value;
+            const origin = document.getElementById('chat-origin').value;
+            const severity = document.getElementById('chat-sepsis').checked;
 
             if (!question) return;
-            if (!spec || !org) { alert('กรุณาเลือก Site of Infection และ Organism ก่อนถามครับ (สวีวันต้องใช้ข้อมูลนี้!)'); return; }
 
             container.innerHTML += `<div class="flex gap-3"><div class="chat-bubble chat-user">${question}</div></div>`;
             input.value = '';
@@ -524,10 +514,12 @@
 
             const params = new URLSearchParams({
                 action: 'chat',
-                specimen: spec,
-                organism: org,
+                specimen: spec || "", // Allow empty for ALL
+                organism: org || "", // Allow empty for ALL
                 quarter: quarter,
                 includeResistant: document.querySelector('input[name="orgMode"]:checked').value === 'total',
+                origin: origin,
+                severity: severity,
                 question: question
             });
 
@@ -543,7 +535,6 @@
                             <div class="ai-avatar min-w-[40px]"><span class="text-xl">🍍</span></div>
                             <div class="chat-bubble chat-ai">${cleanText.replace(/\n/g, '<br>')}</div>
                         </div>`;
-                    speakRobot(cleanText);
                 } else {
                     container.innerHTML += `<div class="text-red-400 text-center text-xs">Error: ${json.message}</div>`;
                 }
@@ -552,26 +543,6 @@
                 container.innerHTML += `<div class="text-red-400 text-center text-xs">Connection failed.</div>`;
             }
             container.scrollTop = container.scrollHeight;
-        }
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const btn = document.getElementById('sound-btn');
-            btn.innerHTML = soundEnabled ? '<i data-lucide="volume-2" class="w-5 h-5"></i>' : '<i data-lucide="volume-x" class="w-5 h-5"></i>';
-            lucide.createIcons();
-        }
-
-        function speakRobot(text) {
-            if (!soundEnabled) return;
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'th-TH';
-            utterance.rate = 0.9;
-            utterance.pitch = 0.6;
-            const voices = window.speechSynthesis.getVoices();
-            const thaiVoice = voices.find(v => v.lang.includes('th'));
-            if (thaiVoice) utterance.voice = thaiVoice;
-            window.speechSynthesis.speak(utterance);
         }
     </script>
 </body>
