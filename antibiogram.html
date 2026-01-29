@@ -20,29 +20,32 @@
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
-        /* Inputs */
+        /* Inputs & Dropdowns */
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
-        select option { background-color: #0f172a; color: #e2e8f0; padding: 8px; }
-        
-        /* Specimen Grid Buttons */
-        .specimen-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; max-height: 200px; overflow-y: auto; }
-        .specimen-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; text-align: left; }
+        select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
+        select:focus { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1); }
+
+        /* Specimen Flex Buttons (Dynamic Width) */
+        .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 2px; }
+        .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; }
         .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
-        .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; }
+        .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
         
         /* Radio Buttons */
         .radio-group { display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding-right: 4px; }
-        .radio-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8rem; color: #cbd5e1; padding: 4px; border-radius: 4px; transition: background 0.2s; }
+        .radio-item { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8rem; color: #cbd5e1; padding: 6px; border-radius: 6px; transition: background 0.2s; background: rgba(30, 41, 59, 0.4); border: 1px solid transparent; }
         .radio-item:hover { background: rgba(255,255,255,0.05); }
-        .radio-item input { accent-color: #22d3ee; width: 14px; height: 14px; }
+        .radio-item:has(input:checked) { border-color: #22d3ee; background: rgba(34, 211, 238, 0.1); color: #22d3ee; }
+        .radio-item input { accent-color: #22d3ee; width: 14px; height: 14px; margin: 0; }
 
         /* Table Modes */
         .table-normal th { padding: 12px; font-size: 0.9rem; }
         .table-normal td { padding: 10px; font-size: 0.9rem; }
         
-        .table-tiny th { padding: 2px; font-size: 0.6rem; transform: rotate(-45deg); height: 80px; vertical-align: bottom; }
-        .table-tiny td { padding: 0; font-size: 0; height: 12px; } /* Hide text, show color */
-        .table-tiny td.has-data { border: 1px solid rgba(0,0,0,0.3); }
+        /* Tiny Heatmap Mode */
+        .table-tiny th { padding: 4px 2px; font-size: 0.65rem; height: 100px; vertical-align: bottom; white-space: nowrap; writing-mode: vertical-rl; transform: rotate(180deg); }
+        .table-tiny td { padding: 0; font-size: 0; height: 12px; border: 1px solid rgba(0,0,0,0.1); } 
+        .table-tiny td.text-col { font-size: 0.7rem; text-align: left; padding: 0 4px; height: auto; border: none; width: 150px; background: transparent; }
 
         /* Colors */
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
@@ -50,13 +53,12 @@
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
         .bg-na { color: #64748b; }
         
-        /* Tiny Mode Colors (More saturated for visibility) */
         .table-tiny .bg-sens-high { background-color: #10b981; }
         .table-tiny .bg-sens-med { background-color: #eab308; }
         .table-tiny .bg-sens-low { background-color: #ef4444; }
         .table-tiny .bg-na { background-color: #1e293b; }
 
-        /* Chat */
+        /* Chat & Loader */
         .chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; line-height: 1.5; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
@@ -82,7 +84,7 @@
             </div>
         </div>
         
-        <!-- Top Action Buttons -->
+        <!-- Action Buttons Group -->
         <div class="flex gap-3">
             <button onclick="switchTab('search')" id="tab-search" class="glass px-5 py-2.5 rounded-xl font-medium border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:bg-cyan-500/10 transition-all flex items-center gap-2">
                 <i data-lucide="table" class="w-4 h-4"></i> ค้นหาข้อมูล (Data)
@@ -106,13 +108,13 @@
                 </div>
 
                 <div class="space-y-6 flex-grow">
-                    <!-- 1. Site of Infection (Grid Buttons) -->
+                    <!-- 1. Site of Infection (Flex Buttons) -->
                     <div>
                         <div class="flex justify-between items-end mb-2">
                             <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
                             <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">เลือกทั้งหมด</button>
                         </div>
-                        <div id="specimen-grid" class="specimen-grid custom-scrollbar">
+                        <div id="specimen-container" class="specimen-container">
                             <div class="text-xs text-slate-500 italic p-2">Loading...</div>
                         </div>
                     </div>
@@ -120,7 +122,7 @@
                     <!-- 2. Organism -->
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block font-medium">Organism (ชื่อเชื้อ)</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- Loading --</option></select>
+                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- เลือกเชื้อ (หรือปล่อยว่าง) --</option></select>
                         <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -150,10 +152,10 @@
                     </div>
                 </div>
 
-                <!-- Main Action Button (Contextual) -->
+                <!-- Main Action Button (Search Mode) -->
                 <div class="mt-6">
-                    <button id="btn-action" onclick="handleAction()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="search" class="w-5 h-5"></i> <span id="btn-text">ค้นหาข้อมูล</span>
+                    <button id="btn-action" onclick="fetchTableData()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5"></i> ค้นหาข้อมูล
                     </button>
                 </div>
             </div>
@@ -163,8 +165,8 @@
         <div class="lg:col-span-9">
             
             <!-- VIEW 1: TABLE -->
-            <div id="view-search" class="glass p-1 h-full min-h-[500px] flex flex-col">
-                <div class="p-4 border-b border-white/5 flex justify-between items-center">
+            <div id="view-search" class="glass p-1 h-full min-h-[500px] flex flex-col relative">
+                <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50 rounded-t-xl">
                     <div>
                         <h3 class="font-semibold text-cyan-100">ผลการทดสอบความไว (Antibiogram)</h3>
                         <p class="text-[10px] text-slate-400 mt-0.5">*ข้อมูลรวมตามช่วงเวลาที่เลือก</p>
@@ -184,17 +186,24 @@
                     </div>
                 </div>
                 
-                <div id="search-loading" class="hidden flex-grow flex flex-col items-center justify-center text-slate-400">
-                    <div class="loader mb-3"></div> กำลังประมวลผลข้อมูล...
-                </div>
-                
-                <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30">
+                <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative">
                     <table id="resultTable" class="w-full text-center border-collapse table-normal">
                         <thead><tr id="table-header"></tr></thead>
                         <tbody id="table-body">
-                            <tr><td colspan="10" class="py-20 text-center text-slate-500"><i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>กรุณาเลือกเงื่อนไขและกดค้นหา</td></tr>
+                            <tr id="table-placeholder">
+                                <td colspan="10" class="py-20 text-center text-slate-500">
+                                    <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                                    กรุณาเลือกเงื่อนไขและกดค้นหา
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                    
+                    <!-- Preloader Overlay (Correctly positioned below header) -->
+                    <!-- Header is approx 56px -->
+                    <div id="search-loading" class="hidden absolute inset-0 bg-slate-900/80 z-20 flex flex-col items-center justify-center text-slate-400 top-[56px]">
+                        <div class="loader mb-3"></div> กำลังประมวลผลข้อมูล...
+                    </div>
                 </div>
             </div>
 
@@ -217,7 +226,6 @@
 
                 <!-- Chat Area -->
                 <div id="chat-container" class="flex-grow p-4 overflow-y-auto custom-scrollbar space-y-4">
-                    <!-- Intro Message -->
                     <div class="flex gap-3">
                         <div class="ai-avatar min-w-[40px]"><span class="text-xl">🍍</span></div>
                         <div class="chat-bubble chat-ai">
@@ -285,7 +293,7 @@
         const specimenIcons = { 'Urine': 'droplets', 'Sputum': 'wind', 'Blood': 'syringe', 'Hemoculture': 'syringe', 'Pus': 'bandage', 'Stool': 'circle-dot', 'Vaginal': 'user', 'Discharge': 'activity' };
         
         function initSpecimenGrid(specimens) {
-            const container = document.getElementById('specimen-grid');
+            const container = document.getElementById('specimen-container');
             container.innerHTML = '';
             specimens.forEach(spec => {
                 selectedSpecimens.add(spec); // Default select all
@@ -319,7 +327,7 @@
 
         function initOrganismDropdown(list) {
             const baseNames = new Set(list.map(n => n.split(' (')[0].trim()).filter(Boolean));
-            document.getElementById('sel-organism').innerHTML = ['<option value="">-- เลือกเชื้อ --</option>', ...Array.from(baseNames).sort().map(o => `<option value="${o}">${o}</option>`)].join('');
+            document.getElementById('sel-organism').innerHTML = ['<option value="">-- เลือกเชื้อ (หรือปล่อยว่าง) --</option>', ...Array.from(baseNames).sort().map(o => `<option value="${o}">${o}</option>`)].join('');
         }
 
         function initQuarterRadio(list) {
@@ -338,36 +346,27 @@
             const aiView = document.getElementById('view-ai');
             const btnSearch = document.getElementById('tab-search');
             const btnAi = document.getElementById('tab-ai');
-            const btnAction = document.getElementById('btn-action');
-            const btnText = document.getElementById('btn-text');
             const aiOptions = document.getElementById('ai-options');
-
-            // Reset Styles
-            btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-2";
-            btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-2";
+            const btnAction = document.getElementById('btn-action');
 
             if (tab === 'search') {
                 searchView.classList.remove('hidden');
                 aiView.classList.add('hidden');
                 aiOptions.classList.add('hidden');
-                btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)] transition-all flex items-center gap-2";
+                btnAction.classList.remove('hidden'); 
                 
-                btnAction.className = "w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2";
-                btnText.innerText = "ค้นหาข้อมูล";
-                btnAction.classList.remove('hidden');
+                btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)] hover:bg-cyan-500/10 transition-all flex items-center gap-2";
+                btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-2";
             } else {
                 searchView.classList.add('hidden');
                 aiView.classList.remove('hidden');
                 aiOptions.classList.remove('hidden');
-                btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all flex items-center gap-2";
-                
-                btnAction.className = "hidden"; // Use chat input for action
+                btnAction.classList.add('hidden');
+
+                btnAi.className = "glass px-5 py-2.5 rounded-xl font-medium border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-emerald-500/10 transition-all flex items-center gap-2";
+                btnSearch.className = "glass px-5 py-2.5 rounded-xl font-medium border-transparent text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-2";
             }
             if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function handleAction() {
-            if (currentTab === 'search') fetchTableData();
         }
 
         // --- TABLE VIEW SIZE CONTROL ---
@@ -392,7 +391,9 @@
         async function fetchTableData() {
             const tbody = document.getElementById('table-body');
             const loader = document.getElementById('search-loading');
-            tbody.innerHTML = ''; loader.classList.remove('hidden');
+            
+            loader.classList.remove('hidden');
+            if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const orgBase = document.getElementById('sel-organism').value;
             const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
@@ -417,9 +418,15 @@
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
                 const json = await res.json();
                 loader.classList.add('hidden');
-                if (json.status === 'success') renderTable(aggregateData(json.data));
-                else alert('Error: ' + json.message);
-            } catch (e) { loader.classList.add('hidden'); alert('Connection Error'); }
+                if (json.status === 'success') {
+                    renderTable(aggregateData(json.data));
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (e) { 
+                loader.classList.add('hidden'); 
+                alert('Connection Error'); 
+            }
         }
 
         function aggregateData(rawData) {
@@ -459,33 +466,35 @@
             const tbody = document.getElementById('table-body');
             const thead = document.getElementById('table-header');
             document.getElementById('result-count').innerText = `${data.length} รายการ`;
-            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-500">ไม่พบข้อมูล</td></tr>'; return; }
+            tbody.innerHTML = ''; 
+
+            if (data.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-500">ไม่พบข้อมูล</td></tr>'; 
+                return; 
+            }
             
             const drugs = Object.keys(data[0].drugResults);
             
-            // Render Head
             thead.innerHTML = `
-                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg">ชื่อเชื้อ</th>
+                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">ชื่อเชื้อ</th>
                 <th>Specimen</th>
                 <th>ช่วงเวลา</th>
                 ${drugs.map(d => `<th class="min-w-[40px]">${d.substring(0,4)}..</th>`).join('')}
             `;
             
-            // Render Body
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50";
                 
                 let html = `
-                    <td class="text-left pl-4 font-medium text-cyan-200">${row.name}</td>
-                    <td class="text-slate-300">${row.specimen}</td>
-                    <td class="text-slate-400 text-[10px] max-w-[100px] truncate">${row.year}</td>
+                    <td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 ${tableMode==='tiny'?'text-col':''}">${row.name}</td>
+                    <td class="text-slate-300 ${tableMode==='tiny'?'hidden':''}">${row.specimen}</td>
+                    <td class="text-slate-400 text-[10px] max-w-[100px] truncate ${tableMode==='tiny'?'hidden':''}">${row.year}</td>
                 `;
 
                 drugs.forEach(d => {
                     const v = row.drugResults[d];
                     const c = (v === 'R*' || v.startsWith('0%') || (parseFloat(v) < 50)) ? 'bg-sens-low' : (parseFloat(v) >= 80 ? 'bg-sens-high' : 'bg-sens-med');
-                    // Add class has-data for tiny mode border
                     html += `<td class="${v === '-' ? 'bg-na' : c} ${v !== '-' ? 'has-data' : ''}" title="${d}: ${v}">${v}</td>`;
                 });
                 tr.innerHTML = html;
