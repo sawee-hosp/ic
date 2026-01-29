@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sawee Smart Antibiogram AI</title>
+    <title>Sawee Hospital Smart Antibiogram</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Kanit', sans-serif;
@@ -15,378 +18,445 @@
             color: #f8fafc;
             overflow-x: hidden;
         }
-
-        /* Aurora Gradient Background */
+        /* Aurora Background */
         .aurora-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
             background: radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.4) 0%, transparent 50%),
                         radial-gradient(circle at 80% 70%, rgba(15, 118, 110, 0.4) 0%, transparent 50%),
                         radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 100%);
         }
-
         .glass {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1.5rem;
+            border-radius: 1rem;
         }
-
-        .card-hover:hover {
-            transform: translateY(-5px);
-            border-color: rgba(34, 211, 238, 0.4);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-        }
-
         .gradient-text {
             background: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.5); }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+        /* Form Inputs */
+        select, input[type="text"] {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+        select:focus, input:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1);
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(34, 211, 238, 0.3);
-            border-radius: 10px;
-        }
+        
+        /* Table */
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem; }
+        th { background: rgba(30, 41, 59, 0.9); color: #22d3ee; padding: 12px; white-space: nowrap; }
+        td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
+        
+        /* Susceptibility Badges */
+        .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 600; }
+        .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .bg-na { color: #64748b; }
 
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        /* Loader */
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #22d3ee;
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            animation: spin 1s linear infinite;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .ai-pulse {
-            animation: pulse-soft 2s infinite ease-in-out;
-        }
+        /* AI Chat Style override */
+        .ai-result ul { list-style: none; padding: 0; margin: 0; }
+        .ai-result li { margin-bottom: 12px; }
+        .badge-custom { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500; }
+        .bg-success { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .bg-warning { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .bg-danger { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-6 min-h-screen flex flex-col">
     <div class="aurora-bg"></div>
 
-    <!-- Header Section -->
-    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-3xl md:text-4xl font-bold gradient-text">SAWEE SMART ANTIBIOGRAM</h1>
-            <p class="text-cyan-400/80 flex items-center gap-2 mt-1">
-                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                Infection Control AI Ecosystem - Hospital Digitalization
-            </p>
-        </div>
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
-            <div class="glass px-4 py-2 flex items-center gap-2">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                <span class="text-sm font-light">Database Updated: 2025-2026</span>
+            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                <i data-lucide="activity" class="w-8 h-8 text-cyan-400"></i>
             </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold gradient-text">SAWEE SMART IC</h1>
+                <p class="text-slate-400 text-sm">Antibiogram & Antimicrobial Stewardship System</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="switchTab('search')" id="tab-search" class="glass px-6 py-2 rounded-full text-sm font-medium border-cyan-500/50 text-cyan-300 transition-all shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+                <i data-lucide="table" class="inline w-4 h-4 mr-1"></i> Data Table
+            </button>
+            <button onclick="switchTab('ai')" id="tab-ai" class="glass px-6 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-cyan-300 transition-all">
+                <i data-lucide="bot" class="inline w-4 h-4 mr-1"></i> AI Advisor
+            </button>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
         
-        <!-- Left Column: Filters & AI Assistant -->
-        <div class="lg:col-span-4 space-y-6">
-            
-            <!-- Selection Controls -->
-            <section class="glass p-6">
-                <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
-                    <i data-lucide="filter" class="w-5 h-5 text-cyan-400"></i> ตัวกรองข้อมูล
-                </h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 ml-1">Specimen (สิ่งส่งตรวจ)</label>
-                        <select id="specimenSelect" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-500 outline-none transition-all">
-                            <option value="ALL">รวมทุกรายการ (ALL)</option>
-                            <option value="Sputum">Sputum</option>
-                            <option value="Urine">Urine</option>
-                            <option value="Blood">Hemoculture</option>
-                            <option value="Pus">Pus / Wound</option>
-                            <option value="Stool">Stool</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 ml-1">Organism (ชื่อเชื้อ)</label>
-                        <select id="organismSelect" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-500 outline-none transition-all">
-                            <!-- Populated by JS -->
-                        </select>
-                    </div>
+        <!-- Sidebar Controls -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="glass p-5 h-full flex flex-col">
+                <div class="mb-4 pb-4 border-b border-white/5">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> ตัวเลือกข้อมูล
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1" id="db-status">Loading database...</p>
                 </div>
-            </section>
 
-            <!-- AI Chat Widget -->
-            <section class="glass p-6 border-t-4 border-t-cyan-500/50 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-2">
-                    <i data-lucide="sparkles" class="w-8 h-8 text-cyan-500/20 ai-pulse"></i>
-                </div>
-                <h3 class="text-lg font-medium mb-3 flex items-center gap-2">
-                    <i data-lucide="message-square" class="w-5 h-5 text-cyan-400"></i> ถาม AI IC-Assistant
-                </h3>
-                <div id="chatHistory" class="h-48 overflow-y-auto mb-4 text-sm space-y-3 custom-scrollbar pr-2">
-                    <div class="bg-cyan-500/10 border border-cyan-500/20 p-3 rounded-2xl rounded-tl-none">
-                        สวัสดีค่ะ ฉันคือ AI ช่วยตัดสินใจจากฐานข้อมูล Antibiogram รพ.สวี ต้องการทราบแนวทางการรักษาเชื้อตัวไหนดีคะ?
+                <!-- Input Form -->
+                <div class="space-y-4 flex-grow">
+                    <!-- Dynamic Selects -->
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">Specimen</label>
+                        <select id="sel-specimen"></select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">Organism (ชื่อเชื้อ)</label>
+                        <select id="sel-organism"></select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">Time Period</label>
+                        <select id="sel-quarter"></select>
+                    </div>
+
+                    <!-- AI Specific Options (Hidden in Search Mode) -->
+                    <div id="ai-options" class="hidden space-y-4 pt-2 border-t border-white/5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-300">เฉพาะเชื้อดื้อยา (Only Resistant)</label>
+                            <input type="checkbox" id="chk-resistant" class="w-4 h-4 accent-cyan-500">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-300">ซ่อนยาที่ไม่มีใน รพ.</label>
+                            <input type="checkbox" id="chk-available" checked class="w-4 h-4 accent-cyan-500">
+                        </div>
                     </div>
                 </div>
-                <div class="relative">
-                    <input id="chatInput" type="text" placeholder="พิมพ์ชื่อเชื้อ เช่น E. coli ในปัสสาวะ..." class="w-full bg-slate-900/80 border border-slate-700 rounded-full px-5 py-3 pr-12 focus:ring-2 focus:ring-cyan-500 outline-none">
-                    <button id="sendChat" class="absolute right-2 top-2 p-1.5 bg-cyan-600 hover:bg-cyan-500 rounded-full transition-colors">
-                        <i data-lucide="send" class="w-4 h-4"></i>
+
+                <div class="mt-6">
+                    <button id="btn-action" onclick="handleAction()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="search" class="w-5 h-5"></i> <span id="btn-text">ค้นหาข้อมูล</span>
                     </button>
                 </div>
-            </section>
-        </div>
+            </div>
+        </aside>
 
-        <!-- Right Column: Visualization & Results -->
-        <div class="lg:col-span-8 space-y-6">
+        <!-- Display Area -->
+        <div class="lg:col-span-9">
             
-            <!-- Statistics Overview -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass p-5 card-hover">
-                    <p class="text-slate-400 text-sm">Top Pathogen</p>
-                    <h2 id="topPathogen" class="text-2xl font-bold text-cyan-400">--</h2>
+            <!-- View: Search Table -->
+            <div id="view-search" class="glass p-1 h-full min-h-[500px] flex flex-col">
+                <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                    <h3 class="font-semibold text-cyan-100">ผลการทดสอบความไว (Antibiogram)</h3>
+                    <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 รายการ</span>
                 </div>
-                <div class="glass p-5 card-hover">
-                    <p class="text-slate-400 text-sm">Avg. Susceptibility</p>
-                    <h2 id="avgSus" class="text-2xl font-bold text-indigo-400">-- %</h2>
+                
+                <div id="search-loading" class="hidden flex-grow flex flex-col items-center justify-center text-slate-400">
+                    <div class="loader mb-3"></div> กำลังดึงข้อมูล...
                 </div>
-                <div class="glass p-5 card-hover">
-                    <p class="text-slate-400 text-sm">Total Isolates</p>
-                    <h2 id="totalIsolates" class="text-2xl font-bold text-emerald-400">--</h2>
+
+                <div class="overflow-auto flex-grow custom-scrollbar">
+                    <table id="resultTable">
+                        <thead>
+                            <tr id="table-header">
+                                <th class="text-left pl-4">ชื่อเชื้อ</th>
+                                <th>Specimen</th>
+                                <th>ปี</th>
+                                <!-- Dynamic Drugs -->
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="10" class="py-20 text-center text-slate-500">
+                                    <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                                    กรุณาเลือกเงื่อนไขและกดค้นหา
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Chart Card -->
-            <section class="glass p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-semibold flex items-center gap-2">
-                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-cyan-400"></i> อัตราความไวต่อยาปฏิชีวนะ (%)
-                    </h3>
-                    <div class="flex gap-2">
-                         <span class="flex items-center gap-1 text-xs text-slate-400">
-                             <span class="w-3 h-3 bg-cyan-500 rounded-sm"></span> Sensitive
-                         </span>
+            <!-- View: AI Advisor -->
+            <div id="view-ai" class="hidden glass p-6 h-full min-h-[500px] relative overflow-hidden flex flex-col">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i data-lucide="bot" class="w-32 h-32 text-cyan-400"></i>
+                </div>
+                
+                <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i> AI Recommendation
+                </h3>
+
+                <div id="ai-loading" class="hidden flex-grow flex flex-col items-center justify-center">
+                    <div class="loader w-10 h-10 mb-4 border-emerald-400"></div>
+                    <p class="text-emerald-300 animate-pulse">AI กำลังวิเคราะห์ข้อมูลและแนวโน้มการดื้อยา...</p>
+                </div>
+
+                <div id="ai-content" class="flex-grow overflow-y-auto custom-scrollbar ai-result space-y-4">
+                    <div class="bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-700 text-center text-slate-400">
+                        <p>เลือก Specimen และ ชื่อเชื้อ ทางด้านซ้าย</p>
+                        <p class="text-sm mt-2">แล้วกดปุ่ม <b>"ขอคำแนะนำจาก AI"</b> เพื่อรับแนวทางการรักษา</p>
                     </div>
                 </div>
-                <div class="h-80 w-full">
-                    <canvas id="antibiogramChart"></canvas>
-                </div>
-            </section>
-
-            <!-- Smart Drug Mapping Section -->
-            <section class="glass p-6">
-                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <i data-lucide="pill" class="w-6 h-6 text-emerald-400"></i> ยาที่แนะนำในโรงพยาบาลสวี (Smart Mapping)
-                </h3>
-                <div id="drugList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <!-- Populated by JS -->
-                    <p class="text-slate-500 italic col-span-2">กรุณาเลือกเชื้อเพื่อดูรายการยา...</p>
-                </div>
-            </section>
+            </div>
 
         </div>
     </main>
 
-    <footer class="max-w-7xl mx-auto mt-12 text-center text-slate-500 text-sm">
-        <p>© 2026 SAWEE SMART IC PROJECT | Digital Transformation by Pharmacy & IC Team</p>
+    <footer class="max-w-7xl mx-auto mt-6 text-center text-slate-600 text-xs pb-4">
+        © 2026 Sawee Hospital Infection Control. Powered by Google Apps Script & AI.
     </footer>
 
     <script>
-        // --- DATASET FROM CSV ---
-        const antibiogramData = [
-            { organism: "Pseudomonas aeruginosa", specimen: "Sputum", amikacin: [10, 10], ceftazidime: [10, 10], ciprofloxacin: [10, 10], gentamicin: [10, 10], imipenem: [10, 10], meropenem: [10, 10], piperacillin_taz: [10, 10], levofloxacin: [10, 10] },
-            { organism: "Escherichia coli", specimen: "Urine", ampicillin: [0, 8], amikacin: [8, 8], ciprofloxacin: [4, 8], ceftriaxone: [4, 8], ceftazidime: [4, 8], gentamicin: [6, 8], imipenem: [8, 8], meropenem: [8, 8], nitrofurantoin: [8, 8], amoxicillin_cla: [2, 8] },
-            { organism: "Escherichia coli", specimen: "Stool", ampicillin: [2, 4], ciprofloxacin: [4, 4], ceftriaxone: [4, 4], gentamicin: [2, 4], imipenem: [4, 4], meropenem: [4, 4] },
-            { organism: "Acinetobacter baumannii (CRAB)", specimen: "Sputum", amikacin: [0, 2], imipenem: [0, 2], meropenem: [0, 2], colistin: [2, 2] },
-            { organism: "Klebsiella pneumoniae", specimen: "Urine", ceftriaxone: [6, 8], gentamicin: [6, 8], imipenem: [8, 8], amoxicillin_cla: [5, 8] },
-            { organism: "Enterococcus faecalis", specimen: "Urine", ampicillin: [5, 5], vancomycin: [5, 5], nitrofurantoin: [5, 5] },
-            { organism: "Staphylococcus aureus (MSSA)", specimen: "Pus", oxacillin: [10, 10], clindamycin: [8, 10], erythromycin: [7, 10], vancomycin: [10, 10] }
-        ];
+        // --- CONFIGURATION ---
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLiywZpQExJgvwau_8fGo1npIXEWrgBVI7fy05uq8_f_juT_6RvS71K20jmJGrVgitvg/exec';
+        
+        let currentTab = 'search'; // 'search' or 'ai'
+        let cachedData = null; // Store dropdown options
 
-        const drugMapping = [
-            { hospitalDrug: "Amoxycillin cap/syrup", testedDrug: "Penicillin" },
-            { hospitalDrug: "Augmentin 1000mg tab / Inj", testedDrug: "Amoxicillin_Cla" },
-            { hospitalDrug: "AMPICILLIN 1gm inj.", testedDrug: "Ampicillin" },
-            { hospitalDrug: "Tazocin 4.5g inj", testedDrug: "Piperacillin_Taz" },
-            { hospitalDrug: "Cefotaxime inj", testedDrug: "Cefotaxime" },
-            { hospitalDrug: "Ceftazidime 1g inj", testedDrug: "Ceftazidime" },
-            { hospitalDrug: "Ceftriaxone 1g inj", testedDrug: "Ceftriaxone" },
-            { hospitalDrug: "Meropenem 1g inj", testedDrug: "Meropenem" },
-            { hospitalDrug: "Amikacin 500mg inj", testedDrug: "Amikacin" },
-            { hospitalDrug: "Gentamicin 80mg inj", testedDrug: "Gentamicin" },
-            { hospitalDrug: "Norfloxacin 400mg tab", testedDrug: "Ciprofloxacin" },
-            { hospitalDrug: "Ciprofloxacin 250mg tab / 200mg inj", testedDrug: "Ciprofloxacin" },
-            { hospitalDrug: "Nitrofurantoin 100mg tab", testedDrug: "Nitrofurantoin" },
-            { hospitalDrug: "Vancomycin 500mg inj", testedDrug: "Vancomycin" },
-            { hospitalDrug: "Clindamycin 300mg cap / inj", testedDrug: "Clindamycin" }
-        ];
-
-        // --- STATE & INITIALIZATION ---
-        let currentChart = null;
-
-        function init() {
+        // --- INITIALIZATION ---
+        window.onload = async () => {
             lucide.createIcons();
-            populateOrganisms();
-            updateDashboard();
-            
-            document.getElementById('specimenSelect').addEventListener('change', () => {
-                populateOrganisms();
-                updateDashboard();
-            });
-            document.getElementById('organismSelect').addEventListener('change', updateDashboard);
-            document.getElementById('sendChat').addEventListener('click', handleChat);
-            document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') handleChat(); });
-        }
+            await loadOptions();
+        };
 
-        function populateOrganisms() {
-            const spec = document.getElementById('specimenSelect').value;
-            const select = document.getElementById('organismSelect');
-            select.innerHTML = '';
-
-            const filtered = spec === "ALL" ? antibiogramData : antibiogramData.filter(d => d.specimen === spec);
-            const uniqueOrg = [...new Set(filtered.map(d => d.organism))];
-
-            uniqueOrg.forEach(org => {
-                const opt = document.createElement('option');
-                opt.value = org;
-                opt.textContent = org;
-                select.appendChild(opt);
-            });
-        }
-
-        function updateDashboard() {
-            const specimen = document.getElementById('specimenSelect').value;
-            const organism = document.getElementById('organismSelect').value;
-
-            const data = antibiogramData.find(d => d.organism === organism && (specimen === "ALL" || d.specimen === specimen));
-            if (!data) return;
-
-            // Update Stats
-            document.getElementById('topPathogen').textContent = organism.split(' ')[0];
-            document.getElementById('totalIsolates').textContent = Math.max(...Object.values(data).filter(v => Array.isArray(v)).map(v => v[1]));
-
-            const drugs = Object.keys(data).filter(k => Array.isArray(data[k]));
-            const chartLabels = drugs.map(d => d.charAt(0).toUpperCase() + d.slice(1).replace('_', '/'));
-            const chartValues = drugs.map(d => (data[d][0] / data[d][1] * 100).toFixed(1));
-
-            const avg = (chartValues.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / chartValues.length).toFixed(1);
-            document.getElementById('avgSus').textContent = avg;
-
-            renderChart(chartLabels, chartValues);
-            renderDrugList(data);
-        }
-
-        function renderChart(labels, values) {
-            const ctx = document.getElementById('antibiogramChart').getContext('2d');
-            if (currentChart) currentChart.destroy();
-
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Susceptibility %',
-                        data: values,
-                        backgroundColor: 'rgba(34, 211, 238, 0.6)',
-                        borderColor: '#22d3ee',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        hoverBackgroundColor: 'rgba(34, 211, 238, 0.9)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            max: 100,
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8', font: { size: 10 } }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-        }
-
-        function renderDrugList(data) {
-            const container = document.getElementById('drugList');
-            container.innerHTML = '';
-
-            const testedDrugs = Object.keys(data).filter(k => Array.isArray(data[k]));
-            
-            testedDrugs.forEach(drugKey => {
-                const percent = (data[drugKey][0] / data[drugKey][1] * 100);
-                if (percent < 10) return; // Skip highly resistant for recommendation
-
-                const hospitalMapped = drugMapping.filter(m => m.testedDrug.toLowerCase() === drugKey.toLowerCase());
+        async function loadOptions() {
+            try {
+                document.getElementById('db-status').innerText = 'Syncing...';
+                const res = await fetch(`${GAS_URL}?action=options`);
+                const json = await res.json();
                 
-                hospitalMapped.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = `p-3 glass border-l-4 ${percent >= 80 ? 'border-emerald-500' : 'border-amber-500'} flex justify-between items-center`;
-                    div.innerHTML = `
-                        <div>
-                            <p class="text-sm font-medium">${m.hospitalDrug}</p>
-                            <p class="text-xs text-slate-500">Based on ${drugKey}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs font-bold ${percent >= 80 ? 'text-emerald-400' : 'text-amber-400'}">${percent.toFixed(0)}% Sens.</span>
-                        </div>
-                    `;
-                    container.appendChild(div);
+                if (json.status === 'success') {
+                    cachedData = json.data;
+                    populateDropdowns(json.data);
+                    document.getElementById('db-status').innerText = 'Database Ready';
+                    document.getElementById('db-status').className = 'text-xs text-emerald-400 mt-1';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('db-status').innerText = 'Connection Failed';
+                document.getElementById('db-status').className = 'text-xs text-red-400 mt-1';
+            }
+        }
+
+        function populateDropdowns(data) {
+            const createOption = (val, text) => `<option value="${val}">${text || val}</option>`;
+            
+            // Specimen
+            const specHTML = ['<option value="">-- ทั้งหมด --</option>', ...data.specimens.map(s => createOption(s))].join('');
+            document.getElementById('sel-specimen').innerHTML = specHTML;
+
+            // Organism
+            const orgHTML = ['<option value="">-- ทั้งหมด --</option>', ...data.organisms.map(o => createOption(o))].join('');
+            document.getElementById('sel-organism').innerHTML = orgHTML;
+
+            // Quarter
+            const qHTML = data.quarters.map(q => createOption(q)).join('');
+            document.getElementById('sel-quarter').innerHTML = qHTML;
+        }
+
+        // --- UI LOGIC ---
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Toggle Buttons
+            const btnSearch = document.getElementById('tab-search');
+            const btnAi = document.getElementById('tab-ai');
+            const activeClass = "border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]";
+            const inactiveClass = "text-slate-400 border-transparent hover:text-cyan-300";
+
+            if (tab === 'search') {
+                btnSearch.className = `glass px-6 py-2 rounded-full text-sm font-medium transition-all ${activeClass}`;
+                btnAi.className = `glass px-6 py-2 rounded-full text-sm font-medium transition-all ${inactiveClass}`;
+                document.getElementById('view-search').classList.remove('hidden');
+                document.getElementById('view-ai').classList.add('hidden');
+                document.getElementById('ai-options').classList.add('hidden');
+                
+                // Update Action Button
+                const btnAction = document.getElementById('btn-action');
+                btnAction.className = "w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2";
+                document.getElementById('btn-text').innerText = "ค้นหาข้อมูล";
+            } else {
+                btnAi.className = `glass px-6 py-2 rounded-full text-sm font-medium transition-all ${activeClass}`;
+                btnSearch.className = `glass px-6 py-2 rounded-full text-sm font-medium transition-all ${inactiveClass}`;
+                document.getElementById('view-search').classList.add('hidden');
+                document.getElementById('view-ai').classList.remove('hidden');
+                document.getElementById('ai-options').classList.remove('hidden');
+
+                // Update Action Button
+                const btnAction = document.getElementById('btn-action');
+                btnAction.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2";
+                document.getElementById('btn-text').innerText = "ขอคำแนะนำจาก AI";
+            }
+        }
+
+        function handleAction() {
+            if (currentTab === 'search') {
+                fetchTableData();
+            } else {
+                fetchAIRecommendation();
+            }
+        }
+
+        // --- FETCH TABLE DATA ---
+        async function fetchTableData() {
+            const tbody = document.getElementById('table-body');
+            const loader = document.getElementById('search-loading');
+            
+            // Reset UI
+            tbody.innerHTML = '';
+            loader.classList.remove('hidden');
+            
+            const params = new URLSearchParams({
+                action: 'search',
+                specimens: document.getElementById('sel-specimen').value,
+                names: document.getElementById('sel-organism').value,
+                // Simple version: Using dropdowns. For multi-select, previous logic applies but adjusted for this UI.
+                // Currently only taking single values for simplicity in this updated UI
+            });
+
+            try {
+                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const json = await res.json();
+                
+                loader.classList.add('hidden');
+                
+                if (json.status === 'success') {
+                    renderTable(json.data);
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch (e) {
+                loader.classList.add('hidden');
+                alert('Connection Error');
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            const theadRow = document.getElementById('table-header');
+            const countLabel = document.getElementById('result-count');
+            
+            countLabel.innerText = `${data.length} รายการ`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-500">ไม่พบข้อมูล</td></tr>';
+                return;
+            }
+
+            // 1. Determine Headers from first row
+            const drugKeys = Object.keys(data[0].drugResults);
+            
+            theadRow.innerHTML = `
+                <th class="text-left pl-4 min-w-[150px] rounded-tl-lg">ชื่อเชื้อ</th>
+                <th>Specimen</th>
+                <th>ปี</th>
+                ${drugKeys.map(d => `<th class="text-xs min-w-[80px]">${d}</th>`).join('')}
+            `;
+
+            // 2. Render Rows
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 transition-colors";
+                
+                let html = `
+                    <td class="text-left pl-4 font-medium text-cyan-200">${row.name}</td>
+                    <td class="text-slate-300">${row.specimen}</td>
+                    <td class="text-slate-400 text-xs">${row.year}</td>
+                `;
+
+                drugKeys.forEach(key => {
+                    const val = row.drugResults[key];
+                    const colorClass = getColorClass(val);
+                    html += `<td class="${colorClass}">${val}</td>`;
                 });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
             });
         }
 
-        // --- AI ASSISTANT LOGIC ---
-        function handleChat() {
-            const input = document.getElementById('chatInput');
-            const history = document.getElementById('chatHistory');
-            const text = input.value.trim().toLowerCase();
-            if (!text) return;
-
-            // User message
-            const userMsg = document.createElement('div');
-            userMsg.className = "bg-slate-800 p-3 rounded-2xl rounded-tr-none ml-8 text-right";
-            userMsg.textContent = input.value;
-            history.appendChild(userMsg);
-            input.value = '';
-
-            // AI Logic
-            setTimeout(() => {
-                const aiMsg = document.createElement('div');
-                aiMsg.className = "bg-cyan-500/10 border border-cyan-500/20 p-3 rounded-2xl rounded-tl-none mr-8";
-                
-                let response = "ขออภัยค่ะ ฉันหาข้อมูลที่เจาะจงไม่เจอ ลองพิมพ์ชื่อเชื้อ เช่น 'E. coli' หรือ 'Urine' ดูนะคะ";
-                
-                if (text.includes('e. coli') || text.includes('coli')) {
-                    response = "สำหรับเชื้อ E. coli ในรพ.สวี ข้อมูลล่าสุดพบว่ายังไวต่อยา Ceftriaxone และ Amikacin สูงมาก (100%) แนะนำให้ใช้กลุ่มนี้เป็น Empiric therapy ค่ะ";
-                } else if (text.includes('urine') || text.includes('ปัสสาวะ')) {
-                    response = "ในตัวอย่างปัสสาวะ เชื้อที่พบบ่อยคือ E. coli และ Klebsiella แนะนำให้ดูผลความไวต่อยา Gentamicin หรือ Nitrofurantoin ประกอบด้วยนะคะ";
-                } else if (text.includes('crab') || text.includes('acineto')) {
-                    response = "A. baumannii (CRAB) ในวอร์ดเราดื้อต่อ Carbapenem 100% ค่ะ ปัจจุบันยาที่ยังพอใช้ได้คือ Colistin โปรดประสานทีม IC เพื่อแยกโรคทันที";
-                }
-
-                aiMsg.textContent = response;
-                history.appendChild(aiMsg);
-                history.scrollTop = history.scrollHeight;
-            }, 600);
+        function getColorClass(value) {
+            if (value === 'R' || value === 'R*') return 'bg-sens-low';
+            if (value === 'N/A' || value === '-' || value === '') return 'bg-na';
+            const match = value.match(/^([\d.]+)%/);
+            if (match) {
+                const num = parseFloat(match[1]);
+                if (num >= 80) return 'bg-sens-high';
+                if (num >= 50) return 'bg-sens-med';
+                return 'bg-sens-low';
+            }
+            return 'bg-na';
         }
 
-        window.onload = init;
+        // --- FETCH AI ADVICE ---
+        async function fetchAIRecommendation() {
+            const container = document.getElementById('ai-content');
+            const loader = document.getElementById('ai-loading');
+            
+            // Check Inputs
+            const spec = document.getElementById('sel-specimen').value;
+            const org = document.getElementById('sel-organism').value;
+            
+            if (!spec || !org) {
+                container.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-300 text-center">
+                        กรุณาเลือก <b>Specimen</b> และ <b>ชื่อเชื้อ</b> ก่อนขอคำแนะนำ
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            loader.classList.remove('hidden');
+
+            const params = new URLSearchParams({
+                action: 'recommend',
+                specimen: spec,
+                organism: org,
+                quarter: document.getElementById('sel-quarter').value,
+                onlyResistant: document.getElementById('chk-resistant').checked,
+                hideUnavailable: document.getElementById('chk-available').checked
+            });
+
+            try {
+                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const json = await res.json();
+                
+                loader.classList.add('hidden');
+                
+                if (json.status === 'success') {
+                    // Inject HTML directly from GAS
+                    container.innerHTML = json.html;
+                } else {
+                    container.innerHTML = `<div class="text-red-400">Error: ${json.message}</div>`;
+                }
+            } catch (e) {
+                loader.classList.add('hidden');
+                container.innerHTML = `<div class="text-red-400">Connection Failed</div>`;
+            }
+        }
     </script>
 </body>
 </html>
