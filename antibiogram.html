@@ -6,8 +6,8 @@
     <title>Sawee Hospital Smart Antibiogram</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+    <!-- Icons (Updated CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
     
@@ -237,7 +237,12 @@
 
         // --- INITIALIZATION ---
         window.onload = async () => {
-            lucide.createIcons();
+            // Safety check for Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.warn("Lucide icons library failed to load.");
+            }
             await loadOptions();
         };
 
@@ -309,6 +314,9 @@
                 btnAction.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2";
                 document.getElementById('btn-text').innerText = "ขอคำแนะนำจาก AI";
             }
+            
+            // Re-render icons if needed (e.g. dynamic content was loaded)
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function handleAction() {
