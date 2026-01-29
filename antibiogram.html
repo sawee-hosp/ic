@@ -79,6 +79,39 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Specimen Carousel Styles */
+        .carousel-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            scrollbar-width: thin;
+        }
+        .specimen-btn {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            min-width: 80px;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.4);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .specimen-btn:hover { background: rgba(30, 41, 59, 0.8); }
+        .specimen-btn.active {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+            border-color: #22d3ee;
+            color: #22d3ee;
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+        }
+        .specimen-btn i { margin-bottom: 0.25rem; }
+        .specimen-btn span { font-size: 0.7rem; }
+
         /* AI Chat Style override */
         .ai-result ul { list-style: none; padding: 0; margin: 0; }
         .ai-result li { margin-bottom: 12px; }
@@ -126,27 +159,56 @@
                 </div>
 
                 <!-- Input Form -->
-                <div class="space-y-4 flex-grow">
-                    <!-- Dynamic Selects -->
+                <div class="space-y-6 flex-grow">
+                    
+                    <!-- 1. Site of Infection (Carousel) -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block">Specimen</label>
-                        <select id="sel-specimen"></select>
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
+                            <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">เลือกทั้งหมด</button>
+                        </div>
+                        <div id="specimen-carousel" class="carousel-container">
+                            <!-- Buttons will be injected here -->
+                            <div class="text-xs text-slate-500 italic p-2">Loading...</div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-1 text-right">*เลื่อนเพื่อดูเพิ่มเติม</div>
                     </div>
+
+                    <!-- 2. Organism -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block">Organism (ชื่อเชื้อ)</label>
-                        <select id="sel-organism"></select>
+                        <label class="text-xs text-slate-400 mb-1 block font-medium">Organism (ชื่อเชื้อ)</label>
+                        <select id="sel-organism" class="mb-2">
+                            <option value="">-- Loading --</option>
+                        </select>
+                        
+                        <!-- Organism Mode -->
+                        <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="orgMode" value="total" checked class="peer hidden">
+                                <div class="text-[10px] text-center py-1.5 rounded transition-all bg-transparent text-slate-400 peer-checked:bg-cyan-500/20 peer-checked:text-cyan-300 border border-transparent peer-checked:border-cyan-500/50">
+                                    รวมเชื้อดื้อยา
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="orgMode" value="resistant" class="peer hidden">
+                                <div class="text-[10px] text-center py-1.5 rounded transition-all bg-transparent text-slate-400 peer-checked:bg-red-500/20 peer-checked:text-red-300 border border-transparent peer-checked:border-red-500/50">
+                                    เฉพาะเชื้อดื้อยา
+                                </div>
+                            </label>
+                        </div>
                     </div>
+
+                    <!-- 3. Time Period -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block">Time Period</label>
-                        <select id="sel-quarter"></select>
+                        <label class="text-xs text-slate-400 mb-1 block font-medium">Time Period (ช่วงเวลา)</label>
+                        <select id="sel-quarter" multiple class="h-24 text-xs">
+                            <!-- Options injected -->
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-1">*เลือกได้หลายช่วงเวลา (ระบบจะรวมยอดให้)</p>
                     </div>
 
                     <!-- AI Specific Options (Hidden in Search Mode) -->
                     <div id="ai-options" class="hidden space-y-4 pt-2 border-t border-white/5">
-                        <div class="flex items-center justify-between">
-                            <label class="text-xs text-slate-300">เฉพาะเชื้อดื้อยา (Only Resistant)</label>
-                            <input type="checkbox" id="chk-resistant" class="w-4 h-4 accent-cyan-500">
-                        </div>
                         <div class="flex items-center justify-between">
                             <label class="text-xs text-slate-300">ซ่อนยาที่ไม่มีใน รพ.</label>
                             <input type="checkbox" id="chk-available" checked class="w-4 h-4 accent-cyan-500">
@@ -168,12 +230,15 @@
             <!-- View: Search Table -->
             <div id="view-search" class="glass p-1 h-full min-h-[500px] flex flex-col">
                 <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                    <h3 class="font-semibold text-cyan-100">ผลการทดสอบความไว (Antibiogram)</h3>
+                    <div>
+                        <h3 class="font-semibold text-cyan-100">ผลการทดสอบความไว (Antibiogram)</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">*ข้อมูลจะถูกรวม (Aggregate) ตามช่วงเวลาที่เลือก</p>
+                    </div>
                     <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 รายการ</span>
                 </div>
                 
                 <div id="search-loading" class="hidden flex-grow flex flex-col items-center justify-center text-slate-400">
-                    <div class="loader mb-3"></div> กำลังดึงข้อมูล...
+                    <div class="loader mb-3"></div> กำลังประมวลผลข้อมูล...
                 </div>
 
                 <div class="overflow-auto flex-grow custom-scrollbar">
@@ -182,7 +247,7 @@
                             <tr id="table-header">
                                 <th class="text-left pl-4">ชื่อเชื้อ</th>
                                 <th>Specimen</th>
-                                <th>ปี</th>
+                                <th>ช่วงเวลา</th>
                                 <!-- Dynamic Drugs -->
                             </tr>
                         </thead>
@@ -215,7 +280,7 @@
 
                 <div id="ai-content" class="flex-grow overflow-y-auto custom-scrollbar ai-result space-y-4">
                     <div class="bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-700 text-center text-slate-400">
-                        <p>เลือก Specimen และ ชื่อเชื้อ ทางด้านซ้าย</p>
+                        <p>เลือก Site of Infection และ Organism ทางด้านซ้าย</p>
                         <p class="text-sm mt-2">แล้วกดปุ่ม <b>"ขอคำแนะนำจาก AI"</b> เพื่อรับแนวทางการรักษา</p>
                     </div>
                 </div>
@@ -232,17 +297,13 @@
         // --- CONFIGURATION ---
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLiywZpQExJgvwau_8fGo1npIXEWrgBVI7fy05uq8_f_juT_6RvS71K20jmJGrVgitvg/exec';
         
-        let currentTab = 'search'; // 'search' or 'ai'
-        let cachedData = null; // Store dropdown options
+        let currentTab = 'search';
+        let cachedData = null; // Store raw options from server
+        let selectedSpecimens = new Set(); // Store active specimen buttons
 
         // --- INITIALIZATION ---
         window.onload = async () => {
-            // Safety check for Lucide icons
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            } else {
-                console.warn("Lucide icons library failed to load.");
-            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             await loadOptions();
         };
 
@@ -254,7 +315,10 @@
                 
                 if (json.status === 'success') {
                     cachedData = json.data;
-                    populateDropdowns(json.data);
+                    initSpecimenCarousel(json.data.specimens);
+                    initOrganismDropdown(json.data.organisms);
+                    initQuarterDropdown(json.data.quarters);
+                    
                     document.getElementById('db-status').innerText = 'Database Ready';
                     document.getElementById('db-status').className = 'text-xs text-emerald-400 mt-1';
                 }
@@ -265,27 +329,94 @@
             }
         }
 
-        function populateDropdowns(data) {
-            const createOption = (val, text) => `<option value="${val}">${text || val}</option>`;
+        // --- SPECIMEN CAROUSEL ---
+        const specimenIcons = {
+            'Urine': 'droplets',
+            'Sputum': 'wind',
+            'Hemoculture': 'syringe',
+            'Blood': 'syringe',
+            'Pus': 'bandage',
+            'Stool': 'circle-dot',
+            'Vaginal': 'user',
+            'Discharge': 'activity',
+            'Wound': 'bandage',
+            'CSF': 'brain-circuit',
+            'Fluid': 'flask-conical'
+        };
+
+        function initSpecimenCarousel(specimens) {
+            const container = document.getElementById('specimen-carousel');
+            container.innerHTML = '';
             
-            // Specimen
-            const specHTML = ['<option value="">-- ทั้งหมด --</option>', ...data.specimens.map(s => createOption(s))].join('');
-            document.getElementById('sel-specimen').innerHTML = specHTML;
-
-            // Organism
-            const orgHTML = ['<option value="">-- ทั้งหมด --</option>', ...data.organisms.map(o => createOption(o))].join('');
-            document.getElementById('sel-organism').innerHTML = orgHTML;
-
-            // Quarter
-            const qHTML = data.quarters.map(q => createOption(q)).join('');
-            document.getElementById('sel-quarter').innerHTML = qHTML;
+            // Add 'ALL' logic by selecting everything initially
+            specimens.forEach(spec => {
+                selectedSpecimens.add(spec); // Default select all
+                const btn = document.createElement('button');
+                btn.className = 'specimen-btn active';
+                btn.dataset.value = spec;
+                btn.onclick = () => toggleSpecimen(btn, spec);
+                
+                // Determine Icon
+                let iconName = 'activity';
+                for (const key in specimenIcons) {
+                    if (spec.includes(key)) iconName = specimenIcons[key];
+                }
+                
+                btn.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i><span>${spec}</span>`;
+                container.appendChild(btn);
+            });
+            lucide.createIcons();
         }
 
-        // --- UI LOGIC ---
+        function toggleSpecimen(btn, val) {
+            if (selectedSpecimens.has(val)) {
+                selectedSpecimens.delete(val);
+                btn.classList.remove('active');
+            } else {
+                selectedSpecimens.add(val);
+                btn.classList.add('active');
+            }
+        }
+
+        function toggleAllSpecimens() {
+            const btns = document.querySelectorAll('.specimen-btn');
+            const allSelected = btns.length === selectedSpecimens.size;
+            
+            if (allSelected) {
+                selectedSpecimens.clear();
+                btns.forEach(b => b.classList.remove('active'));
+            } else {
+                btns.forEach(b => {
+                    selectedSpecimens.add(b.dataset.value);
+                    b.classList.add('active');
+                });
+            }
+        }
+
+        // --- ORGANISM LOGIC ---
+        function initOrganismDropdown(fullList) {
+            // Extract unique base names (remove parenthesis)
+            const baseNames = new Set();
+            fullList.forEach(name => {
+                const base = name.split(' (')[0].trim();
+                if (base) baseNames.add(base);
+            });
+
+            const sortedBase = Array.from(baseNames).sort();
+            const html = ['<option value="">-- เลือกเชื้อ --</option>', ...sortedBase.map(o => `<option value="${o}">${o}</option>`)].join('');
+            document.getElementById('sel-organism').innerHTML = html;
+        }
+
+        // --- QUARTER LOGIC ---
+        function initQuarterDropdown(quarters) {
+            // Default select all quarters logic if needed, or let user pick
+            const html = quarters.map(q => `<option value="${q}" selected>${q}</option>`).join('');
+            document.getElementById('sel-quarter').innerHTML = html;
+        }
+
+        // --- UI TABS ---
         function switchTab(tab) {
             currentTab = tab;
-            
-            // Toggle Buttons
             const btnSearch = document.getElementById('tab-search');
             const btnAi = document.getElementById('tab-ai');
             const activeClass = "border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]";
@@ -298,9 +429,7 @@
                 document.getElementById('view-ai').classList.add('hidden');
                 document.getElementById('ai-options').classList.add('hidden');
                 
-                // Update Action Button
-                const btnAction = document.getElementById('btn-action');
-                btnAction.className = "w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2";
+                document.getElementById('btn-action').className = "w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2";
                 document.getElementById('btn-text').innerText = "ค้นหาข้อมูล";
             } else {
                 btnAi.className = `glass px-6 py-2 rounded-full text-sm font-medium transition-all ${activeClass}`;
@@ -309,56 +438,136 @@
                 document.getElementById('view-ai').classList.remove('hidden');
                 document.getElementById('ai-options').classList.remove('hidden');
 
-                // Update Action Button
-                const btnAction = document.getElementById('btn-action');
-                btnAction.className = "w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2";
+                document.getElementById('btn-action').className = "w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2";
                 document.getElementById('btn-text').innerText = "ขอคำแนะนำจาก AI";
             }
-            
-            // Re-render icons if needed (e.g. dynamic content was loaded)
-            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function handleAction() {
-            if (currentTab === 'search') {
-                fetchTableData();
-            } else {
-                fetchAIRecommendation();
-            }
+            if (currentTab === 'search') fetchTableData();
+            else fetchAIRecommendation();
         }
 
-        // --- FETCH TABLE DATA ---
+        // --- DATA FETCHING & AGGREGATION ---
         async function fetchTableData() {
             const tbody = document.getElementById('table-body');
             const loader = document.getElementById('search-loading');
             
-            // Reset UI
             tbody.innerHTML = '';
             loader.classList.remove('hidden');
+
+            // 1. Prepare Filter
+            const selOrgBase = document.getElementById('sel-organism').value;
+            const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
+            const selQuarters = Array.from(document.getElementById('sel-quarter').selectedOptions).map(o => o.value);
             
+            // 2. Resolve Organism List to Send
+            // Need to filter from cachedData.organisms based on base name and mode
+            let namesToSend = [];
+            if (selOrgBase) {
+                namesToSend = cachedData.organisms.filter(full => {
+                    const isBase = full.split(' (')[0].trim() === selOrgBase;
+                    const isResistant = full.includes('(');
+                    if (!isBase) return false;
+                    
+                    if (orgMode === 'resistant') return isResistant;
+                    return true; // total = base + resistant
+                });
+            } else {
+                // If no organism selected, technically we shouldn't fetch ALL database unless restricted
+                // But let's assume user wants to see list of everything for selected specimen
+                // So we don't filter namesToSend
+            }
+
             const params = new URLSearchParams({
                 action: 'search',
-                specimens: document.getElementById('sel-specimen').value,
-                names: document.getElementById('sel-organism').value,
-                // Simple version: Using dropdowns. For multi-select, previous logic applies but adjusted for this UI.
-                // Currently only taking single values for simplicity in this updated UI
+                specimens: Array.from(selectedSpecimens).join(','),
+                years: selQuarters.join(','), // Assuming backend uses 'years' param for time period/quarter
+                names: namesToSend.join(',')
             });
 
             try {
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
                 const json = await res.json();
-                
                 loader.classList.add('hidden');
                 
                 if (json.status === 'success') {
-                    renderTable(json.data);
+                    const aggregated = aggregateData(json.data);
+                    renderTable(aggregated);
                 } else {
                     alert('Error: ' + json.message);
                 }
             } catch (e) {
                 loader.classList.add('hidden');
+                console.error(e);
                 alert('Connection Error');
             }
+        }
+
+        // --- AGGREGATION LOGIC ---
+        function aggregateData(rawData) {
+            const groups = {};
+
+            // Grouping Key: Organism Name + Specimen
+            rawData.forEach(row => {
+                const key = `${row.name}|${row.specimen}`;
+                if (!groups[key]) {
+                    groups[key] = {
+                        name: row.name,
+                        specimen: row.specimen,
+                        years: new Set(),
+                        drugData: {}
+                    };
+                }
+                groups[key].years.add(row.year);
+
+                // Aggregate Drug Results
+                for (const [drug, val] of Object.entries(row.drugResults)) {
+                    if (!groups[key].drugData[drug]) groups[key].drugData[drug] = { s: 0, t: 0, isR: false };
+                    
+                    const parsed = parseDrugValue(val);
+                    if (parsed.r) {
+                        groups[key].drugData[drug].isR = true; // Flag as resistant
+                    } else {
+                        groups[key].drugData[drug].s += parsed.s;
+                        groups[key].drugData[drug].t += parsed.t;
+                    }
+                }
+            });
+
+            // Convert back to array
+            return Object.values(groups).map(g => {
+                const finalDrugs = {};
+                for (const [drug, counts] of Object.entries(g.drugData)) {
+                    finalDrugs[drug] = formatDrugValue(counts.s, counts.t, counts.isR);
+                }
+                return {
+                    name: g.name,
+                    specimen: g.specimen,
+                    year: Array.from(g.years).sort().join(', '), // Show merged years
+                    drugResults: finalDrugs
+                };
+            });
+        }
+
+        function parseDrugValue(val) {
+            if (!val || val === 'N/A' || val === '-') return { s: 0, t: 0, r: false };
+            if (val.includes('R')) return { s: 0, t: 0, r: true };
+            const match = val.match(/^([\d.]+)%\s*\((\d+)\)$/);
+            if (match) {
+                const pct = parseFloat(match[1]);
+                const total = parseInt(match[2]);
+                const sensitive = Math.round((pct / 100) * total);
+                return { s: sensitive, t: total, r: false };
+            }
+            return { s: 0, t: 0, r: false };
+        }
+
+        function formatDrugValue(s, t, isResistant) {
+            if (isResistant && t === 0) return 'R*'; // If primarily resistant
+            if (t === 0) return '-';
+            const pct = ((s / t) * 100).toFixed(0);
+            return `${pct}% (${t})`;
         }
 
         function renderTable(data) {
@@ -373,25 +582,24 @@
                 return;
             }
 
-            // 1. Determine Headers from first row
+            // Headers
             const drugKeys = Object.keys(data[0].drugResults);
-            
             theadRow.innerHTML = `
                 <th class="text-left pl-4 min-w-[150px] rounded-tl-lg">ชื่อเชื้อ</th>
                 <th>Specimen</th>
-                <th>ปี</th>
+                <th>ช่วงเวลา</th>
                 ${drugKeys.map(d => `<th class="text-xs min-w-[80px]">${d}</th>`).join('')}
             `;
 
-            // 2. Render Rows
+            // Rows
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors";
                 
                 let html = `
-                    <td class="text-left pl-4 font-medium text-cyan-200">${row.name}</td>
-                    <td class="text-slate-300">${row.specimen}</td>
-                    <td class="text-slate-400 text-xs">${row.year}</td>
+                    <td class="text-left pl-4 font-medium text-cyan-200 text-xs md:text-sm">${row.name}</td>
+                    <td class="text-slate-300 text-xs">${row.specimen}</td>
+                    <td class="text-slate-400 text-[10px] max-w-[100px] truncate" title="${row.year}">${row.year}</td>
                 `;
 
                 drugKeys.forEach(key => {
@@ -418,19 +626,20 @@
             return 'bg-na';
         }
 
-        // --- FETCH AI ADVICE ---
+        // --- FETCH AI ---
         async function fetchAIRecommendation() {
             const container = document.getElementById('ai-content');
             const loader = document.getElementById('ai-loading');
             
-            // Check Inputs
-            const spec = document.getElementById('sel-specimen').value;
-            const org = document.getElementById('sel-organism').value;
+            // Get single values for AI (assuming it handles one at a time for better advice)
+            // Or get first selected if multiple
+            const spec = Array.from(selectedSpecimens)[0];
+            const orgBase = document.getElementById('sel-organism').value;
             
-            if (!spec || !org) {
+            if (!spec || !orgBase) {
                 container.innerHTML = `
                     <div class="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-300 text-center">
-                        กรุณาเลือก <b>Specimen</b> และ <b>ชื่อเชื้อ</b> ก่อนขอคำแนะนำ
+                        กรุณาเลือก <b>Site of Infection</b> (อย่างน้อย 1 อย่าง) และ <b>Organism</b>
                     </div>
                 `;
                 return;
@@ -439,23 +648,27 @@
             container.innerHTML = '';
             loader.classList.remove('hidden');
 
+            // AI Mode mapping
+            const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
+            const includeResistant = (orgMode === 'total');
+            const onlyResistant = (orgMode === 'resistant');
+
             const params = new URLSearchParams({
                 action: 'recommend',
-                specimen: spec,
-                organism: org,
-                quarter: document.getElementById('sel-quarter').value,
-                onlyResistant: document.getElementById('chk-resistant').checked,
+                specimen: spec, // Send first selected for now
+                organism: orgBase,
+                quarter: document.getElementById('sel-quarter').value, // Use first or raw value
+                includeResistant: includeResistant,
+                onlyResistant: onlyResistant,
                 hideUnavailable: document.getElementById('chk-available').checked
             });
 
             try {
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
                 const json = await res.json();
-                
                 loader.classList.add('hidden');
                 
                 if (json.status === 'success') {
-                    // Inject HTML directly from GAS
                     container.innerHTML = json.html;
                 } else {
                     container.innerHTML = `<div class="text-red-400">Error: ${json.message}</div>`;
