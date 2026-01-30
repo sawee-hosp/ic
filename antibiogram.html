@@ -9,6 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Regression Library (Simple inline script used below) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
     
     <style>
@@ -17,56 +18,36 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
-        select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; }
         
-        .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
-        .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
-        .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
+        /* Infection Mode Tabs */
+        .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
+        .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
-        .group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.4); margin-bottom: 2px; }
-        .group-header.active { color: #22d3ee; border-left: 2px solid #22d3ee; }
-        .group-body { display: none; padding: 4px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+        .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.6rem; border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
+        .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; }
         
-        .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; }
-        .custom-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
+        /* Organism Group Separator */
+        .org-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0; }
+        
+        /* Smart Table UI */
+        .table-normal th { padding: 12px; font-size: 0.85rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; font-weight: 500; color: #94a3b8; }
+        .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .table-normal td:hover { background: rgba(255,255,255,0.08); }
+        
+        /* Cell Content Layout */
+        .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .cell-pct { font-weight: 400; font-size: 0.95rem; }
+        .cell-n-badge { background: rgba(255,255,255,0.1); color: #cbd5e1; font-size: 0.7rem; padding: 1px 5px; border-radius: 4px; font-weight: 300; min-width: 20px; text-align: center; }
+        .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
 
-        /* Full Screen Mode */
-        .is-fullscreen { position: fixed !important; inset: 0 !important; z-index: 100 !important; background: #0f172a !important; border-radius: 0 !important; max-height: 100vh !important; }
-        .is-fullscreen .table-container { max-height: calc(100vh - 80px) !important; }
+        .bg-sens-high { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
+        .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .bg-na { color: #475569; }
 
-        .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
-        .table-normal td { padding: 12px 8px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; }
-        .table-normal td:hover { background: rgba(255,255,255,0.1); }
-        .cell-disabled { cursor: not-allowed !important; opacity: 0.4; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
-        
-        /* N Badge */
-        .n-badge { font-size: 0.85rem; font-weight: 600; color: #f8fafc; background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 4px; margin-left: 6px; display: inline-block; min-width: 25px; text-align: center; }
-        .alert-icon { color: #fbbf24; width: 14px; height: 14px; vertical-align: middle; display: inline-block; margin-left: 2px; }
-
-        .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; }
-        .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
-        .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .bg-na { color: #64748b; }
-
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
-        .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
-        .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
-        
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-content { background: #1e293b; width: 90%; max-width: 600px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-        
-        /* Analysis Card Styles */
-        .analysis-card { background: rgba(30, 41, 59, 0.8); border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #64748b; }
-        .analysis-card.green { border-left-color: #10b981; }
-        .analysis-card.yellow { border-left-color: #eab308; }
-        .analysis-card.red { border-left-color: #ef4444; }
-        .analysis-card.grey { border-left-color: #94a3b8; }
-        
-        .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 8px 0; overflow: hidden; }
-        .prog-fill { height: 100%; border-radius: 3px; }
-        .prog-fill.green { background: #10b981; }
-        .prog-fill.yellow { background: #eab308; }
-        .prog-fill.red { background: #ef4444; }
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: #1e293b; width: 95%; max-width: 700px; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -77,7 +58,7 @@
 
     <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
-            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 relative">
+            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
                 <i data-lucide="activity" class="w-8 h-8 text-cyan-400"></i>
             </div>
             <div>
@@ -85,69 +66,49 @@
                 <p class="text-slate-400 text-sm">Antibiogram & AI Surveillance System</p>
             </div>
         </div>
-        <div id="db-status" class="text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700 h-fit">Loading...</div>
+        <div id="db-status" class="text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700 h-fit">Connecting...</div>
     </header>
 
     <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
         <!-- Sidebar -->
         <aside class="lg:col-span-3 space-y-4">
-            <div class="glass p-5 h-full flex flex-col">
-                <div class="mb-4 pb-2 border-b border-white/5">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> Filters
-                    </h2>
-                </div>
-
-                <div class="space-y-6 flex-grow custom-scrollbar overflow-y-auto" style="max-height: 75vh;">
-                    <!-- 1. Site -->
-                    <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
-                            <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Select All</button>
+            <div class="glass p-4 h-full flex flex-col">
+                <!-- 1. Infection Site -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs text-slate-400 font-medium uppercase tracking-wide">Site of Infection</label>
+                        <div class="flex bg-slate-800 rounded p-0.5">
+                            <div class="mode-tab active" onclick="setInfectionMode('syndrome', this)">Syndrome</div>
+                            <div class="mode-tab" onclick="setInfectionMode('specimen', this)">Specimen</div>
                         </div>
-                        <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[120px] overflow-y-auto custom-scrollbar content-start"></div>
                     </div>
-
-                    <!-- 2. Time Period -->
-                    <div>
-                        <label class="text-xs text-slate-400 mb-2 block font-medium">Time Period</label>
-                        <div id="quarter-radios" class="flex flex-col gap-2"></div>
-                    </div>
-
-                    <!-- 3. Organism -->
-                    <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <label class="text-xs text-slate-400 font-medium">Organism</label>
-                            <button onclick="resetOrgSelection()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Clear Selection</button>
-                        </div>
-                        
-                        <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2 mb-2">
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="orgMode" value="total" checked class="peer hidden">
-                                <div class="text-[10px] text-center py-1.5 rounded bg-transparent text-slate-400 peer-checked:bg-cyan-500/20 peer-checked:text-cyan-300 border border-transparent peer-checked:border-cyan-500/50">รวมเชื้อดื้อยา</div>
-                            </label>
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="orgMode" value="resistant" class="peer hidden">
-                                <div class="text-[10px] text-center py-1.5 rounded bg-transparent text-slate-400 peer-checked:bg-red-500/20 peer-checked:text-red-300 border border-transparent peer-checked:border-red-500/50">เฉพาะเชื้อดื้อยา</div>
-                            </label>
-                        </div>
-
-                        <div id="organism-filter-container" class="space-y-1"></div>
-                    </div>
-
-                    <!-- 4. Drug Groups -->
-                    <div>
-                        <div class="flex justify-between items-end mb-2">
-                            <label class="text-xs text-slate-400 font-medium">Antibiotic Groups</label>
-                            <button onclick="toggleAllDrugs()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Select All</button>
-                        </div>
-                        <div id="drug-groups-container" class="space-y-1"></div>
+                    <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[140px] overflow-y-auto custom-scrollbar content-start bg-slate-900/30 rounded-lg">
+                        <div class="text-xs text-slate-500 italic p-2">Loading...</div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-t border-white/5">
+                <div class="border-t border-white/5 my-2"></div>
+
+                <!-- 2. Time Period -->
+                <div>
+                    <label class="text-xs text-slate-400 font-medium uppercase tracking-wide mb-2 block">Time Period</label>
+                    <div id="quarter-radios" class="flex flex-col gap-1.5"></div>
+                </div>
+
+                <div class="border-t border-white/5 my-2"></div>
+
+                <!-- 3. Organism -->
+                <div class="flex-grow flex flex-col min-h-0">
+                     <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs text-slate-400 font-medium uppercase tracking-wide">Organism</label>
+                        <button onclick="toggleAllOrganisms()" class="text-[10px] bg-slate-700 hover:bg-cyan-600 text-white px-2 py-0.5 rounded transition">ALL</button>
+                    </div>
+                    <div id="organism-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-1 bg-slate-900/30 rounded-lg p-2"></div>
+                </div>
+
+                <div class="mt-4">
                     <button onclick="fetchTableData()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="search" class="w-5 h-5"></i> Update Table
+                        <i data-lucide="search" class="w-4 h-4"></i> Update Table
                     </button>
                 </div>
             </div>
@@ -155,98 +116,75 @@
 
         <!-- Main Table Area -->
         <div class="lg:col-span-9">
-            <div id="table-container-wrapper" class="glass p-1 h-full min-h-[500px] flex flex-col relative transition-all duration-300">
+            <div class="glass p-1 h-full min-h-[500px] flex flex-col relative">
                 <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50 rounded-t-xl">
-                    <h3 class="font-semibold text-cyan-100">Antibiogram Result</h3>
-                    <div class="flex items-center gap-4">
-                        <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-                            <input type="checkbox" id="hide-empty" class="accent-cyan-500 w-4 h-4 rounded" onchange="fetchTableData()">
-                            ซ่อนแถวว่าง
+                    <h3 class="font-semibold text-cyan-100 flex items-center gap-2">
+                        <i data-lucide="table" class="w-4 h-4 text-cyan-400"></i> Antibiogram Result
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none hover:text-white">
+                            <input type="checkbox" id="hide-empty" class="accent-cyan-500 w-3 h-3 rounded" onchange="fetchTableData()">
+                            Hide Empty
                         </label>
-                        <button onclick="toggleFullScreen()" class="p-1.5 rounded hover:bg-white/10 text-slate-300" title="Full Screen">
-                            <i data-lucide="maximize-2" class="w-5 h-5"></i>
-                        </button>
-                        <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 Isolates</span>
+                        <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 items</span>
                     </div>
                 </div>
                 
-                <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative table-container">
+                <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative">
                     <table id="resultTable" class="w-full text-center border-collapse table-normal">
                         <thead><tr id="table-header"></tr></thead>
                         <tbody id="table-body">
                             <tr id="table-placeholder">
                                 <td colspan="10" class="py-20 text-center text-slate-500">
                                     <i data-lucide="search-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-                                    กรุณาเลือกเงื่อนไขและกดค้นหา
+                                    Select filters to view data
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <div id="search-loading" class="hidden absolute inset-0 bg-slate-900/80 z-20 flex flex-col items-center justify-center text-slate-400 top-[56px]">
-                        <div class="loader mb-3"></div> Processing Data...
+                    <div id="search-loading" class="hidden absolute inset-0 bg-slate-900/80 z-20 flex flex-col items-center justify-center text-slate-400 top-[50px]">
+                        <div class="loader mb-3"></div> Processing...
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- FAB -->
-    <div class="fab-btn" onclick="openAnalysisMenu()" title="ถาม IC SW-1">
-        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
-    </div>
-
-    <!-- Analysis Menu Modal -->
-    <div id="analysis-menu-modal" class="modal-overlay">
-        <div class="bg-slate-800 rounded-xl p-6 w-80 text-center border border-slate-700">
-            <h3 class="text-lg font-bold text-emerald-400 mb-4">IC SW-1 Analysis</h3>
-            <div class="space-y-3">
-                <button onclick="openOverviewAnalysis()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> วิเคราะห์ภาพรวมทั้งตาราง
-                </button>
-                <button onclick="openSpecificAnalysis()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="microscope" class="w-5 h-5"></i> วิเคราะห์เชื้อที่เลือก
-                </button>
-            </div>
-            <button onclick="closeModal('analysis-menu-modal')" class="mt-4 text-slate-500 text-sm hover:text-white">ยกเลิก</button>
-        </div>
-    </div>
-
-    <!-- Analysis Result Modal -->
-    <div id="analysis-result-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
-                <h3 class="font-bold text-emerald-400 flex items-center gap-2">
-                    <i data-lucide="file-text" class="w-5 h-5"></i> ผลการวิเคราะห์
-                </h3>
-                <button onclick="closeModal('analysis-result-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div id="analysis-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
-            <div class="p-4 bg-slate-800 border-t border-white/10">
-                <div class="flex items-start gap-3">
-                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
-                    <div id="ai-advice-box" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20">
-                        <span class="animate-pulse">กำลังปรึกษา IC SW-1...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Trend Modal -->
     <div id="trend-modal" class="modal-overlay">
-        <div class="modal-content bg-slate-900" style="max-width: 700px;">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center">
-                <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
-                <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="modal-content bg-slate-900">
+            <!-- Header -->
+            <div class="p-4 border-b border-white/10 flex justify-between items-start bg-slate-800/50">
+                <div>
+                    <h3 class="font-bold text-lg text-cyan-300" id="trend-title">Trend Analysis</h3>
+                    <div class="flex gap-2 mt-2">
+                        <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300 flex items-center gap-1">Avg: <span id="trend-avg" class="font-bold text-white"></span></span>
+                        <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300 flex items-center gap-1">Total N: <span id="trend-n" class="font-bold text-white"></span></span>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                    <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    <!-- Pineapple Analyze Button -->
+                    <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-4 h-4 object-contain">
+                        วิเคราะห์ยานี้
+                    </button>
+                </div>
             </div>
             
-            <div id="chart-ai-box" class="hidden bg-emerald-900/20 p-3 mx-6 mt-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
-                <div id="chart-ai-text">Analyzing...</div>
-                <button onclick="this.parentElement.classList.add('hidden')" class="absolute top-1 right-1 text-emerald-500 hover:text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
+            <!-- AI Output -->
+            <div id="chart-ai-box" class="hidden bg-emerald-900/30 p-3 mx-4 mt-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
+                <div id="chart-ai-text">Thinking...</div>
             </div>
 
-            <div class="p-6 h-[300px]"><canvas id="trendChart"></canvas></div>
-            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden"><div class="loader"></div></div>
+            <!-- Chart -->
+            <div class="p-4 h-[350px] w-full relative">
+                <canvas id="trendChart"></canvas>
+            </div>
+            
+            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden">
+                <div class="loader"></div>
+            </div>
         </div>
     </div>
 
@@ -254,146 +192,144 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZQ5bn3aLOL91zI79UzCoNfpfqlY3L6WryFeXMa5wDENl6rbbBUJVU2fW1cuKR1W1K/exec';
         let cachedData = null;
         let selectedSpecimens = new Set();
-        let currentTableData = []; 
+        let selectedOrganisms = new Set();
+        let infectionMode = 'syndrome'; // syndrome | specimen
         let trendChartInstance = null;
-        let currentChartContext = {};
+        let currentChartContext = {}; 
+
+        // 1. SYNDROME MAPPING
+        const SYNDROME_MAP = {
+            "Pneumonia / Respiratory": ["Sputum"],
+            "UTI / Urinary Tract": ["Urine"],
+            "Bacteremia / Sepsis": ["Hemoculture", "Blood"],
+            "SSTI / Wound / Pus": ["Pus", "Wound", "Swab", "Abscess"],
+            "GI / Diarrhea": ["Stool"],
+            "Reproductive / Vaginal": ["Vaginal"]
+        };
 
         const DRUG_GROUPS = {
-            "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla", "Ampicillin/Sulb", "Piperacillin", "Piperacillin/Ta"],
+            "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla"],
             "Cephalosporins": ["Cefazolin", "Cefotaxime", "Ceftazidime", "Ceftriaxone", "Cefepime"],
             "Carbapenems": ["Ertapenem", "Imipenem", "Meropenem"],
             "Aminoglycosides": ["Amikacin", "Gentamicin"],
             "Fluoroquinolones": ["Ciprofloxacin", "Levofloxacin"],
-            "Others": ["Clindamycin", "Chloramphenicol", "Trimetho/Sulfa.", "Erythromycin", "Vancomycin", "Tetracycline", "Fosfomycin", "Nitrofurantoin", "Linezolid", "Colistin"]
-        };
-        
-        // Hospital Drugs (Hardcoded Mock based on previous context)
-        const HOSPITAL_DRUGS = {
-            'Gentamicin': 'inj. 80mg/2mL*',
-            'Ciprofloxacin': '250mg TAB, inj. 200 mg.',
-            'Ceftriaxone': 'inj 1 gm*',
-            'Meropenem': '1 gm*',
-            'Amikacin': 'inj 500mg/2mL*',
-            'Trimetho/Sulfa.': 'Cotrimoxazole susp/tab, Bactrim inj*',
-            'Piperacillin/Ta': 'Tazocin 4.5g. inj*',
-            'Ceftazidime': 'inj. 1g.*',
-            'Cefotaxime': 'inj 1g*',
-            'Penicillin': 'PGS Inj',
-            'Ampicillin': 'Inj 1g',
-            'Amoxicillin/Cla': 'Augmentin Tab/Inj',
-            'Vancomycin': 'Inj 500mg',
-            'Clindamycin': 'Inj/Cap',
-            'Erythromycin': 'Syr/Tab'
+            "Others": ["Clindamycin", "Vancomycin", "Colistin", "Trimetho/Sulfa."]
         };
 
         window.onload = async () => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
-            initDrugSelector();
             await loadOptions();
         };
 
-        // --- UI HELPERS ---
-        function toggleGroup(header) {
-            const body = header.nextElementSibling;
-            const icon = header.querySelector('svg') || header.querySelector('i'); // Fix for lucide replacement
-            const isHidden = body.classList.contains('hidden');
-            if (isHidden) {
-                body.classList.remove('hidden');
-                body.style.display = 'grid'; 
-                if(icon) icon.style.transform = 'rotate(180deg)';
-                header.classList.add('text-cyan-400');
-            } else {
-                body.classList.add('hidden');
-                body.style.display = 'none';
-                if(icon) icon.style.transform = 'rotate(0deg)';
-                header.classList.remove('text-cyan-400');
-            }
-        }
-        
-        function toggleGroupCheck(btn, checked) {
-            const body = btn.closest('.group-header').nextElementSibling;
-            const checkboxes = body.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = checked);
-            updateTableVisibility();
-        }
-        
-        function toggleAllDrugs() {
-             const allChecks = document.querySelectorAll('.drug-check');
-             const allChecked = Array.from(allChecks).every(c => c.checked);
-             allChecks.forEach(c => c.checked = !allChecked);
-             updateTableVisibility();
-        }
-
         async function loadOptions() {
             try {
-                document.getElementById('db-status').innerText = 'Syncing...';
                 const res = await fetch(`${GAS_URL}?action=options`);
                 const json = await res.json();
                 if (json.status === 'success') {
                     cachedData = json.data;
-                    initSpecimenGrid(json.data.specimens);
-                    initOrganismFilter(json.data.organisms);
-                    initQuarterRadio(json.data.quarters);
-                    document.getElementById('db-status').innerText = 'Database Ready';
+                    renderSpecimenSelector();
+                    renderOrganismSelector(json.data.organisms);
+                    renderTimeSelector(json.data.quarters);
+                    document.getElementById('db-status').innerText = 'Ready';
                     document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 h-fit';
                 }
-            } catch (e) { document.getElementById('db-status').innerText = 'Offline Mode'; }
+            } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
         }
 
-        function initSpecimenGrid(specimens) {
+        // --- SPECIMEN LOGIC ---
+        function setInfectionMode(mode, el) {
+            infectionMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+            renderSpecimenSelector();
+        }
+
+        function renderSpecimenSelector() {
             const container = document.getElementById('specimen-container');
             container.innerHTML = '';
-            specimens.forEach(spec => {
-                selectedSpecimens.add(spec);
-                const btn = document.createElement('button');
-                btn.className = 'specimen-btn active';
-                btn.dataset.value = spec;
-                btn.onclick = () => toggleSpecimen(btn, spec);
-                let iconName = 'activity';
-                if(spec.includes('Urine')) iconName='droplets';
-                if(spec.includes('Blood') || spec.includes('Hemo')) iconName='syringe';
-                btn.innerHTML = `<i data-lucide="${iconName}" class="w-3 h-3"></i>${spec}`;
-                container.appendChild(btn);
-            });
-            lucide.createIcons();
-        }
-        function toggleSpecimen(btn, val) { if (selectedSpecimens.has(val)) { selectedSpecimens.delete(val); btn.classList.remove('active'); } else { selectedSpecimens.add(val); btn.classList.add('active'); } }
-        function toggleAllSpecimens() { const btns = document.querySelectorAll('.specimen-btn'); const allSelected = btns.length === selectedSpecimens.size; btns.forEach(b => { if (allSelected) { b.classList.remove('active'); selectedSpecimens.clear(); } else { b.classList.add('active'); selectedSpecimens.add(b.dataset.value); } }); }
+            selectedSpecimens.clear(); // Reset on mode switch
 
-        function initOrganismFilter(orgData) {
-            const container = document.getElementById('organism-filter-container');
-            container.innerHTML = '';
-            for (const [gram, groups] of Object.entries(orgData)) {
-                let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
-                for (const [groupName, organisms] of Object.entries(groups)) {
-                    html += `<div class="mb-1"><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold">${groupName}</span><div class="flex gap-2"><span class="group-check-btn" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body">${organisms.map(org => `<label class="custom-checkbox w-full"><input type="radio" name="selected_org" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()"><span>${org}</span></label>`).join('')}</div></div>`;
+            if (infectionMode === 'syndrome') {
+                for (const [label, values] of Object.entries(SYNDROME_MAP)) {
+                    // Auto-select match found in data? No, simpler to let user click.
+                    createSpecimenBtn(container, label, values);
                 }
-                html += `</div>`;
-                container.innerHTML += html;
+            } else {
+                cachedData.specimens.forEach(spec => {
+                    createSpecimenBtn(container, spec, [spec]);
+                });
             }
-            container.innerHTML = `<div class="p-1 mb-1"><button onclick="resetOrgSelection()" class="text-[10px] text-cyan-400 hover:underline w-full text-left">Select All Organisms (Clear Selection)</button></div>` + container.innerHTML;
             lucide.createIcons();
         }
-        function resetOrgSelection() { document.querySelectorAll('input[name="selected_org"]').forEach(r => r.checked = false); updateTableVisibility(); }
 
-        function initDrugSelector() {
-            const container = document.getElementById('drug-groups-container');
+        function createSpecimenBtn(container, label, values) {
+            const btn = document.createElement('button');
+            btn.className = 'specimen-btn';
+            btn.innerHTML = `<span>${label}</span>`;
+            btn.onclick = () => {
+                const isActive = btn.classList.contains('active');
+                btn.classList.toggle('active');
+                values.forEach(v => {
+                    if(!isActive) selectedSpecimens.add(v);
+                    else selectedSpecimens.delete(v);
+                });
+            };
+            container.appendChild(btn);
+        }
+
+        // --- ORGANISM LOGIC (Checkbox List) ---
+        function renderOrganismSelector(orgData) {
+            const container = document.getElementById('organism-list');
             container.innerHTML = '';
-            for (const [group, drugs] of Object.entries(DRUG_GROUPS)) {
-                const html = `<div><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold text-slate-400">${group}</span><div class="flex gap-2"><span class="group-check-btn" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">${drugs.map(d => `<label class="custom-checkbox"><input type="checkbox" value="${d}" class="drug-check accent-cyan-500" checked onchange="updateTableVisibility()"><span>${d}</span></label>`).join('')}</div></div>`;
-                container.innerHTML += html;
+            
+            for (const [gram, groups] of Object.entries(orgData)) {
+                // Gram Header
+                const gramHeader = document.createElement('div');
+                gramHeader.className = 'text-[10px] font-bold text-slate-500 uppercase mt-2 mb-1 px-1';
+                gramHeader.innerText = gram;
+                container.appendChild(gramHeader);
+
+                for (const [groupName, organisms] of Object.entries(groups)) {
+                    // Group Divider
+                    const div = document.createElement('div');
+                    div.className = 'org-divider';
+                    
+                    const groupHtml = `
+                        <div class="mb-1">
+                            <div class="text-xs font-semibold text-cyan-500 mb-1 px-1">${groupName}</div>
+                            <div class="space-y-0.5">
+                                ${organisms.map(org => `
+                                    <label class="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-white/5 cursor-pointer">
+                                        <input type="checkbox" value="${org}" class="org-check accent-cyan-500 w-3 h-3 rounded-sm" onchange="updateSelectedOrgs()">
+                                        <span class="text-xs text-slate-300 truncate">${org}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    container.insertAdjacentHTML('beforeend', groupHtml);
+                }
             }
-            lucide.createIcons();
+        }
+        
+        function updateSelectedOrgs() {
+            // Logic handled in fetch
         }
 
-        function initQuarterRadio(list) {
+        function toggleAllOrganisms() {
+            const checks = document.querySelectorAll('.org-check');
+            const allChecked = Array.from(checks).every(c => c.checked);
+            checks.forEach(c => c.checked = !allChecked);
+        }
+
+        // --- TIME PERIOD ---
+        function renderTimeSelector(quarters) {
             const container = document.getElementById('quarter-radios');
-            container.innerHTML = list.map((opt, idx) => `<label class="flex items-center gap-2 p-2 rounded hover:bg-slate-800 cursor-pointer"><input type="radio" name="quarter" value="${opt.value}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-4 h-4"><span class="text-xs text-slate-300">${opt.label}</span></label>`).join('');
-        }
-
-        function toggleFullScreen() {
-            const wrapper = document.getElementById('table-container-wrapper');
-            wrapper.classList.toggle('is-fullscreen');
+            container.innerHTML = quarters.map((q, i) => `
+                <label class="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-white/5">
+                    <input type="radio" name="quarter" value="${q.value}" ${i===0?'checked':''} class="accent-cyan-500 w-3 h-3">
+                    <span class="text-xs text-slate-300">${q.label}</span>
+                </label>
+            `).join('');
         }
 
         // --- FETCH TABLE ---
@@ -402,21 +338,17 @@
             loader.classList.remove('hidden');
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
-            const selectedOrgRadio = document.querySelector('input[name="selected_org"]:checked');
-            const orgBase = selectedOrgRadio ? selectedOrgRadio.value : "";
-            const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
+            const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
             const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
             
-            let namesToSend = [];
-            if (orgBase) namesToSend = [orgBase.trim()];
+            // Map specimens to string
+            const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
 
-            const specimensParam = selectedSpecimens.size === cachedData.specimens.length ? "" : Array.from(selectedSpecimens).join(',');
-            
             const params = new URLSearchParams({
                 action: 'search',
                 specimens: specimensParam,
                 years: selectedQuarter,
-                names: namesToSend.join(',')
+                names: selectedOrgChecks.join(',')
             });
 
             try {
@@ -424,12 +356,9 @@
                 const json = await res.json();
                 loader.classList.add('hidden');
                 if (json.status === 'success') {
-                    currentTableData = aggregateData(json.data); 
-                    renderTable(currentTableData);
-                } else {
-                    alert('Error: ' + json.message);
-                }
-            } catch (e) { loader.classList.add('hidden'); alert('Connection Error'); }
+                    renderTable(aggregateData(json.data));
+                } else { alert(json.message); }
+            } catch (e) { loader.classList.add('hidden'); }
         }
 
         function aggregateData(rawData) {
@@ -452,6 +381,7 @@
                 return { name: g.name, drugResults: finalDrugs };
             });
         }
+        
         function parseDrugValue(val) {
             if (!val || val === 'N/A' || val === '-') return { s: 0, t: 0, r: false };
             if (val.includes('R')) return { s: 0, t: 0, r: true };
@@ -469,23 +399,25 @@
             document.getElementById('result-count').innerText = `${data.length} Organisms`;
             tbody.innerHTML = ''; 
 
-            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-500">ไม่พบข้อมูล</td></tr>'; return; }
+            if (data.length === 0) return;
             
-            const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
-            
-            thead.innerHTML = `<th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>${activeDrugs.map(d => `<th class="min-w-[85px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}`;
+            // Collect all drugs from data
+            const allDrugs = new Set();
+            data.forEach(row => Object.keys(row.drugResults).forEach(d => allDrugs.add(d)));
+            const drugs = Array.from(allDrugs); // OR use fixed order from DRUG_GROUPS logic
+
+            thead.innerHTML = `<th class="text-left pl-4 min-w-[150px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>${drugs.map(d => `<th class="min-w-[70px] text-center" title="${d}">${d.substring(0,4)}</th>`).join('')}`;
             
             data.forEach(row => {
-                const hasData = activeDrugs.some(d => {
-                    const obj = row.drugResults[d];
-                    return obj && obj.pct !== '-' && obj.pct !== 'R*';
-                });
+                // Hide Empty
+                const hasData = drugs.some(d => row.drugResults[d] && row.drugResults[d].pct !== '-');
                 if (hideEmpty && !hasData) return;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50";
                 let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700">${row.name}</td>`;
-                activeDrugs.forEach(d => {
+                
+                drugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct;
                     const num = parseFloat(v);
@@ -493,21 +425,17 @@
                     let cellClass = 'bg-na text-slate-600';
                     let clickAction = '';
                     let display = v;
-                    let alertIcon = '';
-                    
-                    if(obj.n < 30 && v !== '-' && v !== 'R*') alertIcon = `<i data-lucide="alert-circle" class="w-3 h-3 alert-icon" title="Low data (n<30)"></i>`;
                     
                     if (obj.isR) { 
-                        cellClass = 'cell-disabled'; 
+                        cellClass = 'cell-disabled text-[10px] bg-slate-800 opacity-20'; 
                         display = 'R*'; 
-                    }
-                    else if (v !== '-') {
+                    } else if (v !== '-') {
                         const c = (num < 50) ? 'bg-sens-low' : (num >= 76 ? 'bg-sens-high' : 'bg-sens-med');
                         cellClass = `${c} hover:opacity-80`;
-                        // Escape quotes
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
-                        display = `<div class="flex items-center justify-center gap-1"><span class="text-base font-bold">${v}%</span><span class="n-badge">${obj.n}</span>${alertIcon}</div>`;
+                        // Format: 74% [57]
+                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="cell-n-badge">${obj.n}</span></div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
                 });
@@ -516,127 +444,22 @@
             });
             lucide.createIcons();
         }
-        
-        function updateTableVisibility() { fetchTableData(); }
 
-        // --- ANALYSIS FUNCTIONS (LOCAL GENERATION) ---
-        function openAnalysisMenu() { document.getElementById('analysis-menu-modal').style.display='flex'; }
-        function closeModal(id) { document.getElementById(id).style.display='none'; }
-
-        function openOverviewAnalysis() {
-            closeModal('analysis-menu-modal');
-            const modal = document.getElementById('analysis-result-modal');
-            const content = document.getElementById('analysis-content');
-            modal.style.display='flex';
-            content.innerHTML = '<div class="text-center p-10"><div class="loader mx-auto mb-2"></div>Analyzing...</div>';
-            document.getElementById('ai-advice-box').innerText = "Waiting for analysis...";
-
-            let panResistant = [];
-            let panSensitive = [];
-            currentTableData.forEach(row => {
-                let allR = true, allS = true, hasData = false;
-                const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
-                activeDrugs.forEach(d => {
-                    const obj = row.drugResults[d];
-                    if (obj && obj.pct !== '-' && obj.pct !== 'R*') {
-                        hasData = true;
-                        if (parseFloat(obj.pct) > 0) allR = false;
-                        if (parseFloat(obj.pct) < 100) allS = false;
-                    }
-                });
-                if(hasData) {
-                    if(allR) panResistant.push(row.name);
-                    if(allS) panSensitive.push(row.name);
-                }
-            });
-
-            let html = `<div class="space-y-4"><div class="p-4 bg-slate-800 rounded-lg"><h4 class="font-bold text-lg text-cyan-300 mb-2">สถานการณ์ภาพรวม</h4><p class="text-slate-300">พบเชื้อ <span class="text-white font-bold">${currentTableData.length}</span> ชนิด</p></div><div class="grid grid-cols-2 gap-4"><div class="p-4 bg-red-900/20 border border-red-500/20 rounded-lg"><h5 class="font-bold text-red-400 mb-2">⚠ ดื้อยาทุกตัว (0% S)</h5><ul class="list-disc pl-4 text-xs text-red-200">${panResistant.length ? panResistant.map(n=>`<li>${n}</li>`).join('') : '<li>- ไม่พบ -</li>'}</ul></div><div class="p-4 bg-emerald-900/20 border border-emerald-500/20 rounded-lg"><h5 class="font-bold text-emerald-400 mb-2">✅ ไวต่อยาทุกตัว (100% S)</h5><ul class="list-disc pl-4 text-xs text-emerald-200">${panSensitive.length ? panSensitive.slice(0,5).map(n=>`<li>${n}</li>`).join('') : '<li>- ไม่พบ -</li>'}</ul></div></div></div>`;
-            content.innerHTML = html;
-            callAI("Overview", "สรุปภาพรวมเชื้อดื้อยา", "", []);
-        }
-
-        function openSpecificAnalysis() {
-            closeModal('analysis-menu-modal');
-            const selectedOrgRadio = document.querySelector('input[name="selected_org"]:checked');
-            if (!selectedOrgRadio) { alert("กรุณาเลือกเชื้อ (Organism) 1 ตัวจากเมนูด้านซ้ายก่อนครับ"); return; }
-            
-            const orgName = selectedOrgRadio.value;
-            const rowData = currentTableData.find(r => r.name.includes(orgName.split(' ')[0])); // Loose match
-            if (!rowData) { alert("ไม่พบข้อมูลเชื้อที่เลือกในตาราง"); return; }
-
-            const modal = document.getElementById('analysis-result-modal');
-            const content = document.getElementById('analysis-content');
-            modal.style.display='flex';
-            
-            const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
-            const drugList = [];
-            activeDrugs.forEach(d => {
-                const obj = rowData.drugResults[d];
-                if (obj && obj.pct !== '-' && obj.pct !== 'R*') {
-                    drugList.push({ name: d, pct: parseFloat(obj.pct), n: obj.n });
-                }
-            });
-            drugList.sort((a,b) => b.pct - a.pct);
-
-            let html = `<h2 class="text-xl font-bold text-cyan-300 mb-4">${orgName} Analysis</h2>`;
-            let topDrugs = [], badDrugs = [];
-
-            drugList.forEach(item => {
-                let colorClass = item.pct >= 80 ? 'green' : (item.pct >= 60 ? 'yellow' : 'red');
-                let lightClass = item.pct >= 80 ? 'Green Light ✅' : (item.pct >= 60 ? 'Yellow Light ⚠️' : 'Red Light ❌');
-                let hospDrug = HOSPITAL_DRUGS[item.name] || 'ไม่มีในรพ.สวี';
-                let warnings = '';
-                if(item.name.includes('Meropenem') || item.name.includes('Piperacillin')) warnings = '<span class="text-[10px] text-yellow-300 border border-yellow-500/50 px-1 rounded ml-1">⚠ Consult</span>';
-                if(item.name.includes('Cefotaxime') || item.name.includes('Ciprofloxacin')) warnings = '<span class="text-[10px] text-blue-300 border border-blue-500/50 px-1 rounded ml-1">📝 DUE</span>';
-                if(item.n < 30) { colorClass = 'grey'; lightClass = 'Grey Light ⚪'; warnings += ' <span class="text-[10px] text-slate-400">Low Data</span>'; }
-
-                html += `<div class="analysis-card ${colorClass}"><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-white">${item.name} ${warnings}</span><span class="text-xs font-bold">${item.pct}% (n=${item.n})</span></div><div class="analysis-bar-container"><div class="analysis-bar prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div><div class="mt-2 text-xs text-slate-400 flex justify-between"><span>${lightClass}</span><span class="text-right max-w-[50%]">${hospDrug}</span></div></div>`;
-                
-                if (item.pct > 70 && item.n >= 30) topDrugs.push(item.name);
-                if (item.pct < 50) badDrugs.push(item.name);
-            });
-            
-            content.innerHTML = html;
-            callAI(orgName, "", "", {top: topDrugs, bad: badDrugs});
-        }
-
-        async function callAI(org, summary, context, drugs) {
-            const adviceBox = document.getElementById('ai-advice-box');
-            adviceBox.innerHTML = '<span class="animate-pulse">กำลังปรึกษา IC SW-1...</span>';
-            
-            const params = new URLSearchParams({
-                action: 'get_ai_advice',
-                organism: org,
-                summary: summary || `Top: ${drugs.top.join(', ')}. Bad: ${drugs.bad.join(', ')}`
-            });
-
-            try {
-                const res = await fetch(`${GAS_URL}?${params.toString()}`);
-                const json = await res.json();
-                if(json.status === 'success') {
-                    adviceBox.innerHTML = `<b>IC SW-1 Says:</b><br>${json.answer.replace(/\n/g, '<br>')}`;
-                } else { adviceBox.innerText = "AI Offline"; }
-            } catch(e) { adviceBox.innerText = "Connection Failed"; }
-        }
-
-        // --- TREND CHART ---
+        // --- TREND & FORECAST ---
         async function showTrend(organism, drug) {
             const modal = document.getElementById('trend-modal');
             const loading = document.getElementById('trend-loading');
-            const aiBox = document.getElementById('chart-ai-box');
-            
-            // Check if chart-ai-box exists before accessing classList
-            if (aiBox) aiBox.classList.add('hidden');
-            
             currentChartContext = { organism, drug }; 
+            
             document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
+            document.getElementById('chart-ai-box').classList.add('hidden');
             modal.style.display = 'flex';
             loading.classList.remove('hidden');
 
-            const specimensParam = Array.from(selectedSpecimens).join(',');
-            const params = new URLSearchParams({ action: 'trend', organism: organism, drug: drug, specimens: specimensParam });
+            const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
+            
             try {
-                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const res = await fetch(`${GAS_URL}?action=trend&organism=${organism}&drug=${drug}&specimens=${specimensParam}`);
                 const json = await res.json();
                 loading.classList.add('hidden');
                 if (json.status === 'success') {
@@ -646,33 +469,104 @@
             } catch (e) { loading.classList.add('hidden'); }
         }
 
+        function calculateRegression(data) {
+            // x = 0, 1, 2... based on sorted quarter index
+            const n = data.length;
+            if (n < 2) return null;
+            
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            data.forEach((d, i) => {
+                sumX += i;
+                sumY += d.percent;
+                sumXY += i * d.percent;
+                sumXX += i * i;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            return { slope, intercept, nextIdx: n };
+        }
+
         function renderTrendChart(data) {
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
+            
+            // Calculate Stats for header
+            const totalN = data.reduce((acc, d) => acc + d.total, 0);
+            const wAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
+            
+            // Determine Color
+            let color = '#facc15';
+            if(wAvg >= 76) color = '#34d399';
+            if(wAvg < 50) color = '#f87171';
+            
+            document.getElementById('trend-avg').innerText = `${wAvg.toFixed(0)}%`;
+            document.getElementById('trend-avg').className = `font-bold ml-1 ${wAvg>=76?'text-emerald-400':(wAvg<50?'text-red-400':'text-yellow-400')}`;
+            document.getElementById('trend-n').innerText = totalN;
+
             const labels = data.map(d => d.quarter);
             const values = data.map(d => d.percent);
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
-            gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
-            const segmentColor = (ctx) => { const val = ctx.p0.parsed.y; if (val < 50) return '#f87171'; if (val < 76) return '#facc15'; return '#34d399'; };
+            
+            // Regression Forecast
+            const reg = calculateRegression(data);
+            const forecastData = [];
+            if(reg) {
+                // Fill nulls for existing data
+                data.forEach(() => forecastData.push(null));
+                // Predict Q+1, Q+2
+                const p1 = reg.slope * reg.nextIdx + reg.intercept;
+                const p2 = reg.slope * (reg.nextIdx + 1) + reg.intercept;
+                
+                // Add to labels
+                labels.push('Forecast Q1', 'Forecast Q2');
+                // Connect lines: last real point -> p1 -> p2
+                // We need to overlap last point to draw line
+                forecastData[forecastData.length - 1] = values[values.length-1];
+                forecastData.push(Math.min(100, Math.max(0, p1)));
+                forecastData.push(Math.min(100, Math.max(0, p2)));
+            }
 
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: '% S', data: values, backgroundColor: gradient, borderColor: '#22d3ee', segment: { borderColor: segmentColor }, borderWidth: 3, tension: 0.3, fill: true, pointBackgroundColor: '#fff', pointBorderColor: '#fff' }]
+                    datasets: [
+                        {
+                            label: 'Actual %S',
+                            data: values,
+                            borderColor: color,
+                            backgroundColor: color + '33', // 20% opacity
+                            borderWidth: 3,
+                            tension: 0.2,
+                            fill: true
+                        },
+                        {
+                            label: 'Trend Forecast',
+                            data: forecastData,
+                            borderColor: '#94a3b8',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
             });
         }
         
         async function askAIChart() {
              const aiBox = document.getElementById('chart-ai-box');
              const aiText = document.getElementById('chart-ai-text');
-             if(aiBox) {
-                 aiBox.classList.remove('hidden');
-                 aiText.innerHTML = '<span class="animate-pulse">🤖 Analyzing...</span>';
-             }
+             aiBox.classList.remove('hidden');
+             aiText.innerHTML = '<span class="animate-pulse">🤖 Analyzing...</span>';
 
              const params = new URLSearchParams({
                  action: 'analyze_chart',
