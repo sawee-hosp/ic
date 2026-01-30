@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sawee Antibiogram</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦠</text></svg>">
+    <!-- Favicon -->
+    <link rel="icon" href="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -14,43 +15,43 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
-        select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
+        select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
-        
+
         /* Infection Mode Tabs */
         .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
+        /* Specimen Buttons */
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
-        .specimen-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.3); }
-        .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
+        .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; }
         
-        /* Neon Separator */
         .neon-divider { height: 1px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); margin: 12px 0; opacity: 0.7; box-shadow: 0 0 5px #22d3ee; }
 
         /* Accordion */
         .group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.4); margin-bottom: 2px; }
-        .group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
         .group-header.active { color: #22d3ee; border-left: 2px solid #22d3ee; }
-        .group-body { display: none; padding: 4px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; border-left: 1px solid rgba(255,255,255,0.05); }
+        .group-body { display: none; padding: 4px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
         .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; width: 100%; }
         .custom-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
 
         /* Smart Table */
         .is-fullscreen { position: fixed !important; inset: 0 !important; z-index: 100 !important; background: #0f172a !important; border-radius: 0 !important; padding: 1rem !important; }
-        .is-fullscreen .table-container { max-height: calc(100vh - 100px) !important; }
+        .is-fullscreen .table-container { max-height: calc(100vh - 80px) !important; }
         
         .table-normal th { padding: 12px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.95); position: sticky; top: 0; z-index: 10; font-weight: 500; color: #94a3b8; }
         .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
         .table-normal td:hover { background: rgba(255,255,255,0.08); }
         
+        /* Cell Styles */
         .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.9rem; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
+        .n-badge { font-size: 0.75rem; font-weight: 300; font-style: italic; color: #cbd5e1; margin-left: 2px; }
         .alert-icon { color: #ef4444; width: 14px; height: 14px; }
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
         
@@ -58,12 +59,17 @@
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
+        
+        /* Organism Colors */
+        .gram-neg { color: #22d3ee; }
+        .gram-pos { color: #f87171; }
+        .fungi { color: #fbbf24; }
 
-        /* AI Mode Button */
+        /* AI Mode Button (Orange) */
         .ai-mode-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.5); color: #fb923c; font-size: 0.65rem; padding: 2px 6px; rounded: 4px; opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20; cursor: pointer; }
         tr:hover .ai-mode-btn { opacity: 1; }
 
-        /* FAB */
+        /* FAB - Transparent PNG */
         .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 80px; height: 80px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
         .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
@@ -72,12 +78,22 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-content { background: #1e293b; width: 95%; max-width: 800px; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
         
+        /* Analysis Card */
+        .drug-card { background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #64748b; }
+        .drug-card.green { border-left-color: #10b981; }
+        .drug-card.yellow { border-left-color: #eab308; }
+        .drug-card.red { border-left-color: #ef4444; }
+        .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 6px 0; overflow: hidden; }
+        .prog-fill { height: 100%; border-radius: 3px; }
+        .prog-fill.green { background: #10b981; }
+        .prog-fill.yellow { background: #eab308; }
+        .prog-fill.red { background: #ef4444; }
+
         .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col">
@@ -85,10 +101,7 @@
 
     <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
-            <!-- New Logo Image -->
-            <div class="h-16 w-16 rounded-full overflow-hidden border-2 border-cyan-500/30 p-1 bg-slate-900/50 shadow-lg shadow-cyan-500/20">
-                <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-cover">
-            </div>
+             <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="h-14 w-auto object-contain">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400">SAWEE ANTIBIOGRAM</h1>
                 <p class="text-slate-400 text-sm">Smart AI Surveillance System</p>
@@ -111,7 +124,6 @@
                         </div>
                     </div>
                     <div class="flex justify-end"><button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline mb-1">ALL</button></div>
-                    <!-- Fixed Height 3 rows approx -->
                     <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[110px] overflow-y-auto custom-scrollbar content-start bg-slate-900/30 rounded-lg"></div>
                 </div>
 
@@ -125,7 +137,7 @@
 
                 <div class="neon-divider"></div>
 
-                <!-- 3. Organism (Flex Grow to fill space) -->
+                <!-- 3. Organism -->
                 <div class="flex-grow flex flex-col min-h-0 overflow-hidden">
                      <div class="flex justify-between items-center mb-2 flex-shrink-0">
                         <label class="text-xs text-slate-400 font-medium uppercase tracking-wide">Organism</label>
@@ -134,7 +146,6 @@
                             <button onclick="document.querySelectorAll('.org-check').forEach(c=>c.checked=false);updateTableVisibility();" class="text-[10px] text-slate-500 hover:text-white px-1">Clear</button>
                         </div>
                     </div>
-                    
                     <div class="flex gap-2 mb-2 flex-shrink-0">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -145,13 +156,12 @@
                             <div class="text-[10px] text-center py-1 rounded border border-red-500/30 text-red-400 peer-checked:bg-red-500 peer-checked:text-white transition-all">เฉพาะดื้อยา</div>
                         </label>
                     </div>
-
                     <div id="organism-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-1 bg-slate-900/30 rounded-lg p-2"></div>
                 </div>
                 
                 <div class="neon-divider"></div>
 
-                <!-- 4. Drugs (Compact) -->
+                <!-- 4. Drugs -->
                 <div class="flex-shrink-0 mt-2">
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-xs text-slate-400 font-medium uppercase tracking-wide">Drugs</label>
@@ -186,7 +196,6 @@
                         <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 Isolates</span>
                     </div>
                 </div>
-                
                 <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative table-container">
                     <table id="resultTable" class="w-full text-center border-collapse table-normal">
                         <thead><tr id="table-header"></tr></thead>
@@ -202,27 +211,21 @@
         </div>
     </main>
 
-    <!-- FAB: Open Chat Modal -->
+    <!-- FAB -->
     <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
         <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" alt="IC SW-1">
     </div>
 
-    <!-- Chat Modal (Scenario Analyzer) -->
+    <!-- Chat Modal -->
     <div id="chat-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-emerald-500/50 p-1">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-cover rounded-full">
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3>
-                        <p class="text-[10px] text-slate-400">Scenario Analyzer</p>
-                    </div>
+                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain">
+                    <div><h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3><p class="text-[10px] text-slate-400">Scenario Analyzer</p></div>
                 </div>
                 <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            
             <div class="p-4 bg-slate-900/50 border-b border-white/5 space-y-3">
                 <p class="text-xs text-slate-400 mb-2">ระบุเงื่อนไขเพื่อขอคำแนะนำ:</p>
                 <div class="grid grid-cols-2 gap-2">
@@ -230,21 +233,27 @@
                     <input type="text" id="chat-drug" list="drug-list" placeholder="ชื่อยา (e.g. Meropenem)" class="w-full text-xs">
                     <select id="chat-specimen" class="w-full text-xs"><option value="All">All Specimens</option></select>
                 </div>
-                <button onclick="submitScenario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded">วิเคราะห์ความเหมาะสม</button>
-                
-                <!-- Autocomplete Datalists -->
-                <datalist id="org-list"></datalist>
-                <datalist id="drug-list"></datalist>
+                <button onclick="submitScenario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded">วิเคราะห์</button>
+                <datalist id="org-list"></datalist><datalist id="drug-list"></datalist>
             </div>
-
             <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
-                 <div class="flex gap-3">
-                    <div class="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0 p-1">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-cover rounded-full">
-                    </div>
-                    <div class="chat-bubble chat-ai">
-                        สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อ (เช่น S. aureus) หรือชื่อยา แล้วกดวิเคราะห์ได้เลยค่ะ
-                    </div>
+                 <div class="flex gap-3"><div class="w-8 h-8 rounded-full bg-slate-700 p-1 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อและยา แล้วกดวิเคราะห์ได้เลยค่ะ</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Mode (Organism Analysis) Modal -->
+    <div id="org-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-bold text-emerald-400 flex items-center gap-2" id="org-modal-title">AI Analysis</h3>
+                <button onclick="document.getElementById('org-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="org-modal-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
+            <div class="p-4 bg-slate-800 border-t border-white/10">
+                <div class="flex items-start gap-3">
+                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
+                    <div id="org-ai-advice" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20"><span class="animate-pulse">กำลังปรึกษา IC SW-1...</span></div>
                 </div>
             </div>
         </div>
@@ -256,17 +265,13 @@
             <div class="p-4 border-b border-white/10 flex justify-between items-center">
                 <div>
                     <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
-                    <!-- Avg/N Badges in Header -->
                     <div class="flex gap-2 mt-1">
                          <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">Avg: <span id="trend-avg" class="font-bold text-white"></span></span>
                          <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">Total N: <span id="trend-n" class="font-bold text-white"></span></span>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-4 h-4 object-cover rounded-full">
-                        วิเคราะห์ยานี้
-                    </button>
+                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-4 h-4 object-contain">วิเคราะห์กราฟ</button>
                     <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
             </div>
@@ -275,26 +280,10 @@
             <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden"><div class="loader"></div></div>
         </div>
     </div>
-    
-    <!-- AI Mode Modal (Organism Analysis) -->
-    <div id="org-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
-                <h3 class="font-bold text-emerald-400 flex items-center gap-2" id="org-modal-title">AI Analysis</h3>
-                <button onclick="document.getElementById('org-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div id="org-modal-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
-        </div>
-    </div>
 
     <script>
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZQ5bn3aLOL91zI79UzCoNfpfqlY3L6WryFeXMa5wDENl6rbbBUJVU2fW1cuKR1W1K/exec';
-        let cachedData = null;
-        let selectedSpecimens = new Set();
-        let trendChartInstance = null;
-        let currentChartContext = {}; 
-
-        // SYNDROME & DRUGS
+        let cachedData = null, selectedSpecimens = new Set(), currentTableData = [], trendChartInstance = null, currentChartContext = {}, hospitalDrugMap = {}; 
         const SYNDROME_MAP = { "Pneumonia / Respiratory": ["Sputum"], "UTI / Urinary Tract": ["Urine"], "Bacteremia / Sepsis": ["Hemoculture", "Blood"], "SSTI / Wound / Pus": ["Pus", "Wound", "Swab", "Abscess"], "GI / Diarrhea": ["Stool"], "Reproductive / Vaginal": ["Vaginal"] };
         const DRUG_GROUPS = { "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla"], "Cephalosporins": ["Cefazolin", "Cefotaxime", "Ceftazidime", "Ceftriaxone", "Cefepime"], "Carbapenems": ["Ertapenem", "Imipenem", "Meropenem"], "Aminoglycosides": ["Amikacin", "Gentamicin"], "Fluoroquinolones": ["Ciprofloxacin", "Levofloxacin"], "Others": ["Clindamycin", "Vancomycin", "Colistin", "Trimetho/Sulfa.", "Erythromycin", "Chloramphenicol", "Tetracycline", "Fosfomycin", "Nitrofurantoin", "Linezolid"] };
 
@@ -304,7 +293,6 @@
             await loadOptions();
         };
 
-        // --- Init ---
         function initDrugSelector() {
             const container = document.getElementById('drug-groups-container');
             container.innerHTML = '';
@@ -331,6 +319,7 @@
                 const json = await res.json();
                 if (json.status === 'success') {
                     cachedData = json.data;
+                    hospitalDrugMap = json.data.drugMap || {};
                     initSpecimenGrid(json.data.specimens);
                     initOrganismFilter(json.data.organisms);
                     initQuarterRadio(json.data.quarters);
@@ -342,7 +331,6 @@
             } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
         }
 
-        // --- FILTER LOGIC ---
         let infectionMode = 'syndrome';
         function setInfectionMode(mode, el) {
             infectionMode = mode;
@@ -385,7 +373,7 @@
             const container = document.getElementById('organism-filter-container');
             container.innerHTML = '';
             for (const [gram, groups] of Object.entries(orgData)) {
-                let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
+                let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold tracking-wider mb-1 pl-1 ${gram.includes('Negative')?'text-cyan-400':'text-red-400'}">${gram}</div>`;
                 for (const [groupName, organisms] of Object.entries(groups)) {
                     html += `<div class="mb-1"><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold">${groupName}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body">${organisms.map(org => `<label class="custom-checkbox w-full"><input type="checkbox" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()"><span>${org}</span></label>`).join('')}</div></div>`;
                 }
@@ -408,25 +396,16 @@
             wrapper.classList.toggle('is-fullscreen');
         }
 
-        // --- TABLE ---
         async function fetchTableData() {
             const loader = document.getElementById('search-loading');
             loader.classList.remove('hidden');
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
-            // Fix: Check null for quarter
             const qRadio = document.querySelector('input[name="quarter"]:checked');
             const selectedQuarter = qRadio ? qRadio.value : "";
-            
             const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
-
-            const params = new URLSearchParams({
-                action: 'search',
-                specimens: specimensParam,
-                years: selectedQuarter,
-                names: selectedOrgChecks.join(',')
-            });
+            const params = new URLSearchParams({ action: 'search', specimens: specimensParam, years: selectedQuarter, names: selectedOrgChecks.join(',') });
 
             try {
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
@@ -450,9 +429,7 @@
             });
             return Object.values(groups).map(g => {
                 const finalDrugs = {};
-                for (const [d, c] of Object.entries(g.drugData)) {
-                    finalDrugs[d] = { pct: formatDrugValue(c.s, c.t, c.isR), n: c.t, isR: c.isR };
-                }
+                for (const [d, c] of Object.entries(g.drugData)) { finalDrugs[d] = { pct: formatDrugValue(c.s, c.t, c.isR), n: c.t, isR: c.isR }; }
                 return { name: g.name, drugResults: finalDrugs };
             });
         }
@@ -476,12 +453,17 @@
             const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
             thead.innerHTML = `<th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>${activeDrugs.map(d => `<th class="min-w-[70px] text-center" title="${d}">${d.substring(0,4)}</th>`).join('')}`;
             
+            // Sort by Name (Frontend Sort)
+            data.sort((a,b) => a.name.localeCompare(b.name));
+
             data.forEach(row => {
                 const hasData = activeDrugs.some(d => row.drugResults[d] && row.drugResults[d].pct !== '-');
                 if (hideEmpty && !hasData) return;
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
-                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative">${row.name}<button class="ai-mode-btn" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
+                // Organism Name with AI Button
+                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
+                
                 activeDrugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct; const num = parseFloat(v);
@@ -493,8 +475,7 @@
                         cellClass = `${c} hover:opacity-80`;
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
-                        // Format: 74% (57) italic badge
-                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge italic font-light">${obj.n}${alertIcon}</span></div>`;
+                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge">${obj.n}${alertIcon}</span></div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
                 });
@@ -509,16 +490,9 @@
         function initChatLists(orgs, drugs, specs) {
             document.getElementById('org-list').innerHTML = orgs.map(o => `<option value="${o}">`).join('');
             document.getElementById('drug-list').innerHTML = drugs.map(d => `<option value="${d}">`).join('');
-            // Ensure Specimen Dropdown is populated correctly in Chat Modal
             const specDropdown = document.getElementById('chat-specimen');
-            // Clear existing except first option
             while (specDropdown.options.length > 1) { specDropdown.remove(1); }
-            specs.forEach(s => {
-               const opt = document.createElement('option');
-               opt.value = s;
-               opt.text = s;
-               specDropdown.add(opt);
-            });
+            specs.forEach(s => { const opt = document.createElement('option'); opt.value = s; opt.text = s; specDropdown.add(opt); });
         }
         function openChatModal() { document.getElementById('chat-modal').style.display = 'flex'; }
         function closeChatModal() { document.getElementById('chat-modal').style.display = 'none'; }
@@ -531,7 +505,7 @@
             const container = document.getElementById('chat-container');
             container.innerHTML += `<div class="flex gap-3"><div class="chat-bubble chat-user">Analyze ${org} vs ${drug} in ${spec}</div></div>`;
             const loadingId = 'load-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px]"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
             
             const params = new URLSearchParams({ action: 'get_scenario_analysis', organism: org, drug: drug, specimen: spec });
             try {
@@ -539,7 +513,7 @@
                 const json = await res.json();
                 document.getElementById(loadingId).remove();
                 if(json.status === 'success') {
-                    container.innerHTML += `<div class="flex gap-3"><div class="ai-avatar min-w-[40px]"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
+                    container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
                 } else { container.innerHTML += `<div class="text-red-400">Error</div>`; }
             } catch(e) { document.getElementById(loadingId).remove(); }
         }
@@ -548,25 +522,59 @@
         function openOrganismAnalysis(orgName) {
             const modal = document.getElementById('org-modal');
             const content = document.getElementById('org-modal-content');
+            const adviceBox = document.getElementById('org-ai-advice');
+            document.getElementById('org-modal-title').innerHTML = `AI Analysis: ${orgName}`;
+            
             modal.style.display = 'flex';
-            content.innerHTML = '<div class="loader mx-auto"></div> Analyzing...';
+            content.innerHTML = '';
+            adviceBox.innerHTML = '<span class="animate-pulse">กำลังปรึกษา IC SW-1...</span>';
 
-            const quarter = document.querySelector('input[name="quarter"]:checked').value;
-            const specimen = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
+            const rowData = currentTableData.find(r => r.name === orgName);
+            if (!rowData) return;
 
-            const params = new URLSearchParams({
-                action: 'analyze_organism',
-                organism: orgName,
-                quarter: quarter,
-                specimen: specimen
+            const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
+            const drugList = [];
+            activeDrugs.forEach(d => {
+                const obj = rowData.drugResults[d];
+                if (obj && obj.pct !== '-' && obj.pct !== 'R*') {
+                    drugList.push({ name: d, pct: parseFloat(obj.pct), n: obj.n });
+                }
+            });
+            drugList.sort((a,b) => b.pct - a.pct); // High to Low
+
+            drugList.forEach(item => {
+                let colorClass = item.pct >= 80 ? 'green' : (item.pct >= 60 ? 'yellow' : 'red');
+                let lightClass = item.pct >= 80 ? 'Green Light ✅' : (item.pct >= 60 ? 'Yellow Light ⚠️' : 'Red Light ❌');
+                let hospDrug = hospitalDrugMap[item.name] ? hospitalDrugMap[item.name].join(', ') : 'ไม่มีในรพ.สวี';
+                let warnings = '';
+                if(item.name.includes('Meropenem') || item.name.includes('Piperacillin')) warnings += '<span class="text-[10px] text-yellow-300 border border-yellow-500/50 px-1 rounded ml-1">⚠ Consult</span>';
+                if(item.name.includes('Cefotaxime') || item.name.includes('Ciprofloxacin')) warnings += '<span class="text-[10px] text-blue-300 border border-blue-500/50 px-1 rounded ml-1">📝 DUE</span>';
+                if(item.n < 30) { colorClass = 'grey'; lightClass = 'Grey Light ⚪'; warnings += ' <span class="text-[10px] text-slate-400">Low Data</span>'; }
+
+                const html = `
+                <div class="drug-card ${colorClass}">
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="font-bold text-sm text-white">${item.name} ${warnings}</span>
+                        <span class="text-xs font-bold">${item.pct}% (n=${item.n})</span>
+                    </div>
+                    <div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div>
+                    <div class="mt-2 text-xs text-slate-400 flex justify-between">
+                         <span>${lightClass}</span>
+                         <span class="text-right max-w-[60%] truncate text-cyan-200">${hospDrug}</span>
+                    </div>
+                </div>`;
+                content.insertAdjacentHTML('beforeend', html);
             });
 
+            // Call AI
+            const quarter = document.querySelector('input[name="quarter"]:checked').value;
+            const specimen = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
+            const params = new URLSearchParams({ action: 'analyze_organism', organism: orgName, quarter: quarter, specimen: specimen });
             fetch(`${GAS_URL}?${params.toString()}`)
                 .then(r => r.json())
                 .then(data => {
-                    if(data.status === 'success') {
-                        content.innerHTML = data.answer.replace(/\n/g, '<br>');
-                    } else { content.innerHTML = 'Error'; }
+                    if(data.status === 'success') adviceBox.innerHTML = `<b>IC SW-1 Advice:</b><br>${data.answer.replace(/\n/g, '<br>')}`;
+                    else adviceBox.innerText = "Error";
                 });
         }
 
@@ -594,8 +602,7 @@
         }
 
         function calculateRegression(data) {
-            const n = data.length;
-            if (n < 2) return null;
+            const n = data.length; if (n < 2) return null;
             let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
             data.forEach((d, i) => { sumX += i; sumY += d.percent; sumXY += i * d.percent; sumXX += i * i; });
             const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
@@ -609,11 +616,9 @@
             const totalN = data.reduce((acc, d) => acc + d.total, 0);
             const wAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
             
-            // Stats Badge in Trend Modal
             document.getElementById('trend-avg').innerText = `${wAvg.toFixed(0)}%`;
             document.getElementById('trend-n').innerText = totalN;
-            
-            let color = '#facc15'; if(wAvg >= 76) color = '#34d399'; if(wAvg < 50) color = '#f87171';
+            let color = '#facc15'; if(wAvg >= 76) color = '#34d399'; if(wAvg < 50) color = '#ef4444';
 
             const labels = data.map(d => d.quarter);
             const values = data.map(d => d.percent);
@@ -630,8 +635,7 @@
             }
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, color + '66'); 
-            gradient.addColorStop(1, color + '00');
+            gradient.addColorStop(0, color + '66'); gradient.addColorStop(1, color + '00');
 
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
