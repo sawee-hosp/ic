@@ -15,7 +15,6 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
@@ -44,7 +43,7 @@
 
         /* Smart Table */
         .is-fullscreen { position: fixed !important; inset: 0 !important; z-index: 100 !important; background: #0f172a !important; border-radius: 0 !important; padding: 1rem !important; }
-        .is-fullscreen .table-container { max-height: calc(100vh - 80px) !important; }
+        .is-fullscreen .table-container { max-height: calc(100vh - 100px) !important; }
         
         .table-normal th { padding: 12px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.95); position: sticky; top: 0; z-index: 10; font-weight: 500; color: #94a3b8; }
         .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
@@ -53,7 +52,20 @@
         /* Cell Styles */
         .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 300; font-style: italic; display: inline-flex; align-items: center; gap: 2px; }
+        
+        /* New Badge Style: N without parentheses */
+        .n-badge { 
+            background: rgba(255, 255, 255, 0.15); 
+            color: #f1f5f9; 
+            padding: 1px 6px; 
+            border-radius: 4px; 
+            font-size: 0.75rem; 
+            font-weight: 300; /* Thin */
+            font-style: italic; /* Italic */
+            display: inline-flex; 
+            align-items: center; 
+            gap: 2px; 
+        }
         .alert-icon { color: #ef4444; width: 12px; height: 12px; }
         
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
@@ -62,11 +74,6 @@
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
-        
-        /* Organism Text Colors */
-        .gram-neg { color: #22d3ee; }
-        .gram-pos { color: #f87171; }
-        .fungi { color: #fbbf24; }
 
         /* AI Mode Button (Orange) */
         .ai-mode-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.5); color: #fb923c; font-size: 0.65rem; padding: 2px 6px; rounded: 4px; opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20; cursor: pointer; }
@@ -81,23 +88,11 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-content { background: #1e293b; width: 95%; max-width: 800px; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
         
-        /* Analysis Card */
-        .drug-card { background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #64748b; }
-        .drug-card.green { border-left-color: #10b981; }
-        .drug-card.yellow { border-left-color: #eab308; }
-        .drug-card.red { border-left-color: #ef4444; }
-        .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 6px 0; overflow: hidden; }
-        .prog-fill { height: 100%; border-radius: 3px; }
-        .prog-fill.green { background: #10b981; }
-        .prog-fill.yellow { background: #eab308; }
-        .prog-fill.red { background: #ef4444; }
-
         .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col">
@@ -217,9 +212,9 @@
         </div>
     </main>
 
-    <!-- FAB -->
+    <!-- FAB: Open Chat Modal -->
     <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
-        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
+        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" alt="IC SW-1">
     </div>
 
     <!-- Chat Modal (Scenario Analyzer) -->
@@ -227,11 +222,12 @@
         <div class="modal-content">
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain">
+                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain">
                     <div><h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3><p class="text-[10px] text-slate-400">Scenario Analyzer</p></div>
                 </div>
                 <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
+            
             <div class="p-4 bg-slate-900/50 border-b border-white/5 space-y-3">
                 <p class="text-xs text-slate-400 mb-2">ระบุเงื่อนไขเพื่อขอคำแนะนำ:</p>
                 <div class="grid grid-cols-2 gap-2">
@@ -243,7 +239,7 @@
                 <datalist id="org-list"></datalist><datalist id="drug-list"></datalist>
             </div>
             <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
-                 <div class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อและยา แล้วกดวิเคราะห์ได้เลยค่ะ</div></div>
+                 <div class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อและยา แล้วกดวิเคราะห์ได้เลยค่ะ</div></div>
             </div>
         </div>
     </div>
@@ -258,7 +254,7 @@
             <div id="org-modal-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
             <div class="p-4 bg-slate-800 border-t border-white/10">
                 <div class="flex items-start gap-3">
-                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
+                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
                     <div id="org-ai-advice" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20"><span class="animate-pulse">กำลังปรึกษา IC SW-1...</span></div>
                 </div>
             </div>
@@ -271,7 +267,7 @@
             <div class="p-4 border-b border-white/10 flex justify-between items-center">
                 <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
                 <div class="flex gap-2">
-                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-4 h-4 object-contain">วิเคราะห์กราฟ</button>
+                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-4 h-4 object-contain">วิเคราะห์กราฟ</button>
                     <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
             </div>
@@ -405,11 +401,14 @@
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
-            // Fix: Check null for quarter
             const qRadio = document.querySelector('input[name="quarter"]:checked');
             const selectedQuarter = qRadio ? qRadio.value : "";
             
-            const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
+            // Fix: Check Empty for "All" logic
+            let specimensParam = "";
+            if (selectedSpecimens.size > 0 && selectedSpecimens.size < cachedData.specimens.length) {
+                 specimensParam = Array.from(selectedSpecimens).join(',');
+            }
 
             const params = new URLSearchParams({
                 action: 'search',
@@ -473,9 +472,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
                 // Organism Name with AI Button
-                let orgColor = 'text-cyan-200';
-                // Need grammar info in row or lookup. Using cached structure.
-                let html = `<td class="text-left pl-4 font-medium ${orgColor} sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
+                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
                 activeDrugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct; const num = parseFloat(v);
@@ -518,7 +515,7 @@
             const container = document.getElementById('chat-container');
             container.innerHTML += `<div class="flex gap-3"><div class="chat-bubble chat-user">Analyze ${org} vs ${drug} in ${spec}</div></div>`;
             const loadingId = 'load-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
             
             const params = new URLSearchParams({ action: 'get_scenario_analysis', organism: org, drug: drug, specimen: spec });
             try {
@@ -526,7 +523,7 @@
                 const json = await res.json();
                 document.getElementById(loadingId).remove();
                 if(json.status === 'success') {
-                    container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
+                    container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
                 } else { container.innerHTML += `<div class="text-red-400">Error</div>`; }
             } catch(e) { document.getElementById(loadingId).remove(); }
         }
@@ -631,6 +628,7 @@
             const wAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
             
             document.getElementById('trend-avg').innerText = `${wAvg.toFixed(0)}%`;
+            document.getElementById('trend-avg').className = `font-bold ml-1 ${wAvg>=76?'text-emerald-400':(wAvg<50?'text-red-400':'text-yellow-400')}`;
             document.getElementById('trend-n').innerText = totalN;
             let color = '#facc15'; if(wAvg >= 76) color = '#34d399'; if(wAvg < 50) color = '#ef4444';
 
