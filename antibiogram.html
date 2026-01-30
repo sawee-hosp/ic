@@ -13,7 +13,6 @@
     
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
-        .aurora-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(15, 118, 110, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 100%); }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -23,37 +22,34 @@
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
         
-        /* Specimen Scroll Fix */
-        .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 4px; max-height: 120px; overflow-y: auto; align-content: flex-start; }
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
-        .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
         .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
         
-        /* Drug Group */
-        .drug-group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .drug-group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
-        .drug-group-body { display: none; padding-left: 8px; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-        .group-check-btn { font-size: 0.65rem; color: #34d399; margin-left: auto; margin-right: 5px; cursor: pointer; text-decoration: underline; }
+        /* Accordion */
+        .group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.4); margin-bottom: 2px; }
+        .group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+        .group-header.active { color: #22d3ee; border-left: 2px solid #22d3ee; }
+        .group-body { display: none; padding: 4px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+        
+        .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; }
+        .custom-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
 
         .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
         .table-normal td { padding: 12px 8px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; }
         .table-normal td:hover { background: rgba(255,255,255,0.1); }
-        
-        /* R* Cell Disabled */
-        .cell-disabled { cursor: not-allowed !important; opacity: 0.4; background: rgba(0,0,0,0.3) !important; color: transparent; pointer-events: none; }
+        .cell-disabled { cursor: not-allowed !important; opacity: 0.4; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
         
         /* N Badge */
-        .n-badge { font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 6px; margin-left: 6px; color: #f1f5f9; font-weight: 500; border: 1px solid rgba(255,255,255,0.2); }
-        .alert-icon { color: #fbbf24; margin-left: 4px; vertical-align: middle; }
+        .n-badge { font-size: 0.85rem; font-weight: 600; color: #f8fafc; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .alert-icon { color: #fbbf24; width: 14px; height: 14px; vertical-align: middle; display: inline-block; margin-left: 2px; }
 
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
         .bg-na { color: #64748b; }
 
-        /* FAB */
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
-        .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); }
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s; z-index: 50; border: 2px solid #34d399; overflow: hidden; background: #0f172a; }
+        .fab-btn img { width: 100%; height: 100%; object-fit: contain; }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -62,8 +58,6 @@
         .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
-        
-        optgroup { font-weight: bold; background: #0f172a; color: #94a3b8; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -89,53 +83,52 @@
     </header>
 
     <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
-        
         <!-- Sidebar -->
         <aside class="lg:col-span-3 space-y-4">
             <div class="glass p-5 h-full flex flex-col">
-                <div class="mb-4 pb-2 border-b border-white/5">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i> Filters
-                    </h2>
-                </div>
-
-                <div class="space-y-6 flex-grow custom-scrollbar overflow-y-auto" style="max-height: 70vh;">
-                    <!-- 1. Site -->
+                <div class="space-y-6 flex-grow custom-scrollbar overflow-y-auto" style="max-height: 75vh;">
+                    <!-- Site -->
                     <div>
                         <div class="flex justify-between items-end mb-2">
                             <label class="text-xs text-slate-400 font-medium">Site of Infection</label>
                             <button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Select All</button>
                         </div>
-                        <div id="specimen-container" class="specimen-container custom-scrollbar">
+                        <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[120px] overflow-y-auto custom-scrollbar content-start">
                             <div class="text-xs text-slate-500 italic p-2">Loading...</div>
                         </div>
                     </div>
 
-                    <!-- 2. Time Period -->
+                    <!-- Time -->
                     <div>
                         <label class="text-xs text-slate-400 mb-2 block font-medium">Time Period</label>
                         <div id="quarter-radios" class="flex flex-col gap-2"></div>
                     </div>
 
-                    <!-- 3. Organism (Grouped) -->
+                    <!-- Organism (Checkbox Accordion) -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block font-medium">Organism</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- Loading --</option></select>
-                        <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-xs text-slate-400 font-medium">Organism</label>
+                        </div>
+                        <div id="organism-filter-container" class="space-y-1"></div>
+                        
+                        <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2 mt-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
-                                <div class="text-[10px] text-center py-1.5 rounded transition-all bg-transparent text-slate-400 peer-checked:bg-cyan-500/20 peer-checked:text-cyan-300 border border-transparent peer-checked:border-cyan-500/50">รวมเชื้อดื้อยา</div>
+                                <div class="text-[10px] text-center py-1.5 rounded bg-transparent text-slate-400 peer-checked:bg-cyan-500/20 peer-checked:text-cyan-300 border border-transparent peer-checked:border-cyan-500/50">รวมเชื้อดื้อยา</div>
                             </label>
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="resistant" class="peer hidden">
-                                <div class="text-[10px] text-center py-1.5 rounded transition-all bg-transparent text-slate-400 peer-checked:bg-red-500/20 peer-checked:text-red-300 border border-transparent peer-checked:border-red-500/50">เฉพาะเชื้อดื้อยา</div>
+                                <div class="text-[10px] text-center py-1.5 rounded bg-transparent text-slate-400 peer-checked:bg-red-500/20 peer-checked:text-red-300 border border-transparent peer-checked:border-red-500/50">เฉพาะเชื้อดื้อยา</div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- 4. Drug Groups -->
+                    <!-- Drug Groups -->
                     <div>
-                        <label class="text-xs text-slate-400 mb-2 block font-medium">Antibiotic Groups</label>
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="text-xs text-slate-400 font-medium">Antibiotic Groups</label>
+                            <button onclick="toggleAllDrugs()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">Select/Deselect All</button>
+                        </div>
                         <div id="drug-groups-container" class="space-y-1"></div>
                     </div>
                 </div>
@@ -152,10 +145,7 @@
         <div class="lg:col-span-9">
             <div class="glass p-1 h-full min-h-[500px] flex flex-col relative">
                 <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50 rounded-t-xl">
-                    <div>
-                        <h3 class="font-semibold text-cyan-100">Antibiogram Result</h3>
-                        <p class="text-[10px] text-slate-400 mt-0.5">*คลิกที่ช่อง % เพื่อดูกราฟแนวโน้ม</p>
-                    </div>
+                    <h3 class="font-semibold text-cyan-100">Antibiogram Result</h3>
                     <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 Isolates</span>
                 </div>
                 
@@ -179,7 +169,7 @@
         </div>
     </main>
 
-    <!-- FAB: AI Chat -->
+    <!-- FAB -->
     <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
         <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
     </div>
@@ -190,11 +180,11 @@
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-emerald-500/50">
-                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain">
                     </div>
                     <div>
                         <h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3>
-                        <p class="text-[10px] text-slate-400">เภสัชกรสับปะรด (AI System)</p>
+                        <p class="text-[10px] text-slate-400">เภสัชกรสับปะรด</p>
                     </div>
                 </div>
                 <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -215,12 +205,11 @@
             <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
                 <div class="flex gap-3">
                     <div class="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
-                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain">
                     </div>
                     <div class="chat-bubble chat-ai">
-                        สวัสดีค่ะ... สวีวันพร้อมปฏิบัติการ... <br>
+                        สวัสดีครับ สวีวันพร้อมให้บริการ... <br>
                         ข้อมูลล่าสุดจากหน้าจอ: <span id="ai-context-label" class="text-emerald-400 font-bold">...</span><br>
-                        กดส่งเพื่อรับการวิเคราะห์ หรือพิมพ์คำถามเพิ่มได้เลยค่ะ...
                     </div>
                 </div>
             </div>
@@ -232,46 +221,27 @@
         </div>
     </div>
 
-    <!-- Trend Chart Modal -->
+    <!-- Trend Modal -->
     <div id="trend-modal" class="modal-overlay">
         <div class="modal-content bg-slate-900" style="max-width: 700px;">
             <div class="p-4 border-b border-white/10 flex justify-between items-center">
                 <div>
-                    <h3 class="font-bold text-cyan-300" id="trend-title">Susceptibility Trend</h3>
+                    <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
                     <div class="flex items-center gap-2 mt-1">
                         <span id="trend-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700"></span>
-                        <span id="trend-subtitle" class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded"></span>
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="askAIChart()" class="glass px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-500/20 flex items-center gap-1">
-                        <i data-lucide="bot" class="w-3 h-3"></i> 🤖 วิเคราะห์กราฟ
-                    </button>
-                    <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
+                <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            
-            <div id="chart-ai-box" class="hidden bg-emerald-900/20 p-3 mx-6 mt-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
-                <div id="chart-ai-text">Analyzing...</div>
-                <button onclick="this.parentElement.classList.add('hidden')" class="absolute top-1 right-1 text-emerald-500 hover:text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
-            </div>
-
-            <div class="p-6 h-[300px]">
-                <canvas id="trendChart"></canvas>
-            </div>
-            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden">
-                <div class="loader"></div>
-            </div>
+            <div class="p-6 h-[300px]"><canvas id="trendChart"></canvas></div>
         </div>
     </div>
 
     <script>
-        // --- CONFIG ---
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZQ5bn3aLOL91zI79UzCoNfpfqlY3L6WryFeXMa5wDENl6rbbBUJVU2fW1cuKR1W1K/exec';
         let cachedData = null;
         let selectedSpecimens = new Set();
         let trendChartInstance = null;
-        let currentChartContext = {}; 
 
         const DRUG_GROUPS = {
             "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla", "Ampicillin/Sulb", "Piperacillin", "Piperacillin/Ta"],
@@ -297,16 +267,16 @@
             for (const [group, drugs] of Object.entries(DRUG_GROUPS)) {
                 const html = `
                     <div>
-                        <div class="drug-group-header flex justify-between items-center text-slate-400 hover:text-white cursor-pointer p-1.5 rounded hover:bg-slate-800" onclick="toggleGroup(this)">
-                            <span class="text-xs font-semibold">${group}</span>
+                        <div class="group-header" onclick="toggleGroup(this)">
+                            <span class="text-xs font-semibold text-slate-400">${group}</span>
                             <div class="flex gap-2">
                                 <span class="group-check-btn" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span>
                                 <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
                             </div>
                         </div>
-                        <div class="drug-group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">
+                        <div class="group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">
                             ${drugs.map(d => `
-                                <label class="flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer hover:bg-slate-800/50 p-1 rounded">
+                                <label class="custom-checkbox">
                                     <input type="checkbox" value="${d}" class="drug-check accent-cyan-500" checked onchange="updateTableVisibility()">
                                     <span>${d}</span>
                                 </label>
@@ -336,10 +306,17 @@
         }
         
         function toggleGroupCheck(btn, checked) {
-            const body = btn.closest('.drug-group-header').nextElementSibling;
+            const body = btn.closest('.group-header').nextElementSibling;
             const checkboxes = body.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(cb => cb.checked = checked);
             updateTableVisibility();
+        }
+        
+        function toggleAllDrugs() {
+             const allChecks = document.querySelectorAll('.drug-check');
+             const allChecked = Array.from(allChecks).every(c => c.checked);
+             allChecks.forEach(c => c.checked = !allChecked);
+             updateTableVisibility();
         }
 
         async function loadOptions() {
@@ -350,7 +327,7 @@
                 if (json.status === 'success') {
                     cachedData = json.data;
                     initSpecimenGrid(json.data.specimens);
-                    initOrganismDropdown(json.data.organisms);
+                    initOrganismFilter(json.data.organisms);
                     initQuarterRadio(json.data.quarters);
                     document.getElementById('db-status').innerText = 'Database Ready';
                     document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 h-fit';
@@ -392,38 +369,64 @@
             });
         }
 
-        function initOrganismDropdown(orgData) {
-            let html = '<option value="">-- แสดงทั้งหมด (All) --</option>';
-            for (const [type, groups] of Object.entries(orgData)) {
-                html += `<optgroup label="${type}">`;
-                for (const [groupName, list] of Object.entries(groups)) {
-                    html += `<optgroup label="&nbsp;&nbsp;${groupName}">`; // Nested effect
-                    list.forEach(org => {
-                        html += `<option value="${org.base}">&nbsp;&nbsp;&nbsp;&nbsp;${org.base}</option>`;
-                    });
-                    html += `</optgroup>`;
+        // --- ORGANISM FILTER (Checkbox Accordion) ---
+        function initOrganismFilter(orgData) {
+            const container = document.getElementById('organism-filter-container');
+            container.innerHTML = '';
+
+            // Group by Gram Positive / Negative / Others first
+            // Note: Data is structured Gram -> Group -> List
+            for (const [gram, groups] of Object.entries(orgData)) {
+                // Gram Section
+                const gramHtml = document.createElement('div');
+                gramHtml.className = 'mb-2';
+                gramHtml.innerHTML = `<div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
+                
+                for (const [groupName, organisms] of Object.entries(groups)) {
+                    const groupId = `grp-${groupName.replace(/\s+/g, '-')}`;
+                    const html = `
+                    <div class="mb-1">
+                        <div class="group-header" onclick="toggleGroup(this)">
+                            <span class="text-xs font-semibold">${groupName}</span>
+                            <div class="flex gap-2">
+                                <span class="group-check-btn" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
+                            </div>
+                        </div>
+                        <div class="group-body">
+                            ${organisms.map(org => `
+                                <label class="custom-checkbox w-full">
+                                    <input type="radio" name="selected_org" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()">
+                                    <span>${org}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                    gramHtml.insertAdjacentHTML('beforeend', html);
                 }
-                html += `</optgroup>`;
+                container.appendChild(gramHtml);
             }
-            document.getElementById('sel-organism').innerHTML = html;
+            
+            container.innerHTML = `<div class="p-1 mb-1"><button onclick="resetOrgSelection()" class="text-[10px] text-cyan-400 hover:underline w-full text-left">Select All Organisms (Clear Selection)</button></div>` + container.innerHTML;
+            lucide.createIcons();
+        }
+        
+        function resetOrgSelection() {
+            const radios = document.querySelectorAll('input[name="selected_org"]');
+            radios.forEach(r => r.checked = false);
+            updateTableVisibility();
         }
 
         function initQuarterRadio(list) {
             const container = document.getElementById('quarter-radios');
-            const options = [];
-            if(list.length > 0) options.push({val: list[0], label: "ไตรมาสล่าสุด"});
-            if(list.length >= 4) options.push({val: "4 ไตรมาสล่าสุด", label: "4 ไตรมาสล่าสุด"});
-            options.push({val: "ข้อมูลทั้งหมด", label: "ข้อมูลทั้งหมด (ตั้งแต่ 2021)"});
-
-            container.innerHTML = options.map((opt, idx) => `
+            container.innerHTML = list.map((opt, idx) => `
                 <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-800 cursor-pointer">
-                    <input type="radio" name="quarter" value="${opt.val}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-4 h-4">
+                    <input type="radio" name="quarter" value="${opt.value}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-4 h-4">
                     <span class="text-xs text-slate-300">${opt.label}</span>
                 </label>
             `).join('');
         }
 
-        // --- FETCH TABLE ---
         async function fetchTableData() {
             const tbody = document.getElementById('table-body');
             const loader = document.getElementById('search-loading');
@@ -431,7 +434,9 @@
             loader.classList.remove('hidden');
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
-            const orgBase = document.getElementById('sel-organism').value;
+            const selectedOrgRadio = document.querySelector('input[name="selected_org"]:checked');
+            const orgBase = selectedOrgRadio ? selectedOrgRadio.value : "";
+            
             const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
             const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
             
@@ -440,8 +445,6 @@
 
             let namesToSend = [];
             if (orgBase) {
-                // Fetch logic should handle base name matching on backend for efficiency or send exact matches
-                // Simplified: Send base name, let backend startsWith
                 namesToSend = [orgBase.trim()];
             }
 
@@ -544,16 +547,17 @@
                     if(obj.n < 30 && v !== '-' && v !== 'R*') alertIcon = `<i data-lucide="alert-circle" class="w-3 h-3 alert-icon" title="Low data (n<30)"></i>`;
 
                     if (obj.isR) {
-                        cellClass = 'cell-disabled text-xs'; 
+                        cellClass = 'cell-disabled text-xs bg-slate-800 opacity-30 text-transparent'; 
                         display = 'R*';
                     } else if (v !== '-') {
                         const c = (num < 50) ? 'bg-sens-low' : (num >= 76 ? 'bg-sens-high' : 'bg-sens-med');
                         cellClass = `${c} hover:opacity-80`;
                         clickAction = `onclick="showTrend('${row.name}', '${d}')"`;
+                        // Format: 74% (57)
                         display = `
                             <div class="flex items-center justify-center gap-1">
                                 <span class="text-base font-bold">${v}%</span>
-                                <span class="n-badge">(n=${obj.n})${alertIcon}</span>
+                                <span class="n-badge">(${obj.n})${alertIcon}</span>
                             </div>`;
                     }
                     
@@ -571,11 +575,8 @@
         async function showTrend(organism, drug) {
             const modal = document.getElementById('trend-modal');
             const loading = document.getElementById('trend-loading');
-            
             currentChartContext = { organism, drug }; 
-            
             document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
-            document.getElementById('chart-ai-box').classList.add('hidden');
             modal.style.display = 'flex';
             loading.classList.remove('hidden');
 
@@ -655,32 +656,6 @@
             });
         }
 
-        async function askAIChart() {
-            const aiBox = document.getElementById('chart-ai-box');
-            const aiText = document.getElementById('chart-ai-text');
-            aiBox.classList.remove('hidden');
-            aiText.innerHTML = '<span class="animate-pulse">🤖 กำลังวิเคราะห์กราฟ...</span>';
-
-            const params = new URLSearchParams({
-                action: 'analyze_chart',
-                organism: currentChartContext.organism,
-                drug: currentChartContext.drug,
-                trendData: JSON.stringify(currentChartContext.data)
-            });
-
-            try {
-                const res = await fetch(`${GAS_URL}?${params.toString()}`);
-                const json = await res.json();
-                if (json.status === 'success') {
-                    aiText.innerHTML = json.answer.replace(/\n/g, '<br>');
-                } else {
-                    aiText.innerText = "Error analyzing chart.";
-                }
-            } catch (e) {
-                aiText.innerText = "Connection failed.";
-            }
-        }
-
         // --- CHATBOT ---
         function openChatModal() { document.getElementById('chat-modal').style.display = 'flex'; }
         function closeChatModal() { document.getElementById('chat-modal').style.display = 'none'; }
@@ -690,19 +665,20 @@
             const container = document.getElementById('chat-container');
             const question = input.value.trim();
             const spec = Array.from(selectedSpecimens)[0];
-            const org = document.getElementById('sel-organism').value;
+            const selectedOrgRadio = document.querySelector('input[name="selected_org"]:checked');
+            const org = selectedOrgRadio ? selectedOrgRadio.value : "";
             const quarter = document.querySelector('input[name="quarter"]:checked').value;
             const origin = document.getElementById('chat-origin').value;
             const severity = document.getElementById('chat-sepsis').checked;
 
             if (!question) return;
 
-            container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-slate-700"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover"></div><div class="chat-bubble chat-user">${question}</div></div>`;
+            container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-slate-700"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-user">${question}</div></div>`;
             input.value = '';
             container.scrollTop = container.scrollHeight;
 
             const loadingId = 'loading-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover rounded-full"></div><div class="chat-bubble chat-ai">กำลังประมวลผล...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain rounded-full"></div><div class="chat-bubble chat-ai">กำลังประมวลผล...</div></div>`;
             container.scrollTop = container.scrollHeight;
 
             const params = new URLSearchParams({
@@ -725,7 +701,7 @@
                     const cleanText = json.answer.replace(/\*\*/g, '');
                     container.innerHTML += `
                         <div class="flex gap-3">
-                            <div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover rounded-full"></div>
+                            <div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain rounded-full"></div>
                             <div class="chat-bubble chat-ai">${cleanText.replace(/\n/g, '<br>')}</div>
                         </div>`;
                 } else {
