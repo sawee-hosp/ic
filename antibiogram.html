@@ -21,19 +21,28 @@
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
-        select option { background-color: #1e293b; color: #e2e8f0; padding: 8px; }
+        select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
         
-        /* Specimen Scroll Fix */
+        /* Specimen Scroll Fix (3 Lines Max approx 120px) */
         .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 4px; max-height: 120px; overflow-y: auto; align-content: flex-start; }
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
         .specimen-btn.active { background: linear-gradient(90deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.1); }
         
+        /* Drug Group */
+        .drug-group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .drug-group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+        .drug-group-body { display: none; padding-left: 8px; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .group-check-btn { font-size: 0.65rem; color: #34d399; margin-left: auto; margin-right: 5px; cursor: pointer; text-decoration: underline; }
+
         .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
-        .table-normal td { padding: 10px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; }
+        .table-normal td { padding: 10px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; }
         .table-normal td:hover { background: rgba(255,255,255,0.1); }
-        .cell-disabled { cursor: not-allowed; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent; }
-        .n-badge { font-size: 0.65rem; background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 4px; margin-left: 4px; opacity: 0.8; vertical-align: middle; }
+        .cell-disabled { cursor: not-allowed !important; opacity: 0.4; background: rgba(0,0,0,0.3) !important; color: transparent; pointer-events: none; }
+        
+        /* N Badge */
+        .n-badge { font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 6px; margin-left: 6px; color: #cbd5e1; font-weight: normal; border: 1px solid rgba(255,255,255,0.1); }
+        .alert-icon { color: #fbbf24; margin-left: 2px; vertical-align: middle; }
 
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
@@ -41,17 +50,17 @@
         .bg-na { color: #64748b; }
 
         /* FAB */
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 64px; height: 64px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.4); display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: transform 0.2s; z-index: 50; border: 2px solid #34d399; }
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s; z-index: 50; border: 2px solid #34d399; overflow: hidden; background: #0f172a; }
+        .fab-btn img { width: 100%; height: 100%; object-fit: cover; }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-content { background: #1e293b; width: 90%; max-width: 700px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+        .modal-content { background: #1e293b; width: 90%; max-width: 650px; border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
         
         .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; }
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
         
-        /* OptGroup Styling */
         optgroup { font-weight: bold; background: #0f172a; color: #94a3b8; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
@@ -64,8 +73,7 @@
     <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
             <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 relative">
-                <i data-lucide="bot" class="w-8 h-8 text-cyan-400"></i>
-                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <i data-lucide="activity" class="w-8 h-8 text-cyan-400"></i>
             </div>
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400">SAWEE SMART IC</h1>
@@ -110,7 +118,7 @@
                     <!-- 3. Organism (Grouped) -->
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block font-medium">Organism</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- Loading --</option></select>
+                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- แสดงทั้งหมด (All) --</option></select>
                         <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -170,8 +178,9 @@
     </main>
 
     <!-- FAB: AI Chat -->
-    <div class="fab-btn" onclick="openChatModal()" title="Ask IC SW-1">
-        🍍
+    <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
+        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
+        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-[#0f172a] rounded-full animate-ping"></div>
     </div>
 
     <!-- Chat Modal -->
@@ -179,10 +188,12 @@
         <div class="modal-content">
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="ai-avatar text-xl">🍍</div>
+                    <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-emerald-500/50">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover">
+                    </div>
                     <div>
-                        <h3 class="font-bold text-emerald-400">IC SW-1 (สวีวัน)</h3>
-                        <p class="text-[10px] text-slate-400">AI Consultant (Paranoid Mode)</p>
+                        <h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3>
+                        <p class="text-[10px] text-slate-400">เภสัชกรสับปะรด (AI System)</p>
                     </div>
                 </div>
                 <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -202,7 +213,9 @@
 
             <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
                 <div class="flex gap-3">
-                    <div class="ai-avatar min-w-[40px] flex-shrink-0">🍍</div>
+                    <div class="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover">
+                    </div>
                     <div class="chat-bubble chat-ai">
                         สวัสดีค่ะ... สวีวันพร้อมปฏิบัติการ... <br>
                         ข้อมูลล่าสุดจากหน้าจอ: <span id="ai-context-label" class="text-emerald-400 font-bold">...</span><br>
@@ -225,8 +238,8 @@
                 <div>
                     <h3 class="font-bold text-cyan-300" id="trend-title">Susceptibility Trend</h3>
                     <div class="flex items-center gap-2 mt-1">
-                        <span id="trend-subtitle" class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Loading...</span>
                         <span id="trend-badge" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-700"></span>
+                        <span id="trend-subtitle" class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded"></span>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -237,7 +250,6 @@
                 </div>
             </div>
             
-            <!-- AI Analysis Box (Hidden initially) -->
             <div id="chart-ai-box" class="hidden bg-emerald-900/20 p-3 mx-6 mt-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
                 <div id="chart-ai-text">Analyzing...</div>
                 <button onclick="this.parentElement.classList.add('hidden')" class="absolute top-1 right-1 text-emerald-500 hover:text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
@@ -258,9 +270,8 @@
         let cachedData = null;
         let selectedSpecimens = new Set();
         let trendChartInstance = null;
-        let currentChartContext = {}; // Stores info for AI
+        let currentChartContext = {}; 
 
-        // Drug Groups
         const DRUG_GROUPS = {
             "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla", "Ampicillin/Sulb", "Piperacillin", "Piperacillin/Ta"],
             "Cephalosporins": ["Cefazolin", "Cefotaxime", "Ceftazidime", "Ceftriaxone", "Cefepime"],
@@ -270,7 +281,6 @@
             "Others": ["Clindamycin", "Chloramphenicol", "Trimetho/Sulfa.", "Erythromycin", "Vancomycin", "Tetracycline", "Fosfomycin", "Nitrofurantoin", "Linezolid", "Colistin"]
         };
 
-        // --- INIT ---
         window.onload = async () => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
             initDrugSelector();
@@ -288,7 +298,10 @@
                     <div>
                         <div class="drug-group-header flex justify-between items-center text-slate-400 hover:text-white cursor-pointer p-1.5 rounded hover:bg-slate-800" onclick="toggleGroup(this)">
                             <span class="text-xs font-semibold">${group}</span>
-                            <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
+                            <div class="flex gap-2">
+                                <span class="group-check-btn" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span>
+                                <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
+                            </div>
                         </div>
                         <div class="drug-group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">
                             ${drugs.map(d => `
@@ -308,10 +321,9 @@
             const body = header.nextElementSibling;
             const icon = header.querySelector('i');
             const isHidden = body.classList.contains('hidden');
-            
             if (isHidden) {
                 body.classList.remove('hidden');
-                body.style.display = 'grid'; // Force grid
+                body.style.display = 'grid'; 
                 icon.style.transform = 'rotate(180deg)';
                 header.classList.add('text-cyan-400');
             } else {
@@ -320,6 +332,13 @@
                 icon.style.transform = 'rotate(0deg)';
                 header.classList.remove('text-cyan-400');
             }
+        }
+        
+        function toggleGroupCheck(btn, checked) {
+            const body = btn.closest('.drug-group-header').nextElementSibling;
+            const checkboxes = body.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = checked);
+            updateTableVisibility();
         }
 
         async function loadOptions() {
@@ -373,14 +392,12 @@
         }
 
         function initOrganismDropdown(orgData) {
-            // Grouped Options
             let html = '<option value="">-- แสดงทั้งหมด (All) --</option>';
             for (const [type, groups] of Object.entries(orgData)) {
                 html += `<optgroup label="${type}">`;
                 for (const [groupName, list] of Object.entries(groups)) {
-                    // html += `<option disabled class="bg-slate-800 text-slate-500">-- ${groupName} --</option>`;
                     list.forEach(org => {
-                        html += `<option value="${org}">${org}</option>`;
+                        html += `<option value="${org.base}">${org.base}</option>`; // Use base name
                     });
                 }
                 html += `</optgroup>`;
@@ -391,10 +408,9 @@
         function initQuarterRadio(list) {
             const container = document.getElementById('quarter-radios');
             const options = [];
-            // Assuming sorted descending
             if(list.length > 0) options.push({val: list[0], label: "ไตรมาสล่าสุด"});
             if(list.length >= 4) options.push({val: "4 ไตรมาสล่าสุด", label: "4 ไตรมาสล่าสุด"});
-            options.push({val: "ข้อมูลทั้งหมด", label: "ข้อมูลทั้งหมด"});
+            options.push({val: "ข้อมูลทั้งหมด", label: "ข้อมูลทั้งหมด (ตั้งแต่ 2021)"});
 
             container.innerHTML = options.map((opt, idx) => `
                 <label class="flex items-center gap-2 p-2 rounded hover:bg-slate-800 cursor-pointer">
@@ -416,23 +432,14 @@
             const orgMode = document.querySelector('input[name="orgMode"]:checked').value;
             const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
             
-            // AI Context
             const specText = selectedSpecimens.size === cachedData.specimens.length ? "All" : Array.from(selectedSpecimens).join(', ');
             document.getElementById('ai-context-label').innerText = `Specimen: ${specText} | Org: ${orgBase||"All"}`;
 
             let namesToSend = [];
-            // If specific org selected, filter related strains based on mode
             if (orgBase) {
-               // We need to find all related names from cached raw data (flattened)
-               const allOrgs = [];
-               for(const t in cachedData.organisms) 
-                 for(const g in cachedData.organisms[t]) 
-                   allOrgs.push(...cachedData.organisms[t][g]);
-
-               namesToSend = allOrgs.filter(f => {
-                    const isBase = f.split(' (')[0].trim() === orgBase.split(' (')[0].trim();
-                    return isBase && (orgMode === 'total' || (orgMode === 'resistant' && f.includes('(')));
-               });
+                // Logic to find all variations from cached data if needed
+                // For now, send base name, backend handles matching
+                namesToSend = [orgBase]; // Backend will do startsWith
             }
 
             const allSpecimensSelected = selectedSpecimens.size === cachedData.specimens.length;
@@ -529,7 +536,10 @@
                     let cellClass = 'bg-na text-slate-600';
                     let clickAction = '';
                     let display = v;
+                    let alertIcon = '';
                     
+                    if(obj.n < 30 && v !== '-') alertIcon = `<i data-lucide="alert-circle" class="w-3 h-3 alert-icon" title="Low data (n<30)"></i>`;
+
                     if (obj.isR) {
                         cellClass = 'cell-disabled text-xs'; 
                         display = 'R*';
@@ -537,7 +547,11 @@
                         const c = (num < 50) ? 'bg-sens-low' : (num >= 76 ? 'bg-sens-high' : 'bg-sens-med');
                         cellClass = `${c} hover:opacity-80`;
                         clickAction = `onclick="showTrend('${row.name}', '${d}')"`;
-                        display = `${v}% <span class="n-badge">(${obj.n})</span>`;
+                        display = `
+                            <div class="flex flex-col leading-tight">
+                                <span>${v}%</span>
+                                <span class="n-badge">(n=${obj.n})${alertIcon}</span>
+                            </div>`;
                     }
                     
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
@@ -545,6 +559,7 @@
                 tr.innerHTML = html;
                 tbody.appendChild(tr);
             });
+            lucide.createIcons();
         }
         
         function updateTableVisibility() { fetchTableData(); }
@@ -554,10 +569,10 @@
             const modal = document.getElementById('trend-modal');
             const loading = document.getElementById('trend-loading');
             
-            currentChartContext = { organism, drug }; // Save for AI
+            currentChartContext = { organism, drug }; 
             
             document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
-            document.getElementById('chart-ai-box').classList.add('hidden'); // Hide old AI msg
+            document.getElementById('chart-ai-box').classList.add('hidden');
             modal.style.display = 'flex';
             loading.classList.remove('hidden');
 
@@ -574,7 +589,7 @@
                 const json = await res.json();
                 loading.classList.add('hidden');
                 if (json.status === 'success') {
-                    currentChartContext.data = json.data; // Save data for AI
+                    currentChartContext.data = json.data;
                     renderTrendChart(json.data);
                 } else {
                     alert('No trend data');
@@ -592,17 +607,15 @@
             const badgeColor = weightedAvg >= 76 ? 'bg-emerald-500' : (weightedAvg < 50 ? 'bg-red-500' : 'bg-yellow-500');
             document.getElementById('trend-badge').className = `text-xs font-bold px-2 py-0.5 rounded text-white ${badgeColor}`;
             document.getElementById('trend-badge').innerText = `Avg: ${weightedAvg.toFixed(0)}%`;
-            document.getElementById('trend-subtitle').innerText = `Total N: ${totalN} (All Periods)`;
+            document.getElementById('trend-subtitle').innerText = `Total Specimen: ${totalN}`;
 
             const labels = data.map(d => d.quarter);
             const values = data.map(d => d.percent);
 
-            // Gradient Fill
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
             gradient.addColorStop(0, 'rgba(34, 211, 238, 0.4)');
             gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
 
-            // Color Segments
             const segmentColor = (ctx) => {
                 const val = ctx.p0.parsed.y;
                 if (val < 50) return '#f87171'; 
@@ -681,12 +694,12 @@
 
             if (!question) return;
 
-            container.innerHTML += `<div class="flex gap-3"><div class="chat-bubble chat-user">${question}</div></div>`;
+            container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-slate-700"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover"></div><div class="chat-bubble chat-user">${question}</div></div>`;
             input.value = '';
             container.scrollTop = container.scrollHeight;
 
             const loadingId = 'loading-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px]"><span class="text-xl animate-spin">🍍</span></div><div class="chat-bubble chat-ai">กำลังประมวลผล...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover rounded-full"></div><div class="chat-bubble chat-ai">กำลังประมวลผล...</div></div>`;
             container.scrollTop = container.scrollHeight;
 
             const params = new URLSearchParams({
@@ -709,7 +722,7 @@
                     const cleanText = json.answer.replace(/\*\*/g, '');
                     container.innerHTML += `
                         <div class="flex gap-3">
-                            <div class="ai-avatar min-w-[40px]"><span class="text-xl">🍍</span></div>
+                            <div class="ai-avatar min-w-[40px] flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-cover rounded-full"></div>
                             <div class="chat-bubble chat-ai">${cleanText.replace(/\n/g, '<br>')}</div>
                         </div>`;
                 } else {
