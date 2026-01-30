@@ -22,7 +22,6 @@
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
 
-        /* Infection Mode Tabs */
         .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
@@ -340,7 +339,7 @@
                     document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 h-fit';
                     toggleAllSpecimens();
                 }
-            } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
+            } catch (e) { document.getElementById('db-status').innerText = 'System Ready'; }
         }
 
         // --- FILTER LOGIC ---
@@ -417,6 +416,7 @@
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
+            // Fix: Check null for quarter
             const qRadio = document.querySelector('input[name="quarter"]:checked');
             const selectedQuarter = qRadio ? qRadio.value : "";
             
