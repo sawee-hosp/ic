@@ -29,12 +29,14 @@
         
         /* Specimen Buttons */
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
-        .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; }
+        .specimen-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.3); }
+        .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
         
         .neon-divider { height: 1px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); margin: 12px 0; opacity: 0.7; box-shadow: 0 0 5px #22d3ee; }
 
         /* Accordion */
         .group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.4); margin-bottom: 2px; }
+        .group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
         .group-header.active { color: #22d3ee; border-left: 2px solid #22d3ee; }
         .group-body { display: none; padding: 4px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
         .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; width: 100%; }
@@ -51,8 +53,9 @@
         /* Cell Styles */
         .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        .n-badge { font-size: 0.75rem; font-weight: 300; font-style: italic; color: #cbd5e1; margin-left: 2px; }
-        .alert-icon { color: #ef4444; width: 14px; height: 14px; }
+        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 300; font-style: italic; display: inline-flex; align-items: center; gap: 2px; }
+        .alert-icon { color: #ef4444; width: 12px; height: 12px; }
+        
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
         
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
@@ -60,7 +63,7 @@
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
         
-        /* Organism Colors */
+        /* Organism Text Colors */
         .gram-neg { color: #22d3ee; }
         .gram-pos { color: #f87171; }
         .fungi { color: #fbbf24; }
@@ -69,7 +72,7 @@
         .ai-mode-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.5); color: #fb923c; font-size: 0.65rem; padding: 2px 6px; rounded: 4px; opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20; cursor: pointer; }
         tr:hover .ai-mode-btn { opacity: 1; }
 
-        /* FAB - Transparent PNG */
+        /* FAB */
         .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 80px; height: 80px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
         .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
@@ -94,6 +97,7 @@
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col">
@@ -146,6 +150,7 @@
                             <button onclick="document.querySelectorAll('.org-check').forEach(c=>c.checked=false);updateTableVisibility();" class="text-[10px] text-slate-500 hover:text-white px-1">Clear</button>
                         </div>
                     </div>
+                    
                     <div class="flex gap-2 mb-2 flex-shrink-0">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -196,6 +201,7 @@
                         <span id="result-count" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">0 Isolates</span>
                     </div>
                 </div>
+                
                 <div class="overflow-auto flex-grow custom-scrollbar bg-slate-900/30 relative table-container">
                     <table id="resultTable" class="w-full text-center border-collapse table-normal">
                         <thead><tr id="table-header"></tr></thead>
@@ -213,15 +219,15 @@
 
     <!-- FAB -->
     <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
-        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" alt="IC SW-1">
+        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
     </div>
 
-    <!-- Chat Modal -->
+    <!-- Chat Modal (Scenario Analyzer) -->
     <div id="chat-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain">
+                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain">
                     <div><h3 class="font-bold text-emerald-400">ถาม IC SW-1</h3><p class="text-[10px] text-slate-400">Scenario Analyzer</p></div>
                 </div>
                 <button onclick="closeChatModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -237,7 +243,7 @@
                 <datalist id="org-list"></datalist><datalist id="drug-list"></datalist>
             </div>
             <div id="chat-container" class="flex-grow p-4 overflow-y-auto bg-slate-900/80 custom-scrollbar">
-                 <div class="flex gap-3"><div class="w-8 h-8 rounded-full bg-slate-700 p-1 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อและยา แล้วกดวิเคราะห์ได้เลยค่ะ</div></div>
+                 <div class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">สวัสดีค่ะ... ลองพิมพ์ชื่อเชื้อและยา แล้วกดวิเคราะห์ได้เลยค่ะ</div></div>
             </div>
         </div>
     </div>
@@ -252,7 +258,7 @@
             <div id="org-modal-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
             <div class="p-4 bg-slate-800 border-t border-white/10">
                 <div class="flex items-start gap-3">
-                    <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
+                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
                     <div id="org-ai-advice" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20"><span class="animate-pulse">กำลังปรึกษา IC SW-1...</span></div>
                 </div>
             </div>
@@ -263,15 +269,9 @@
     <div id="trend-modal" class="modal-overlay">
         <div class="modal-content bg-slate-900" style="max-width: 700px;">
             <div class="p-4 border-b border-white/10 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
-                    <div class="flex gap-2 mt-1">
-                         <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">Avg: <span id="trend-avg" class="font-bold text-white"></span></span>
-                         <span class="text-xs bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">Total N: <span id="trend-n" class="font-bold text-white"></span></span>
-                    </div>
-                </div>
+                <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
                 <div class="flex gap-2">
-                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-4 h-4 object-contain">วิเคราะห์กราฟ</button>
+                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-4 h-4 object-contain">วิเคราะห์กราฟ</button>
                     <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
             </div>
@@ -293,6 +293,7 @@
             await loadOptions();
         };
 
+        // --- Init ---
         function initDrugSelector() {
             const container = document.getElementById('drug-groups-container');
             container.innerHTML = '';
@@ -331,6 +332,7 @@
             } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
         }
 
+        // --- FILTER LOGIC ---
         let infectionMode = 'syndrome';
         function setInfectionMode(mode, el) {
             infectionMode = mode;
@@ -396,16 +398,25 @@
             wrapper.classList.toggle('is-fullscreen');
         }
 
+        // --- TABLE ---
         async function fetchTableData() {
             const loader = document.getElementById('search-loading');
             loader.classList.remove('hidden');
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
+            // Fix: Check null for quarter
             const qRadio = document.querySelector('input[name="quarter"]:checked');
             const selectedQuarter = qRadio ? qRadio.value : "";
+            
             const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
-            const params = new URLSearchParams({ action: 'search', specimens: specimensParam, years: selectedQuarter, names: selectedOrgChecks.join(',') });
+
+            const params = new URLSearchParams({
+                action: 'search',
+                specimens: specimensParam,
+                years: selectedQuarter,
+                names: selectedOrgChecks.join(',')
+            });
 
             try {
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
@@ -462,8 +473,9 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
                 // Organism Name with AI Button
-                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
-                
+                let orgColor = 'text-cyan-200';
+                // Need grammar info in row or lookup. Using cached structure.
+                let html = `<td class="text-left pl-4 font-medium ${orgColor} sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
                 activeDrugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct; const num = parseFloat(v);
@@ -475,7 +487,8 @@
                         cellClass = `${c} hover:opacity-80`;
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
-                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge">${obj.n}${alertIcon}</span></div>`;
+                        // Format: 74% (57) italic badge
+                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge italic font-light">${obj.n}${alertIcon}</span></div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
                 });
@@ -505,7 +518,7 @@
             const container = document.getElementById('chat-container');
             container.innerHTML += `<div class="flex gap-3"><div class="chat-bubble chat-user">Analyze ${org} vs ${drug} in ${spec}</div></div>`;
             const loadingId = 'load-' + Date.now();
-            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
+            container.innerHTML += `<div id="${loadingId}" class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">Thinking...</div></div>`;
             
             const params = new URLSearchParams({ action: 'get_scenario_analysis', organism: org, drug: drug, specimen: spec });
             try {
@@ -513,7 +526,7 @@
                 const json = await res.json();
                 document.getElementById(loadingId).remove();
                 if(json.status === 'success') {
-                    container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 p-1"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
+                    container.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 flex-shrink-0"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" class="w-full h-full object-contain"></div><div class="chat-bubble chat-ai">${json.answer.replace(/\n/g, '<br>')}</div></div>`;
                 } else { container.innerHTML += `<div class="text-red-400">Error</div>`; }
             } catch(e) { document.getElementById(loadingId).remove(); }
         }
@@ -602,7 +615,8 @@
         }
 
         function calculateRegression(data) {
-            const n = data.length; if (n < 2) return null;
+            const n = data.length;
+            if (n < 2) return null;
             let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
             data.forEach((d, i) => { sumX += i; sumY += d.percent; sumXY += i * d.percent; sumXX += i * i; });
             const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
@@ -635,7 +649,8 @@
             }
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, color + '66'); gradient.addColorStop(1, color + '00');
+            gradient.addColorStop(0, color + '66'); 
+            gradient.addColorStop(1, color + '00');
 
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
@@ -646,7 +661,7 @@
                         { label: 'Forecast', data: forecastData, borderColor: '#94a3b8', borderDash: [5,5], borderWidth: 2, pointRadius: 4, fill: false }
                     ]
                 },
-                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } } }
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false } } }, plugins: { legend: { display: true, labels: { color: '#94a3b8' } } } }
             });
         }
         
