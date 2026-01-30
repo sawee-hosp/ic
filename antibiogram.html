@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sawee Antibiogram</title>
+    <!-- Favicon -->
     <link rel="icon" href="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,11 +20,11 @@
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; }
-        select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
-
+        
         .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
+        /* Specimen Buttons */
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
         
@@ -43,11 +44,8 @@
         .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
         .table-normal td:hover { background: rgba(255,255,255,0.08); }
         
-        .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        
-        /* Fixed Badge N */
-        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 300; font-style: italic; display: inline-flex; align-items: center; gap: 2px; }
+        /* New Badge Style: N number only */
+        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 300; font-style: italic; display: inline-flex; align-items: center; gap: 2px; }
         .alert-icon { color: #ef4444; width: 12px; height: 12px; }
         
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
@@ -56,11 +54,16 @@
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
+        
+        /* Gram Colors */
+        .gram-neg { color: #22d3ee; }
+        .gram-pos { color: #f87171; }
+        .gram-other { color: #34d399; }
 
         .ai-mode-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.5); color: #fb923c; font-size: 0.65rem; padding: 2px 6px; rounded: 4px; opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20; cursor: pointer; }
         tr:hover .ai-mode-btn { opacity: 1; }
 
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 80px; height: 80px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
         .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
 
@@ -71,7 +74,20 @@
         .chat-user { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #e0f2fe; margin-left: auto; border-top-right-radius: 2px; }
         .chat-ai { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #d1fae5; margin-right: auto; border-top-left-radius: 2px; }
         
+        /* Chart Bar in Modal */
+        .drug-card { background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #64748b; }
+        .drug-card.green { border-left-color: #10b981; }
+        .drug-card.yellow { border-left-color: #eab308; }
+        .drug-card.red { border-left-color: #ef4444; }
+        .prog-bg { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin: 8px 0; overflow: hidden; position: relative; }
+        .prog-fill { height: 100%; border-radius: 4px; }
+        .prog-fill.green { background: #10b981; }
+        .prog-fill.yellow { background: #eab308; }
+        .prog-fill.red { background: #ef4444; }
+        .prog-text { position: absolute; right: 4px; top: -1px; font-size: 0.6rem; color: #fff; text-shadow: 0 0 2px #000; }
+        
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="p-4 md:p-6 min-h-screen flex flex-col">
@@ -89,7 +105,6 @@
     </header>
 
     <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
-        <!-- Sidebar -->
         <aside class="lg:col-span-3 space-y-4">
             <div class="glass p-4 h-full flex flex-col max-h-[calc(100vh-100px)]">
                 <!-- 1. Infection Site -->
@@ -223,7 +238,7 @@
         </div>
     </div>
 
-    <!-- AI Mode Modal -->
+    <!-- AI Mode (Organism Analysis) Modal -->
     <div id="org-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
@@ -268,7 +283,6 @@
             await loadOptions();
         };
 
-        // --- Init ---
         function initDrugSelector() {
             const container = document.getElementById('drug-groups-container');
             container.innerHTML = '';
@@ -374,7 +388,6 @@
             wrapper.classList.toggle('is-fullscreen');
         }
 
-        // --- TABLE ---
         async function fetchTableData() {
             const loader = document.getElementById('search-loading');
             loader.classList.remove('hidden');
@@ -408,7 +421,7 @@
             const groups = {};
             rawData.forEach(row => {
                 const key = row.name; 
-                if (!groups[key]) groups[key] = { name: row.name, drugData: {} };
+                if (!groups[key]) groups[key] = { name: row.name, gram: row.gram, drugData: {} };
                 for (const [d, v] of Object.entries(row.drugResults)) {
                     if (!groups[key].drugData[d]) groups[key].drugData[d] = { s: 0, t: 0, isR: false };
                     const p = parseDrugValue(v);
@@ -419,7 +432,7 @@
             return Object.values(groups).map(g => {
                 const finalDrugs = {};
                 for (const [d, c] of Object.entries(g.drugData)) { finalDrugs[d] = { pct: formatDrugValue(c.s, c.t, c.isR), n: c.t, isR: c.isR }; }
-                return { name: g.name, drugResults: finalDrugs };
+                return { name: g.name, gram: g.gram, drugResults: finalDrugs };
             });
         }
         function parseDrugValue(val) {
@@ -442,15 +455,25 @@
             const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
             thead.innerHTML = `<th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>${activeDrugs.map(d => `<th class="min-w-[70px] text-center" title="${d}">${d.substring(0,4)}</th>`).join('')}`;
             
-            // Sort by Name
-            data.sort((a,b) => a.name.localeCompare(b.name));
+            // Sort: Gram then Name
+            const gramOrder = { 'Gram Negative': 1, 'Gram Positive': 2, 'Fungi': 3, 'Others': 4 };
+            data.sort((a,b) => {
+                const gA = gramOrder[a.gram] || 99;
+                const gB = gramOrder[b.gram] || 99;
+                if(gA !== gB) return gA - gB;
+                return a.name.localeCompare(b.name);
+            });
 
             data.forEach(row => {
                 const hasData = activeDrugs.some(d => row.drugResults[d] && row.drugResults[d].pct !== '-');
                 if (hideEmpty && !hasData) return;
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
-                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
+                
+                let gramColor = row.gram.includes('Negative') ? 'text-cyan-400' : (row.gram.includes('Positive') ? 'text-red-400' : 'text-emerald-400');
+                
+                let html = `<td class="text-left pl-4 font-medium ${gramColor} sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative group">${row.name}<button class="ai-mode-btn hidden group-hover:block" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
+                
                 activeDrugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct; const num = parseFloat(v);
@@ -462,7 +485,6 @@
                         cellClass = `${c} hover:opacity-80`;
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
-                        // Format: 74% 57 (Italic N)
                         display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge">${obj.n}</span>${alertIcon}</div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
@@ -519,6 +541,9 @@
 
             const rowData = currentTableData.find(r => r.name === orgName);
             if (!rowData) return;
+            
+            const quarter = document.querySelector('input[name="quarter"]:checked').value;
+            const specimen = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "All Specimens";
 
             const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
             const drugList = [];
@@ -538,16 +563,19 @@
                 if(item.name.includes('Meropenem') || item.name.includes('Piperacillin')) warnings += '<span class="text-[10px] text-yellow-300 border border-yellow-500/50 px-1 rounded ml-1">⚠ Consult</span>';
                 if(item.name.includes('Cefotaxime') || item.name.includes('Ciprofloxacin')) warnings += '<span class="text-[10px] text-blue-300 border border-blue-500/50 px-1 rounded ml-1">📝 DUE</span>';
                 if(item.n < 30) { colorClass = 'grey'; lightClass = 'Grey Light ⚪'; warnings += ' <span class="text-[10px] text-slate-400">Low Data</span>'; }
+                
+                // Context sentence
+                const contextStr = `ไว ${item.pct}% จาก ${item.n} ตัวอย่าง (${specimen}) ในช่วงเวลา ${quarter}`;
 
-                // Progress bar style (HTML/CSS Chart)
                 const html = `
                 <div class="drug-card ${colorClass}">
                     <div class="flex justify-between items-end mb-1">
                         <span class="font-bold text-sm text-white">${item.name} ${warnings}</span>
-                        <span class="text-xs font-bold">${item.pct}% (n=${item.n})</span>
+                        <span class="text-xs font-bold">${item.pct}%</span>
                     </div>
-                    <div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div>
-                    <div class="mt-2 text-xs text-slate-400 flex justify-between">
+                    <div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"><span class="prog-text">${item.pct}%</span></div></div>
+                    <div class="mt-1 text-[10px] text-slate-400 italic">${contextStr}</div>
+                    <div class="mt-2 text-xs text-slate-400 flex justify-between border-t border-white/5 pt-1">
                          <span>${lightClass}</span>
                          <span class="text-right max-w-[60%] truncate text-cyan-200">${hospDrug}</span>
                     </div>
@@ -556,8 +584,6 @@
             });
 
             // Call AI
-            const quarter = document.querySelector('input[name="quarter"]:checked').value;
-            const specimen = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
             const params = new URLSearchParams({ action: 'analyze_organism', organism: orgName, quarter: quarter, specimen: specimen });
             fetch(`${GAS_URL}?${params.toString()}`)
                 .then(r => r.json())
