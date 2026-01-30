@@ -14,7 +14,6 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
@@ -47,16 +46,27 @@
         .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
         .table-normal td:hover { background: rgba(255,255,255,0.08); }
         
+        /* Cell Content */
         .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 2px; }
-        .alert-icon { color: #fbbf24; width: 12px; height: 12px; }
+        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
+        .alert-icon { color: #ef4444; width: 12px; height: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; border: 1px solid #ef4444; padding: 1px; }
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
-
+        
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
+
+        /* AI Mode Button (Orange) */
+        .ai-mode-btn {
+            position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+            background: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.5); color: #fb923c;
+            font-size: 0.65rem; padding: 2px 6px; rounded: 4px;
+            opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20; cursor: pointer;
+        }
+        .ai-mode-btn:hover { background: rgba(249, 115, 22, 0.4); }
+        tr:hover .ai-mode-btn { opacity: 1; }
 
         /* FAB */
         .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
@@ -65,18 +75,6 @@
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-content { background: #1e293b; width: 95%; max-width: 800px; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-        
-        /* Analysis Card */
-        .drug-card { background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #64748b; }
-        .drug-card.green { border-left-color: #10b981; }
-        .drug-card.yellow { border-left-color: #eab308; }
-        .drug-card.red { border-left-color: #ef4444; }
-        
-        .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 6px 0; overflow: hidden; }
-        .prog-fill { height: 100%; border-radius: 3px; }
-        .prog-fill.green { background: #10b981; }
-        .prog-fill.yellow { background: #eab308; }
-        .prog-fill.red { background: #ef4444; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -112,7 +110,9 @@
                         </div>
                     </div>
                     <div class="flex justify-end"><button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline mb-1">ALL</button></div>
-                    <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[140px] overflow-y-auto custom-scrollbar content-start bg-slate-900/30 rounded-lg"></div>
+                    <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[140px] overflow-y-auto custom-scrollbar content-start bg-slate-900/30 rounded-lg">
+                        <div class="text-xs text-slate-500 italic p-2">Loading...</div>
+                    </div>
                 </div>
 
                 <div class="neon-divider"></div>
@@ -217,9 +217,6 @@
                 <button onclick="openOverviewAnalysis()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="bar-chart-2" class="w-5 h-5"></i> วิเคราะห์ภาพรวม
                 </button>
-                <button onclick="openSpecificAnalysis()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="microscope" class="w-5 h-5"></i> วิเคราะห์เชื้อที่เลือก
-                </button>
             </div>
             <button onclick="closeModal('analysis-menu-modal')" class="mt-4 text-slate-500 text-sm hover:text-white">ยกเลิก</button>
         </div>
@@ -310,9 +307,12 @@
             }
             lucide.createIcons();
         }
+        
+        // FIXED TOGGLE: Check if element exists before style access
         function toggleGroup(header) { 
             const body = header.nextElementSibling; 
-            const icon = header.querySelector('svg'); // FIXED Selector
+            const icon = header.querySelector('svg'); // Lucide
+            if (!body) return; // Safety
             const isHidden = getComputedStyle(body).display === 'none'; 
             if(isHidden){ body.classList.remove('hidden'); body.style.display='grid'; if(icon) icon.style.transform='rotate(180deg)'; header.classList.add('text-cyan-400'); }
             else{ body.classList.add('hidden'); body.style.display='none'; if(icon) icon.style.transform='rotate(0deg)'; header.classList.remove('text-cyan-400'); } 
@@ -385,14 +385,13 @@
             for (const [gram, groups] of Object.entries(orgData)) {
                 let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
                 for (const [groupName, organisms] of Object.entries(groups)) {
-                    html += `<div class="mb-1"><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold">${groupName}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body">${organisms.map(org => `<label class="custom-checkbox w-full"><input type="checkbox" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()"><span>${org}</span></label>`).join('')}</div></div>`;
+                    html += `<div class="mb-1"><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold">${groupName}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body">${organisms.map(org => `<label class="custom-checkbox w-full"><input type="radio" name="selected_org" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()"><span>${org}</span></label>`).join('')}</div></div>`;
                 }
                 html += `</div>`;
                 container.innerHTML += html;
             }
             lucide.createIcons();
         }
-        function resetOrgSelection() { document.querySelectorAll('.org-check').forEach(r => r.checked = false); updateTableVisibility(); }
         function toggleAllOrganisms() {
             const checks = document.querySelectorAll('.org-check');
             const allChecked = Array.from(checks).every(c => c.checked);
@@ -486,6 +485,7 @@
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
+                // AI Mode Button (Orange)
                 let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative">${row.name}<button class="ai-mode-btn" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
                 
                 activeDrugs.forEach(d => {
@@ -507,6 +507,7 @@
                         cellClass = `${c} hover:opacity-80`;
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
+                        // Format: 74% (57) with Red I icon
                         display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge">${obj.n}</span>${alertIcon}</div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
@@ -555,7 +556,6 @@
         }
 
         function openOrganismAnalysis(orgName) {
-            // Re-purposed Specific Analysis
             const rowData = currentTableData.find(r => r.name === orgName);
             if (!rowData) return;
             
@@ -574,7 +574,6 @@
             drugList.sort((a,b) => b.pct - a.pct);
 
             let html = `<h2 class="text-xl font-bold text-cyan-300 mb-4">${orgName} Analysis</h2>`;
-            let topDrugs = [], badDrugs = [];
             let summaryTextForAI = "";
 
             drugList.forEach(item => {
@@ -586,7 +585,18 @@
                 if(item.name.includes('Cefotaxime') || item.name.includes('Ciprofloxacin')) warnings += '<span class="text-[10px] text-blue-300 border border-blue-500/50 px-1 rounded ml-1">📝 DUE</span>';
                 if(item.n < 30) { colorClass = 'grey'; lightClass = 'Grey Light ⚪'; warnings += ' <span class="text-[10px] text-slate-400">Low Data</span>'; }
 
-                html += `<div class="drug-card ${colorClass}"><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-white">${item.name} ${warnings}</span><span class="text-xs font-bold">${item.pct}% (n=${item.n})</span></div><div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div><div class="mt-2 text-xs text-slate-400 flex justify-between"><span>${lightClass}</span><span class="text-right max-w-[60%] truncate text-cyan-200">${hospDrug}</span></div></div>`;
+                html += `
+                <div class="drug-card ${colorClass}">
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="font-bold text-sm text-white">${item.name} ${warnings}</span>
+                        <span class="text-xs font-bold">${item.pct}% (n=${item.n})</span>
+                    </div>
+                    <div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div>
+                    <div class="mt-2 text-xs text-slate-400 flex justify-between">
+                         <span>${lightClass}</span>
+                         <span class="text-right max-w-[60%] truncate text-cyan-200">${hospDrug}</span>
+                    </div>
+                </div>`;
                 
                 summaryTextForAI += `${item.name}: ${item.pct}% (n=${item.n}). Available: ${hospDrug}. \n`;
             });
@@ -601,7 +611,7 @@
             try {
                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
                 const json = await res.json();
-                if(json.status === 'success') adviceBox.innerHTML = `<b>IC SW-1 Says:</b><br>${json.answer.replace(/\n/g, '<br>')}`;
+                if(json.status === 'success') adviceBox.innerHTML = `<b>IC SW-1 Advice:</b><br>${json.answer.replace(/\n/g, '<br>')}`;
                 else adviceBox.innerText = "AI Offline";
             } catch(e) { adviceBox.innerText = "Connection Failed"; }
         }
@@ -643,8 +653,17 @@
         function renderTrendChart(data) {
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
-            const values = data.map(d => d.percent);
+            const totalN = data.reduce((acc, d) => acc + d.total, 0);
+            const wAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
+            
+            let color = '#facc15'; if(wAvg >= 76) color = '#34d399'; if(wAvg < 50) color = '#f87171';
+            
+            document.getElementById('trend-avg').innerText = `${wAvg.toFixed(0)}%`;
+            document.getElementById('trend-avg').className = `font-bold ml-1 ${wAvg>=76?'text-emerald-400':(wAvg<50?'text-red-400':'text-yellow-400')}`;
+            document.getElementById('trend-n').innerText = totalN;
+
             const labels = data.map(d => d.quarter);
+            const values = data.map(d => d.percent);
             const reg = calculateRegression(data);
             const forecastData = new Array(data.length).fill(null);
             
@@ -656,14 +675,30 @@
                 forecastData.push(Math.min(100, Math.max(0, p1)));
                 forecastData.push(Math.min(100, Math.max(0, p2)));
             }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, color + '66'); 
+            gradient.addColorStop(1, color + '00');
+
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Actual %S', data: values, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.2)', fill: true },
+                        { label: 'Actual %S', data: values, borderColor: color, backgroundColor: gradient, borderWidth: 3, tension: 0.2, fill: true },
                         { label: 'Forecast', data: forecastData, borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointRadius: 4, fill: false }
                     ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { 
+                       legend: { display: true, labels: { color: '#94a3b8' } }
+                    }
                 }
             });
         }
