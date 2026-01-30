@@ -13,78 +13,70 @@
     
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
-        .aurora-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.4) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(15, 118, 110, 0.4) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 100%); }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
-        select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; }
-        
         /* Infection Mode Tabs */
         .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
-        /* Specimen Buttons - Wrapped & Colored */
-        .specimen-container { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; max-height: 140px; overflow-y: auto; align-content: flex-start; }
-        .specimen-btn { 
-            display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; 
-            border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); 
-            background: rgba(30, 41, 59, 0.6); color: #cbd5e1; 
-            cursor: pointer; transition: all 0.2s; font-size: 0.75rem; 
-            white-space: nowrap; width: auto; flex: none; 
-        }
+        .specimen-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.6rem; border-radius: 0.4rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #cbd5e1; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.3); }
-        .specimen-btn.active { 
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); 
-            border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); 
-        }
+        .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
+        
+        /* Neon Separator */
+        .neon-divider { height: 1px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); margin: 12px 0; opacity: 0.7; box-shadow: 0 0 5px #22d3ee; }
 
-        /* Organism Accordion */
+        /* Accordion Headers */
         .group-header { font-size: 0.8rem; font-weight: 500; color: #94a3b8; cursor: pointer; padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.6); margin-bottom: 2px; border: 1px solid transparent; transition: all 0.2s; }
         .group-header:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
         .group-header.active { color: #22d3ee; border-color: rgba(34, 211, 238, 0.3); background: rgba(34, 211, 238, 0.05); }
         .group-body { display: none; padding: 6px 8px; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; border-left: 2px solid rgba(34, 211, 238, 0.1); margin-left: 4px; }
+        
         .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; width: 100%; }
-        .custom-checkbox input { accent-color: #22d3ee; width: 13px; height: 13px; }
+        .custom-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
 
-        /* Full Screen */
+        /* Smart Table */
         .is-fullscreen { position: fixed !important; inset: 0 !important; z-index: 100 !important; background: #0f172a !important; border-radius: 0 !important; padding: 1rem !important; }
         .is-fullscreen .table-container { max-height: calc(100vh - 100px) !important; }
-
-        /* Table */
-        .table-normal th { padding: 12px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.95); position: sticky; top: 0; z-index: 10; font-weight: 500; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        
+        .table-normal th { padding: 12px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.95); position: sticky; top: 0; z-index: 10; font-weight: 500; color: #94a3b8; }
         .table-normal td { padding: 8px; font-size: 0.85rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; border-bottom: 1px solid rgba(255,255,255,0.03); position: relative; }
         .table-normal td:hover { background: rgba(255,255,255,0.08); }
         
-        .cell-content { display: flex; align-items: center; justify-content: center; gap: 2px; }
+        .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        .cell-n-badge { font-size: 0.75rem; opacity: 0.6; margin-left: 2px; }
-        .cell-disabled { cursor: not-allowed !important; background: rgba(30, 41, 59, 0.5) !important; color: transparent !important; pointer-events: none; }
-        
-        /* Low N Alert */
-        .alert-badge { display: inline-flex; width: 16px; height: 16px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 50%; font-size: 10px; align-items: center; justify-content: center; margin-left: 4px; font-style: italic; font-family: serif; cursor: help; }
+        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 2px; }
+        .alert-icon { color: #fbbf24; width: 12px; height: 12px; }
+        .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
 
-        /* Colors */
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.15); color: #facc15; }
         .bg-sens-low { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
         .bg-na { color: #475569; }
 
-        /* AI Mode Button (Orange) */
-        .ai-mode-btn {
-            position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-            background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.4); color: #fb923c;
-            font-size: 0.65rem; padding: 2px 6px; rounded: 4px;
-            opacity: 0; transition: all 0.2s; pointer-events: auto; z-index: 20;
-        }
-        .ai-mode-btn:hover { background: rgba(249, 115, 22, 0.3); transform: translateY(-50%) scale(1.05); }
-        tr:hover .ai-mode-btn { opacity: 1; }
-
-        /* Modals */
+        /* FAB */
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
+        .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+        .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
+        
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-content { background: #1e293b; width: 95%; max-width: 800px; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+        
+        /* Analysis Card */
+        .drug-card { background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #64748b; }
+        .drug-card.green { border-left-color: #10b981; }
+        .drug-card.yellow { border-left-color: #eab308; }
+        .drug-card.red { border-left-color: #ef4444; }
+        
+        .prog-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 6px 0; overflow: hidden; }
+        .prog-fill { height: 100%; border-radius: 3px; }
+        .prog-fill.green { background: #10b981; }
+        .prog-fill.yellow { background: #eab308; }
+        .prog-fill.red { background: #ef4444; }
         
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -95,7 +87,7 @@
 
     <header class="max-w-7xl mx-auto w-full mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
-            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+            <div class="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 relative">
                 <i data-lucide="activity" class="w-8 h-8 text-cyan-400"></i>
             </div>
             <div>
@@ -119,12 +111,11 @@
                             <div class="mode-tab" onclick="setInfectionMode('specimen', this)">Specimen</div>
                         </div>
                     </div>
-                    <div id="specimen-container" class="specimen-container bg-slate-900/30 rounded-lg">
-                        <div class="text-xs text-slate-500 italic p-2">Loading...</div>
-                    </div>
+                    <div class="flex justify-end"><button onclick="toggleAllSpecimens()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline mb-1">ALL</button></div>
+                    <div id="specimen-container" class="flex flex-wrap gap-2 p-1 max-h-[140px] overflow-y-auto custom-scrollbar content-start bg-slate-900/30 rounded-lg"></div>
                 </div>
 
-                <div class="border-t border-white/5 my-2"></div>
+                <div class="neon-divider"></div>
 
                 <!-- 2. Time Period -->
                 <div>
@@ -132,7 +123,7 @@
                     <div id="quarter-radios" class="flex flex-col gap-1.5"></div>
                 </div>
 
-                <div class="border-t border-white/5 my-2"></div>
+                <div class="neon-divider"></div>
 
                 <!-- 3. Organism -->
                 <div class="flex-grow flex flex-col min-h-0">
@@ -141,21 +132,22 @@
                         <button onclick="toggleAllOrganisms()" class="text-[10px] bg-slate-700 hover:bg-cyan-600 text-white px-2 py-0.5 rounded transition">ALL</button>
                     </div>
                     
-                    <!-- Include/Only Resistant Buttons -->
                     <div class="flex gap-2 mb-2">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="orgMode" value="total" checked class="peer hidden">
-                            <div class="text-[10px] text-center py-1.5 rounded border border-cyan-500/30 text-cyan-400 peer-checked:bg-cyan-500 peer-checked:text-white transition-all">รวมเชื้อดื้อยา</div>
+                            <div class="text-[10px] text-center py-1 rounded border border-cyan-500/30 text-cyan-400 peer-checked:bg-cyan-500 peer-checked:text-white transition-all">รวมเชื้อดื้อยา</div>
                         </label>
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="orgMode" value="resistant" class="peer hidden">
-                            <div class="text-[10px] text-center py-1.5 rounded border border-red-500/30 text-red-400 peer-checked:bg-red-500 peer-checked:text-white transition-all">เฉพาะเชื้อดื้อยา</div>
+                            <div class="text-[10px] text-center py-1 rounded border border-red-500/30 text-red-400 peer-checked:bg-red-500 peer-checked:text-white transition-all">เฉพาะเชื้อดื้อยา</div>
                         </label>
                     </div>
 
                     <div id="organism-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-1 bg-slate-900/30 rounded-lg p-2"></div>
                 </div>
                 
+                <div class="neon-divider"></div>
+
                  <!-- 4. Drugs -->
                 <div class="mt-2">
                     <div class="flex justify-between items-center mb-2">
@@ -212,41 +204,67 @@
         </div>
     </main>
 
-    <!-- Trend Modal -->
-    <div id="trend-modal" class="modal-overlay">
-        <div class="modal-content bg-slate-900">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50">
-                <div>
-                    <h3 class="font-bold text-lg text-cyan-300" id="trend-title">Trend Analysis</h3>
-                    <div class="flex gap-2 mt-2">
-                        <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Avg: <span id="trend-avg" class="font-bold"></span></span>
-                        <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">N: <span id="trend-n" class="font-bold"></span></span>
+    <!-- FAB -->
+    <div class="fab-btn" onclick="openAnalysisMenu()" title="ถาม IC SW-1">
+        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
+    </div>
+
+    <!-- Analysis Menu Modal -->
+    <div id="analysis-menu-modal" class="modal-overlay">
+        <div class="bg-slate-800 rounded-xl p-6 w-80 text-center border border-slate-700">
+            <h3 class="text-lg font-bold text-emerald-400 mb-4">IC SW-1 Analysis</h3>
+            <div class="space-y-3">
+                <button onclick="openOverviewAnalysis()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> วิเคราะห์ภาพรวม
+                </button>
+                <button onclick="openSpecificAnalysis()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="microscope" class="w-5 h-5"></i> วิเคราะห์เชื้อที่เลือก
+                </button>
+            </div>
+            <button onclick="closeModal('analysis-menu-modal')" class="mt-4 text-slate-500 text-sm hover:text-white">ยกเลิก</button>
+        </div>
+    </div>
+    
+    <!-- Analysis Result Modal -->
+    <div id="analysis-result-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="p-4 bg-slate-800 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-bold text-emerald-400 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> ผลการวิเคราะห์
+                </h3>
+                <button onclick="closeModal('analysis-result-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="analysis-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
+            <div class="p-4 bg-slate-800 border-t border-white/10">
+                <div class="flex items-start gap-3">
+                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
+                    <div id="ai-advice-box" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20">
+                        <span class="animate-pulse">กำลังปรึกษา IC SW-1...</span>
                     </div>
                 </div>
-                <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="p-4 h-[350px] w-full relative">
-                <canvas id="trendChart"></canvas>
-            </div>
-            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden"><div class="loader"></div></div>
         </div>
     </div>
 
-    <!-- AI Analysis Modal (New) -->
-    <div id="ai-modal" class="modal-overlay">
-        <div class="modal-content bg-slate-900 border border-orange-500/30">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-orange-900/20">
-                <div class="flex items-center gap-2">
-                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-8 h-8 object-contain">
-                    <h3 class="font-bold text-lg text-orange-300">IC SW-1 Analysis</h3>
+    <!-- Trend Modal -->
+    <div id="trend-modal" class="modal-overlay">
+        <div class="modal-content bg-slate-900" style="max-width: 700px;">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-bold text-cyan-300" id="trend-title">Trend</h3>
+                <div class="flex gap-2">
+                     <button onclick="askAIChart()" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg transition-all">
+                        <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-4 h-4 object-contain">
+                        วิเคราะห์กราฟ
+                    </button>
+                    <button onclick="document.getElementById('trend-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
-                <button onclick="document.getElementById('ai-modal').style.display='none'" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div id="ai-content" class="p-6 overflow-y-auto custom-scrollbar text-sm text-slate-300 leading-relaxed whitespace-pre-wrap" style="max-height: 60vh;"></div>
-            <div id="ai-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-10">
-                <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-16 h-16 object-contain animate-bounce mb-4">
-                <span class="text-orange-300 animate-pulse">กำลังวิเคราะห์ข้อมูล...</span>
+            <div class="p-6 h-[300px]"><canvas id="trendChart"></canvas></div>
+            <!-- AI Box for Trend -->
+            <div id="chart-ai-box" class="hidden bg-emerald-900/30 p-3 mx-4 mb-4 rounded-lg border border-emerald-500/20 text-xs text-emerald-100 relative">
+                <div id="chart-ai-text">Thinking...</div>
             </div>
+            <div id="trend-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/90 z-10 hidden"><div class="loader"></div></div>
         </div>
     </div>
 
@@ -254,8 +272,10 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwZQ5bn3aLOL91zI79UzCoNfpfqlY3L6WryFeXMa5wDENl6rbbBUJVU2fW1cuKR1W1K/exec';
         let cachedData = null;
         let selectedSpecimens = new Set();
+        let currentTableData = [];
         let trendChartInstance = null;
-        let infectionMode = 'syndrome';
+        let currentChartContext = {};
+        let hospitalDrugMap = {}; 
 
         const SYNDROME_MAP = {
             "Pneumonia / Respiratory": ["Sputum"],
@@ -265,14 +285,13 @@
             "GI / Diarrhea": ["Stool"],
             "Reproductive / Vaginal": ["Vaginal"]
         };
-
         const DRUG_GROUPS = {
-            "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla"],
+            "Penicillins": ["Ampicillin", "Penicillin", "Oxacillin", "Amoxicillin/Cla", "Ampicillin/Sulb", "Piperacillin", "Piperacillin/Ta"],
             "Cephalosporins": ["Cefazolin", "Cefotaxime", "Ceftazidime", "Ceftriaxone", "Cefepime"],
             "Carbapenems": ["Ertapenem", "Imipenem", "Meropenem"],
             "Aminoglycosides": ["Amikacin", "Gentamicin"],
             "Fluoroquinolones": ["Ciprofloxacin", "Levofloxacin"],
-            "Others": ["Clindamycin", "Vancomycin", "Colistin", "Trimetho/Sulfa."]
+            "Others": ["Clindamycin", "Vancomycin", "Colistin", "Trimetho/Sulfa.", "Erythromycin", "Chloramphenicol", "Tetracycline", "Fosfomycin", "Nitrofurantoin", "Linezolid"]
         };
 
         window.onload = async () => {
@@ -281,25 +300,46 @@
             await loadOptions();
         };
 
+        // --- Init Functions ---
+        function initDrugSelector() {
+            const container = document.getElementById('drug-groups-container');
+            container.innerHTML = '';
+            for (const [group, drugs] of Object.entries(DRUG_GROUPS)) {
+                const html = `<div><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold text-slate-400">${group}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">${drugs.map(d => `<label class="custom-checkbox"><input type="checkbox" value="${d}" class="drug-check accent-cyan-500" checked><span>${d}</span></label>`).join('')}</div></div>`;
+                container.innerHTML += html;
+            }
+            lucide.createIcons();
+        }
+        function toggleGroup(header) { 
+            const body = header.nextElementSibling; 
+            const icon = header.querySelector('svg'); // FIXED Selector
+            const isHidden = getComputedStyle(body).display === 'none'; 
+            if(isHidden){ body.classList.remove('hidden'); body.style.display='grid'; if(icon) icon.style.transform='rotate(180deg)'; header.classList.add('text-cyan-400'); }
+            else{ body.classList.add('hidden'); body.style.display='none'; if(icon) icon.style.transform='rotate(0deg)'; header.classList.remove('text-cyan-400'); } 
+        }
+        function toggleGroupCheck(btn, checked) { const body = btn.closest('.group-header').nextElementSibling; body.style.display = 'grid'; body.querySelectorAll('input').forEach(cb=>cb.checked=checked); updateTableVisibility(); }
+        function toggleAllDrugs() { const allChecks=document.querySelectorAll('.drug-check'); const allChecked=Array.from(allChecks).every(c=>c.checked); allChecks.forEach(c=>c.checked=!allChecked); updateTableVisibility(); }
+
         async function loadOptions() {
             try {
+                document.getElementById('db-status').innerText = 'Syncing...';
                 const res = await fetch(`${GAS_URL}?action=options`);
                 const json = await res.json();
                 if (json.status === 'success') {
                     cachedData = json.data;
-                    renderSpecimenSelector();
-                    renderOrganismSelector(json.data.organisms);
-                    renderTimeSelector(json.data.quarters);
-                    document.getElementById('db-status').innerText = 'Ready';
+                    hospitalDrugMap = json.data.drugMap || {};
+                    initSpecimenGrid(json.data.specimens);
+                    initOrganismFilter(json.data.organisms);
+                    initQuarterRadio(json.data.quarters);
+                    document.getElementById('db-status').innerText = 'Database Ready';
                     document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 h-fit';
-                    
-                    // Default Select All Specimens
                     toggleAllSpecimens();
                 }
             } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
         }
 
         // --- SPECIMEN ---
+        let infectionMode = 'syndrome';
         function setInfectionMode(mode, el) {
             infectionMode = mode;
             document.querySelectorAll('.mode-tab').forEach(e => e.classList.remove('active'));
@@ -309,123 +349,60 @@
         function renderSpecimenSelector() {
             const container = document.getElementById('specimen-container');
             container.innerHTML = '';
+            selectedSpecimens.clear();
             const source = infectionMode === 'syndrome' ? Object.keys(SYNDROME_MAP) : cachedData.specimens;
             source.forEach(label => {
                 const btn = document.createElement('button');
                 btn.className = 'specimen-btn';
                 btn.innerHTML = `<span>${label}</span>`;
-                btn.dataset.val = label;
                 btn.onclick = () => {
                     const isActive = btn.classList.toggle('active');
                     const vals = infectionMode === 'syndrome' ? SYNDROME_MAP[label] : [label];
                     vals.forEach(v => isActive ? selectedSpecimens.add(v) : selectedSpecimens.delete(v));
                 };
-                // Auto-select if in set
-                const vals = infectionMode === 'syndrome' ? SYNDROME_MAP[label] : [label];
-                if(vals && vals.some(v => selectedSpecimens.has(v))) btn.classList.add('active');
-                
                 container.appendChild(btn);
             });
             lucide.createIcons();
         }
+        function initSpecimenGrid(specimens) { renderSpecimenSelector(); }
+        
         function toggleAllSpecimens() {
             const btns = document.querySelectorAll('.specimen-btn');
             const allActive = Array.from(btns).every(b => b.classList.contains('active'));
             selectedSpecimens.clear();
             if(!allActive) {
-                // Select All underlying
-                 cachedData.specimens.forEach(s => selectedSpecimens.add(s));
+                if (infectionMode === 'syndrome') Object.values(SYNDROME_MAP).flat().forEach(s => selectedSpecimens.add(s));
+                else cachedData.specimens.forEach(s => selectedSpecimens.add(s));
             }
-            // Re-render visual state
             renderSpecimenSelector();
             if(!allActive) document.querySelectorAll('.specimen-btn').forEach(b => b.classList.add('active'));
         }
 
         // --- ORGANISM ---
-        function renderOrganismSelector(orgData) {
-            const container = document.getElementById('organism-list');
+        function initOrganismFilter(orgData) {
+            const container = document.getElementById('organism-filter-container');
             container.innerHTML = '';
             for (const [gram, groups] of Object.entries(orgData)) {
-                const gramHtml = document.createElement('div');
-                gramHtml.className = 'mb-1';
-                gramHtml.innerHTML = `<div class="text-[10px] font-bold text-slate-500 uppercase mt-2 mb-1 px-1">${gram}</div>`;
-                
+                let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
                 for (const [groupName, organisms] of Object.entries(groups)) {
-                    const sortedOrgs = organisms.sort(); // Alpha sort
-                    const groupHtml = `
-                        <div class="mb-1">
-                            <div class="group-header" onclick="toggleGroup(this)">
-                                <span class="text-xs font-semibold">${groupName}</span>
-                                <div class="flex gap-2">
-                                    <span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span>
-                                    <i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i>
-                                </div>
-                            </div>
-                            <div class="group-body">
-                                ${sortedOrgs.map(org => `
-                                    <label class="custom-checkbox w-full">
-                                        <input type="checkbox" value="${org}" class="org-check accent-cyan-500 rounded-sm">
-                                        <span class="text-xs text-slate-300 truncate" title="${org}">${org}</span>
-                                    </label>
-                                `).join('')}
-                            </div>
-                        </div>`;
-                    gramHtml.insertAdjacentHTML('beforeend', groupHtml);
+                    html += `<div class="mb-1"><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold">${groupName}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body">${organisms.map(org => `<label class="custom-checkbox w-full"><input type="checkbox" value="${org}" class="org-check accent-cyan-500" onchange="updateTableVisibility()"><span>${org}</span></label>`).join('')}</div></div>`;
                 }
-                container.appendChild(gramHtml);
+                html += `</div>`;
+                container.innerHTML += html;
             }
             lucide.createIcons();
         }
+        function resetOrgSelection() { document.querySelectorAll('.org-check').forEach(r => r.checked = false); updateTableVisibility(); }
         function toggleAllOrganisms() {
             const checks = document.querySelectorAll('.org-check');
             const allChecked = Array.from(checks).every(c => c.checked);
             checks.forEach(c => c.checked = !allChecked);
         }
 
-        // --- DRUGS ---
-        function initDrugSelector() {
-            const container = document.getElementById('drug-groups-container');
-            container.innerHTML = '';
-            for (const [group, drugs] of Object.entries(DRUG_GROUPS)) {
-                const sortedDrugs = drugs.sort();
-                const html = `<div><div class="group-header" onclick="toggleGroup(this)"><span class="text-xs font-semibold text-slate-400">${group}</span><div class="flex gap-2"><span class="text-[10px] text-cyan-500 hover:underline" onclick="event.stopPropagation(); toggleGroupCheck(this, true)">All</span><i data-lucide="chevron-down" class="w-3 h-3 transition-transform"></i></div></div><div class="group-body hidden pl-2 pt-1 grid grid-cols-2 gap-1">${sortedDrugs.map(d => `<label class="custom-checkbox"><input type="checkbox" value="${d}" class="drug-check accent-cyan-500" checked><span>${d}</span></label>`).join('')}</div></div>`;
-                container.innerHTML += html;
-            }
-            lucide.createIcons();
-        }
-        function toggleAllDrugs() {
-            const checks = document.querySelectorAll('.drug-check');
-            const allChecked = Array.from(checks).every(c => c.checked);
-            checks.forEach(c => c.checked = !allChecked);
-        }
-
-        // --- COMMON TOGGLES ---
-        function toggleGroup(header) {
-            const body = header.nextElementSibling;
-            const icon = header.querySelector('svg');
-            const isHidden = getComputedStyle(body).display === 'none';
-            body.style.display = isHidden ? 'flex' : 'none';
-            if(icon) icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-            header.classList.toggle('active', isHidden);
-        }
-        function toggleGroupCheck(btn, checked) {
-            const body = btn.closest('.group-header').nextElementSibling;
-            // Ensure group is open
-            body.style.display = 'flex';
-             const icon = btn.closest('.group-header').querySelector('svg');
-            if(icon) icon.style.transform = 'rotate(180deg)';
-            
-            body.querySelectorAll('input').forEach(cb => cb.checked = checked);
-        }
-
-        function renderTimeSelector(quarters) {
+        // --- TIME ---
+        function initQuarterRadio(list) {
             const container = document.getElementById('quarter-radios');
-            container.innerHTML = quarters.map((opt, idx) => `
-                <label class="flex items-center gap-2 p-1 rounded hover:bg-white/5 cursor-pointer">
-                    <input type="radio" name="quarter" value="${opt.value}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-3 h-3">
-                    <span class="text-xs text-slate-300">${opt.label}</span>
-                </label>
-            `).join('');
+            container.innerHTML = list.map((opt, idx) => `<label class="flex items-center gap-2 p-1 rounded hover:bg-white/5 cursor-pointer"><input type="radio" name="quarter" value="${opt.value}" ${idx === 0 ? 'checked' : ''} class="accent-cyan-500 w-3 h-3"><span class="text-xs text-slate-300">${opt.label}</span></label>`).join('');
         }
 
         function toggleFullScreen() {
@@ -455,7 +432,8 @@
                 const json = await res.json();
                 loader.classList.add('hidden');
                 if (json.status === 'success') {
-                    renderTable(aggregateData(json.data));
+                    currentTableData = aggregateData(json.data);
+                    renderTable(currentTableData);
                 } else { alert(json.message); }
             } catch (e) { loader.classList.add('hidden'); }
         }
@@ -500,7 +478,6 @@
             if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="py-20 text-center text-slate-500">No Data</td></tr>'; return; }
             
             const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
-            
             thead.innerHTML = `<th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>${activeDrugs.map(d => `<th class="min-w-[70px] text-center" title="${d}">${d.substring(0,4)}</th>`).join('')}`;
             
             data.forEach(row => {
@@ -509,25 +486,18 @@
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-white/5 transition-colors border-b border-slate-800/50 group relative";
-                
-                // Organism Name with AI Mode Button
-                let html = `
-                    <td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative">
-                        ${row.name}
-                        <button class="ai-mode-btn" onclick="openAIAnalysis('${row.name}')">AI Mode</button>
-                    </td>`;
+                let html = `<td class="text-left pl-4 font-medium text-cyan-200 sticky left-0 bg-slate-900/90 z-10 border-r border-slate-700 relative">${row.name}<button class="ai-mode-btn" onclick="openOrganismAnalysis('${row.name.replace(/'/g, "\\'")}')">AI Mode</button></td>`;
                 
                 activeDrugs.forEach(d => {
                     const obj = row.drugResults[d] || { pct: '-', n: 0, isR: false };
                     const v = obj.pct;
                     const num = parseFloat(v);
-                    
                     let cellClass = 'bg-na text-slate-600';
                     let clickAction = '';
                     let display = v;
                     let alertIcon = '';
                     
-                    if(obj.n < 30 && v !== '-' && v !== 'R*') alertIcon = `<span class="alert-badge" title="Low data (n<30)">i</span>`;
+                    if(obj.n < 30 && v !== '-' && v !== 'R*') alertIcon = `<i data-lucide="info" class="w-3 h-3 text-red-400 inline-block ml-1"></i>`;
                     
                     if (obj.isR) { 
                         cellClass = 'cell-disabled text-[10px] bg-slate-800 opacity-20'; 
@@ -537,7 +507,7 @@
                         cellClass = `${c} hover:opacity-80`;
                         const safeOrg = row.name.replace(/'/g, "\\'");
                         clickAction = `onclick="showTrend('${safeOrg}', '${d}')"`;
-                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="cell-n-badge">${obj.n}</span>${alertIcon}</div>`;
+                        display = `<div class="cell-content"><span class="cell-pct">${v}%</span><span class="n-badge">${obj.n}</span>${alertIcon}</div>`;
                     }
                     html += `<td class="${cellClass}" ${clickAction}>${display}</td>`;
                 });
@@ -546,60 +516,115 @@
             });
             lucide.createIcons();
         }
+        
+        function updateTableVisibility() { fetchTableData(); }
 
-        // --- ANALYZE ORGANISM (AI Mode) ---
-        function openAIAnalysis(orgName) {
-            const modal = document.getElementById('ai-modal');
-            const content = document.getElementById('ai-content');
-            const loading = document.getElementById('ai-loading');
-            
-            modal.style.display = 'flex';
-            content.innerHTML = '';
-            loading.classList.remove('hidden');
+        // --- ANALYSIS FEATURES ---
+        function openAnalysisMenu() { document.getElementById('analysis-menu-modal').style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
 
-            const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
-            const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
-            const includeResistant = document.querySelector('input[name="orgMode"]:checked').value === 'total';
-            
-            const params = new URLSearchParams({
-                action: 'analyze_organism',
-                organism: orgName,
-                specimen: specimensParam,
-                quarter: selectedQuarter,
-                includeResistant: includeResistant
+        function openOverviewAnalysis() {
+            closeModal('analysis-menu-modal');
+            const modal = document.getElementById('analysis-result-modal');
+            const content = document.getElementById('analysis-content');
+            modal.style.display='flex';
+            content.innerHTML = '<div class="text-center p-10"><div class="loader mx-auto mb-2"></div>Analyzing...</div>';
+            document.getElementById('ai-advice-box').innerText = "Waiting for analysis...";
+
+            let panResistant = [], panSensitive = [];
+            currentTableData.forEach(row => {
+                let allR = true, allS = true, hasData = false;
+                const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
+                activeDrugs.forEach(d => {
+                    const obj = row.drugResults[d];
+                    if (obj && obj.pct !== '-' && obj.pct !== 'R*') {
+                        hasData = true;
+                        if (parseFloat(obj.pct) > 0) allR = false;
+                        if (parseFloat(obj.pct) < 100) allS = false;
+                    }
+                });
+                if(hasData) {
+                    if(allR) panResistant.push(row.name);
+                    if(allS) panSensitive.push(row.name);
+                }
             });
 
-            fetch(`${GAS_URL}?${params.toString()}`)
-                .then(r => r.json())
-                .then(data => {
-                    loading.classList.add('hidden');
-                    if(data.status === 'success') {
-                        content.innerHTML = data.answer.replace(/\n/g, '<br>');
-                    } else {
-                        content.innerHTML = `<span class="text-red-400">Error: ${data.message}</span>`;
-                    }
-                })
-                .catch(() => {
-                    loading.classList.add('hidden');
-                    content.innerHTML = `<span class="text-red-400">Connection Failed</span>`;
-                });
+            let html = `<div class="space-y-4"><div class="p-4 bg-slate-800 rounded-lg"><h4 class="font-bold text-lg text-cyan-300 mb-2">สถานการณ์ภาพรวม</h4><p class="text-slate-300">พบเชื้อ <span class="text-white font-bold">${currentTableData.length}</span> ชนิด</p></div><div class="grid grid-cols-2 gap-4"><div class="p-4 bg-red-900/20 border border-red-500/20 rounded-lg"><h5 class="font-bold text-red-400 mb-2">⚠ ดื้อยาทุกตัว (0% S)</h5><ul class="list-disc pl-4 text-xs text-red-200">${panResistant.length ? panResistant.map(n=>`<li>${n}</li>`).join('') : '<li>- ไม่พบ -</li>'}</ul></div><div class="p-4 bg-emerald-900/20 border border-emerald-500/20 rounded-lg"><h5 class="font-bold text-emerald-400 mb-2">✅ ไวต่อยาทุกตัว (100% S)</h5><ul class="list-disc pl-4 text-xs text-emerald-200">${panSensitive.length ? panSensitive.slice(0,5).map(n=>`<li>${n}</li>`).join('') : '<li>- ไม่พบ -</li>'}</ul></div></div></div>`;
+            content.innerHTML = html;
+            callAI("Overview", "สรุปภาพรวมเชื้อดื้อยา", "", []);
+        }
+
+        function openOrganismAnalysis(orgName) {
+            // Re-purposed Specific Analysis
+            const rowData = currentTableData.find(r => r.name === orgName);
+            if (!rowData) return;
+            
+            const modal = document.getElementById('analysis-result-modal');
+            const content = document.getElementById('analysis-content');
+            modal.style.display='flex';
+            
+            const activeDrugs = Array.from(document.querySelectorAll('.drug-check:checked')).map(c => c.value);
+            const drugList = [];
+            activeDrugs.forEach(d => {
+                const obj = rowData.drugResults[d];
+                if (obj && obj.pct !== '-' && obj.pct !== 'R*') {
+                    drugList.push({ name: d, pct: parseFloat(obj.pct), n: obj.n });
+                }
+            });
+            drugList.sort((a,b) => b.pct - a.pct);
+
+            let html = `<h2 class="text-xl font-bold text-cyan-300 mb-4">${orgName} Analysis</h2>`;
+            let topDrugs = [], badDrugs = [];
+            let summaryTextForAI = "";
+
+            drugList.forEach(item => {
+                let colorClass = item.pct >= 80 ? 'green' : (item.pct >= 60 ? 'yellow' : 'red');
+                let lightClass = item.pct >= 80 ? 'Green Light ✅' : (item.pct >= 60 ? 'Yellow Light ⚠️' : 'Red Light ❌');
+                let hospDrug = hospitalDrugMap[item.name] ? hospitalDrugMap[item.name].join(', ') : 'ไม่มีในรพ.สวี';
+                let warnings = '';
+                if(item.name.includes('Meropenem') || item.name.includes('Piperacillin')) warnings += '<span class="text-[10px] text-yellow-300 border border-yellow-500/50 px-1 rounded ml-1">⚠ Consult</span>';
+                if(item.name.includes('Cefotaxime') || item.name.includes('Ciprofloxacin')) warnings += '<span class="text-[10px] text-blue-300 border border-blue-500/50 px-1 rounded ml-1">📝 DUE</span>';
+                if(item.n < 30) { colorClass = 'grey'; lightClass = 'Grey Light ⚪'; warnings += ' <span class="text-[10px] text-slate-400">Low Data</span>'; }
+
+                html += `<div class="drug-card ${colorClass}"><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-white">${item.name} ${warnings}</span><span class="text-xs font-bold">${item.pct}% (n=${item.n})</span></div><div class="prog-bg"><div class="prog-fill ${colorClass}" style="width: ${item.pct}%"></div></div><div class="mt-2 text-xs text-slate-400 flex justify-between"><span>${lightClass}</span><span class="text-right max-w-[60%] truncate text-cyan-200">${hospDrug}</span></div></div>`;
+                
+                summaryTextForAI += `${item.name}: ${item.pct}% (n=${item.n}). Available: ${hospDrug}. \n`;
+            });
+            content.innerHTML = html;
+            callAI(orgName, summaryTextForAI, "", {});
+        }
+
+        async function callAI(org, summary, context, drugs) {
+            const adviceBox = document.getElementById('ai-advice-box');
+            adviceBox.innerHTML = '<span class="animate-pulse">กำลังปรึกษา IC SW-1...</span>';
+            const params = new URLSearchParams({ action: 'get_ai_advice', organism: org, summary: summary });
+            try {
+                const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                const json = await res.json();
+                if(json.status === 'success') adviceBox.innerHTML = `<b>IC SW-1 Says:</b><br>${json.answer.replace(/\n/g, '<br>')}`;
+                else adviceBox.innerText = "AI Offline";
+            } catch(e) { adviceBox.innerText = "Connection Failed"; }
         }
 
         // --- TREND CHART ---
         async function showTrend(organism, drug) {
             const modal = document.getElementById('trend-modal');
             const loading = document.getElementById('trend-loading');
+            const aiBox = document.getElementById('chart-ai-box');
+            if(aiBox) aiBox.classList.add('hidden');
+            
+            currentChartContext = { organism, drug }; 
             document.getElementById('trend-title').innerText = `${organism} vs ${drug}`;
             modal.style.display = 'flex';
             loading.classList.remove('hidden');
 
             const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
-            
             try {
                 const res = await fetch(`${GAS_URL}?action=trend&organism=${organism}&drug=${drug}&specimens=${specimensParam}`);
                 const json = await res.json();
                 loading.classList.add('hidden');
                 if (json.status === 'success') {
+                    currentChartContext.data = json.data;
                     renderTrendChart(json.data);
                 } else { alert('No trend data'); }
             } catch (e) { loading.classList.add('hidden'); }
@@ -618,19 +643,8 @@
         function renderTrendChart(data) {
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
-            
-            const totalN = data.reduce((acc, d) => acc + d.total, 0);
-            const wAvg = data.reduce((acc, d) => acc + (d.percent * d.total), 0) / totalN;
-            
-            let color = '#facc15'; if(wAvg >= 76) color = '#34d399'; if(wAvg < 50) color = '#f87171';
-            
-            document.getElementById('trend-avg').innerText = `${wAvg.toFixed(0)}%`;
-            document.getElementById('trend-avg').className = `font-bold ml-1 ${wAvg>=76?'text-emerald-400':(wAvg<50?'text-red-400':'text-yellow-400')}`;
-            document.getElementById('trend-n').innerText = totalN;
-
-            const labels = data.map(d => d.quarter);
             const values = data.map(d => d.percent);
-            
+            const labels = data.map(d => d.quarter);
             const reg = calculateRegression(data);
             const forecastData = new Array(data.length).fill(null);
             
@@ -642,32 +656,29 @@
                 forecastData.push(Math.min(100, Math.max(0, p1)));
                 forecastData.push(Math.min(100, Math.max(0, p2)));
             }
-
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, color + '66'); 
-            gradient.addColorStop(1, color + '00');
-
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Actual %S', data: values, borderColor: color, backgroundColor: gradient, borderWidth: 3, tension: 0.2, fill: true },
+                        { label: 'Actual %S', data: values, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.2)', fill: true },
                         { label: 'Forecast', data: forecastData, borderColor: '#94a3b8', borderDash: [5, 5], borderWidth: 2, pointRadius: 4, fill: false }
                     ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        x: { grid: { display: false } }
-                    },
-                    plugins: { 
-                       legend: { display: true, labels: { color: '#94a3b8' } }
-                    }
                 }
             });
+        }
+        
+        async function askAIChart() {
+             const aiBox = document.getElementById('chart-ai-box');
+             const aiText = document.getElementById('chart-ai-text');
+             if(aiBox) { aiBox.classList.remove('hidden'); aiText.innerHTML = '<span class="animate-pulse">🤖 Analyzing...</span>'; }
+             const params = new URLSearchParams({ action: 'analyze_chart_trend', organism: currentChartContext.organism, drug: currentChartContext.drug, trendData: JSON.stringify(currentChartContext.data) });
+             try {
+                 const res = await fetch(`${GAS_URL}?${params.toString()}`);
+                 const json = await res.json();
+                 if(json.status === 'success') aiText.innerHTML = json.answer.replace(/\n/g, '<br>');
+                 else aiText.innerText = "Error.";
+             } catch(e) { aiText.innerText = "Failed."; }
         }
     </script>
 </body>
