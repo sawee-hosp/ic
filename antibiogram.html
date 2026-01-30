@@ -76,8 +76,8 @@
         .bg-na { color: #475569; }
         
         /* Organism Text Colors */
-        .gram-neg { color: #f87171 !important; } /* Red for Gram Neg (User Request) */
-        .gram-pos { color: #22d3ee !important; } /* Blue for Gram Pos (User Request) */
+        .gram-neg { color: #f87171 !important; } /* Red for Gram Neg */
+        .gram-pos { color: #22d3ee !important; } /* Blue for Gram Pos */
         .gram-other { color: #34d399 !important; } /* Green */
 
         /* AI Mode Button (Orange) */
@@ -122,6 +122,7 @@
                 <p class="text-slate-400 text-sm">Smart AI Surveillance System</p>
             </div>
         </div>
+        <div id="db-status" class="text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700 h-fit">Connecting...</div>
     </header>
 
     <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
@@ -269,7 +270,7 @@
             <div id="org-modal-content" class="flex-grow p-4 overflow-y-auto bg-slate-900/90 custom-scrollbar text-sm text-slate-300"></div>
             <div class="p-4 bg-slate-800 border-t border-white/10">
                 <div class="flex items-start gap-3">
-                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-8 h-8 object-contain flex-shrink-0">
+                    <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain flex-shrink-0">
                     <div id="org-ai-advice" class="text-xs text-emerald-200 italic bg-emerald-900/30 p-3 rounded-lg w-full border border-emerald-500/20"><span class="animate-pulse">กำลังปรึกษา IC SW-1...</span></div>
                 </div>
             </div>
@@ -335,9 +336,11 @@
                     initOrganismFilter(json.data.organisms);
                     initQuarterRadio(json.data.quarters);
                     initChatLists(json.data.flatOrganisms, json.data.flatDrugs, json.data.specimens);
+                    document.getElementById('db-status').innerText = 'Ready';
+                    document.getElementById('db-status').className = 'text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 h-fit';
                     toggleAllSpecimens();
                 }
-            } catch (e) { console.log("Offline mode"); }
+            } catch (e) { document.getElementById('db-status').innerText = 'Offline'; }
         }
 
         // --- FILTER LOGIC ---
