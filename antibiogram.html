@@ -23,7 +23,7 @@
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
         
-        /* Specimen Scroll Fix (3 Lines Max approx 120px) */
+        /* Specimen Scroll Fix */
         .specimen-container { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 4px; max-height: 120px; overflow-y: auto; align-content: flex-start; }
         .specimen-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(30, 41, 59, 0.4); color: #94a3b8; cursor: pointer; transition: all 0.2s; font-size: 0.75rem; white-space: nowrap; width: auto; flex: none; }
         .specimen-btn:hover { background: rgba(30, 41, 59, 0.9); }
@@ -36,13 +36,15 @@
         .group-check-btn { font-size: 0.65rem; color: #34d399; margin-left: auto; margin-right: 5px; cursor: pointer; text-decoration: underline; }
 
         .table-normal th { padding: 12px; font-size: 0.9rem; background: rgba(30, 41, 59, 0.95); position: sticky; top: 0; z-index: 10; }
-        .table-normal td { padding: 10px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; }
+        .table-normal td { padding: 12px 8px; font-size: 0.9rem; cursor: pointer; transition: background 0.1s; vertical-align: middle; }
         .table-normal td:hover { background: rgba(255,255,255,0.1); }
+        
+        /* R* Cell Disabled */
         .cell-disabled { cursor: not-allowed !important; opacity: 0.4; background: rgba(0,0,0,0.3) !important; color: transparent; pointer-events: none; }
         
         /* N Badge */
-        .n-badge { font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 6px; margin-left: 6px; color: #cbd5e1; font-weight: normal; border: 1px solid rgba(255,255,255,0.1); }
-        .alert-icon { color: #fbbf24; margin-left: 2px; vertical-align: middle; }
+        .n-badge { font-size: 0.8rem; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 6px; margin-left: 6px; color: #f1f5f9; font-weight: 500; border: 1px solid rgba(255,255,255,0.2); }
+        .alert-icon { color: #fbbf24; margin-left: 4px; vertical-align: middle; }
 
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; }
         .bg-sens-med { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
@@ -50,8 +52,8 @@
         .bg-na { color: #64748b; }
 
         /* FAB */
-        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.2s; z-index: 50; border: 2px solid #34d399; overflow: hidden; background: #0f172a; }
-        .fab-btn img { width: 100%; height: 100%; object-fit: cover; }
+        .fab-btn { position: fixed; bottom: 2rem; right: 2rem; width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; z-index: 50; }
+        .fab-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); }
         .fab-btn:hover { transform: scale(1.1) rotate(5deg); }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -118,7 +120,7 @@
                     <!-- 3. Organism (Grouped) -->
                     <div>
                         <label class="text-xs text-slate-400 mb-1 block font-medium">Organism</label>
-                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- แสดงทั้งหมด (All) --</option></select>
+                        <select id="sel-organism" class="mb-2 w-full"><option value="">-- Loading --</option></select>
                         <div class="bg-slate-800/50 rounded-lg p-2 flex gap-2">
                             <label class="flex-1 cursor-pointer">
                                 <input type="radio" name="orgMode" value="total" checked class="peer hidden">
@@ -180,7 +182,6 @@
     <!-- FAB: AI Chat -->
     <div class="fab-btn" onclick="openChatModal()" title="ถาม IC SW-1">
         <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" alt="IC SW-1">
-        <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-[#0f172a] rounded-full animate-ping"></div>
     </div>
 
     <!-- Chat Modal -->
@@ -396,9 +397,11 @@
             for (const [type, groups] of Object.entries(orgData)) {
                 html += `<optgroup label="${type}">`;
                 for (const [groupName, list] of Object.entries(groups)) {
+                    html += `<optgroup label="&nbsp;&nbsp;${groupName}">`; // Nested effect
                     list.forEach(org => {
-                        html += `<option value="${org.base}">${org.base}</option>`; // Use base name
+                        html += `<option value="${org.base}">&nbsp;&nbsp;&nbsp;&nbsp;${org.base}</option>`;
                     });
+                    html += `</optgroup>`;
                 }
                 html += `</optgroup>`;
             }
@@ -437,9 +440,9 @@
 
             let namesToSend = [];
             if (orgBase) {
-                // Logic to find all variations from cached data if needed
-                // For now, send base name, backend handles matching
-                namesToSend = [orgBase]; // Backend will do startsWith
+                // Fetch logic should handle base name matching on backend for efficiency or send exact matches
+                // Simplified: Send base name, let backend startsWith
+                namesToSend = [orgBase.trim()];
             }
 
             const allSpecimensSelected = selectedSpecimens.size === cachedData.specimens.length;
@@ -517,7 +520,7 @@
             
             thead.innerHTML = `
                 <th class="text-left pl-4 min-w-[180px] rounded-tl-lg sticky left-0 bg-slate-900 z-10">Organism</th>
-                ${activeDrugs.map(d => `<th class="min-w-[75px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}
+                ${activeDrugs.map(d => `<th class="min-w-[85px] cursor-help" title="${d}">${d.substring(0,4)}</th>`).join('')}
             `;
             
             data.forEach(row => {
@@ -538,7 +541,7 @@
                     let display = v;
                     let alertIcon = '';
                     
-                    if(obj.n < 30 && v !== '-') alertIcon = `<i data-lucide="alert-circle" class="w-3 h-3 alert-icon" title="Low data (n<30)"></i>`;
+                    if(obj.n < 30 && v !== '-' && v !== 'R*') alertIcon = `<i data-lucide="alert-circle" class="w-3 h-3 alert-icon" title="Low data (n<30)"></i>`;
 
                     if (obj.isR) {
                         cellClass = 'cell-disabled text-xs'; 
@@ -548,8 +551,8 @@
                         cellClass = `${c} hover:opacity-80`;
                         clickAction = `onclick="showTrend('${row.name}', '${d}')"`;
                         display = `
-                            <div class="flex flex-col leading-tight">
-                                <span>${v}%</span>
+                            <div class="flex items-center justify-center gap-1">
+                                <span class="text-base font-bold">${v}%</span>
                                 <span class="n-badge">(n=${obj.n})${alertIcon}</span>
                             </div>`;
                     }
