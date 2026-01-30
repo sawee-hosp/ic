@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sawee Antibiogram</title>
-    <!-- Favicon -->
-    <link rel="icon" href="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦠</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -15,16 +14,14 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 4px; }
         
         select, input[type="text"] { background-color: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; outline: none; transition: all 0.3s; }
         select option { background-color: #1e293b; color: #e2e8f0; padding: 10px; }
-        select:focus, input:focus { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.1); }
-
-        /* Buttons & Tabs */
+        
+        /* Infection Mode Tabs */
         .mode-tab { padding: 4px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-tab.active { background: rgba(34, 211, 238, 0.1); color: #22d3ee; font-weight: 500; }
         
@@ -32,6 +29,7 @@
         .specimen-btn:hover { background: rgba(34, 211, 238, 0.1); border-color: rgba(34, 211, 238, 0.3); }
         .specimen-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.15); }
         
+        /* Neon Separator */
         .neon-divider { height: 1px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); margin: 12px 0; opacity: 0.7; box-shadow: 0 0 5px #22d3ee; }
 
         /* Accordion */
@@ -42,7 +40,7 @@
         .custom-checkbox { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #cbd5e1; cursor: pointer; padding: 2px 0; width: 100%; }
         .custom-checkbox input { accent-color: #22d3ee; width: 12px; height: 12px; }
 
-        /* Table */
+        /* Smart Table */
         .is-fullscreen { position: fixed !important; inset: 0 !important; z-index: 100 !important; background: #0f172a !important; border-radius: 0 !important; padding: 1rem !important; }
         .is-fullscreen .table-container { max-height: calc(100vh - 100px) !important; }
         
@@ -52,22 +50,8 @@
         
         .cell-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
         .cell-pct { font-weight: 400; font-size: 0.9rem; }
-        
-        /* Badge Style - Fixed per requirement */
-        .n-badge { 
-            background: rgba(255, 255, 255, 0.15); 
-            color: #f1f5f9; 
-            padding: 1px 6px; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            font-weight: 300; /* Thin */
-            font-style: italic; /* Italic */
-            display: inline-flex; 
-            align-items: center; 
-            gap: 2px; 
-        }
-        .alert-icon { color: #ef4444; width: 12px; height: 12px; }
-        
+        .n-badge { background: rgba(255, 255, 255, 0.15); color: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.9rem; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
+        .alert-icon { color: #ef4444; width: 14px; height: 14px; }
         .cell-disabled { cursor: not-allowed !important; opacity: 0.3; background: rgba(0,0,0,0.3) !important; color: transparent !important; pointer-events: none; }
         
         .bg-sens-high { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
@@ -240,7 +224,7 @@
             </div>
             
             <div class="p-4 bg-slate-900/50 border-b border-white/5 space-y-3">
-                <p class="text-xs text-slate-400 mb-2">ระบุเชื้อ ยา และสิ่งส่งตรวจ เพื่อวิเคราะห์ความเหมาะสม:</p>
+                <p class="text-xs text-slate-400 mb-2">ระบุเงื่อนไขเพื่อขอคำแนะนำ:</p>
                 <div class="grid grid-cols-2 gap-2">
                     <input type="text" id="chat-org" list="org-list" placeholder="ชื่อเชื้อ (e.g. E. coli)" class="w-full text-xs">
                     <input type="text" id="chat-drug" list="drug-list" placeholder="ชื่อยา (e.g. Meropenem)" class="w-full text-xs">
@@ -382,6 +366,7 @@
                 };
                 container.appendChild(btn);
             });
+            lucide.createIcons();
         }
         function initSpecimenGrid(specimens) { renderSpecimenSelector(); }
         function toggleAllSpecimens() {
@@ -397,7 +382,7 @@
         }
 
         function initOrganismFilter(orgData) {
-            const container = document.getElementById('organism-list');
+            const container = document.getElementById('organism-filter-container');
             container.innerHTML = '';
             for (const [gram, groups] of Object.entries(orgData)) {
                 let html = `<div class="mb-2"><div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1 pl-1">${gram}</div>`;
@@ -430,7 +415,10 @@
             if(document.getElementById('table-placeholder')) document.getElementById('table-placeholder').classList.add('hidden');
 
             const selectedOrgChecks = Array.from(document.querySelectorAll('.org-check:checked')).map(c => c.value);
-            const selectedQuarter = document.querySelector('input[name="quarter"]:checked').value;
+            // Fix: Check null for quarter
+            const qRadio = document.querySelector('input[name="quarter"]:checked');
+            const selectedQuarter = qRadio ? qRadio.value : "";
+            
             const specimensParam = selectedSpecimens.size > 0 ? Array.from(selectedSpecimens).join(',') : "";
 
             const params = new URLSearchParams({
