@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SW-1 Bundle Tracker</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" type="image/png">
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- QR Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background: #0f172a; 
+            color: #f8fafc; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
+        }
+        
+        .bg-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 150%;
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: -1;
+            mix-blend-mode: luminosity;
+        }
+
+        .glass-panel { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-input { 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: white; 
+        }
+        .glass-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+        
+        .btn-press:active { transform: scale(0.97); }
+        .neon-text { text-shadow: 0 0 10px currentColor; }
+        
+        .bundle-cauti { border-left: 4px solid #fbbf24; } 
+        .bundle-vap { border-left: 4px solid #3b82f6; } 
+        .bundle-pvc { border-left: 4px solid #ef4444; } 
+        .bundle-ssi { border-left: 4px solid #10b981; } 
+        .bundle-mdr { border-left: 4px solid #a855f7; } 
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts;
+
+        // --- CONFIGURATION ---
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbypLTYWgle-SsRfHxwgfHpIT6Lyhh_iwEKK6lVxcuQyM-TQBCk6mIRWJ0pKd7sFxEY/exec";
+        const LIFF_ID = "2008690634-O4vlZdND";
+
+        const BUNDLE_CONFIG = {
+            'CAUTI': { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/50', icon: 'flask-conical', label: 'CAUTI' },
+            'VAP': { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/50', icon: 'wind', label: 'VAP' },
+            'PVC': { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/50', icon: 'activity', label: 'PVC' },
+            'SSI': { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', icon: 'scissors', label: 'SSI' },
+            'MDR': { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/50', icon: 'bug', label: 'MDR' },
+        };
+        const WARD_OPTIONS = ['ทั้งหมด', 'Wardชาย', 'Wardหญิง', 'LR', 'ER'];
+        const FREQUENCY_MAP = {
+            'Once': 'ครั้งแรก (Insertion)',
+            'Daily': 'ทุกวัน (Daily)',
+            'Shift': 'ทุกเวร (Shift)',
+            'Event': 'ทุกครั้งเมื่อมีเหตุ'
+        };
+
+        // --- API UTILS ---
+        const runGAS = async (action, payload = {}) => {
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: "POST",
+                    mode: "no-cors", // Google Apps Script Web App constraint for simple POST
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action, ...payload })
+                });
+                // Note: 'no-cors' returns an opaque response, so we can't read JSON directly.
+                // However, GAS 'doPost' usually requires 'redirect: follow' to work with fetch and return data.
+                // Standard fetch to GAS requires a trick or using 'redirect: follow'.
+                
+                // Retry with standard fetch expecting JSON (works if CORS is handled by GAS correctly or using JSONP/text output)
+                // Since we are hosting on GitHub, we need a robust method.
+                // Let's try the standard method with redirect.
+            } catch (e) {
+                console.error("Fetch Error", e);
+                // Fallback for demo if fetch fails totally
+                return null;
+            }
+        };
+
+        // Improved Fetch for GAS (handles redirects)
+        const fetchGAS = async (action, data = {}) => {
+            const params = { action, ...data };
+            const response = await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify(params)
+            });
+            return await response.json();
+        };
+
+        // --- COMPONENTS ---
+
+        const LoadingSpinner = ({ text }) => (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-8 h-8 opacity-80" />
+                    </div>
+                </div>
+                <p className="mt-4 text-slate-400 text-sm animate-pulse">{text || 'Loading System...'}</p>
+            </div>
+        );
+
+        const Header = ({ userProfile }) => (
+            <header className="glass-panel sticky top-0 z-40 px-4 py-3 flex justify-between items-center mb-4 rounded-b-2xl mx-1 mt-1">
+                <div className="flex items-center gap-3">
+                     <div className="relative group">
+                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="h-10 w-auto drop-shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
+                    </div>
+                    <div>
+                        <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300">SW-1 Bundle Tracker</div>
+                        <div className="text-[9px] text-slate-500 uppercase tracking-widest">Smart Infection Control</div>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <div className="text-right hidden md:block">
+                        <div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{userProfile?.job || 'Staff'}</div>
+                    </div>
+                    <div className="relative w-10 h-10 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800">
+                        {userProfile ? 
+                            <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : 
+                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><i data-lucide="user"></i></div>
+                        }
+                    </div>
+                </div>
+            </header>
+        );
+
+        const ScannerModal = ({ onScan, onClose }) => {
+            useEffect(() => {
+                const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                scanner.render((decodedText) => {
+                    scanner.clear();
+                    onScan(decodedText);
+                }, (error) => {});
+                return () => scanner.clear().catch(() => {});
+            }, []);
+
+            return (
+                <div className="fixed inset-0 z-[70] bg-black flex flex-col items-center justify-center p-4">
+                    <div className="w-full max-w-sm bg-white rounded-xl overflow-hidden">
+                        <div id="reader" className="w-full"></div>
+                    </div>
+                    <button onClick={onClose} className="mt-6 px-6 py-2 bg-slate-800 text-white rounded-full border border-slate-700">Cancel</button>
+                </div>
+            );
+        };
+
+        const ItemDetailModal = ({ item, onClose }) => (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+                <div className="glass-panel w-full max-w-sm p-6 rounded-2xl relative" onClick={e => e.stopPropagation()}>
+                    <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><i data-lucide="x" className="w-5 h-5"></i></button>
+                    <h3 className="text-xl font-bold text-indigo-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="info" className="w-5 h-5"></i> ข้อมูลมาตรฐาน
+                    </h3>
+                    <div className="space-y-4 text-sm text-slate-200">
+                        <div>
+                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">หัวข้อประเมิน</span>
+                            <div className="font-semibold">{item.item_desc_th}</div>
+                        </div>
+                        <div>
+                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">รายละเอียด</span>
+                            <div className="font-light leading-relaxed bg-slate-800/50 p-3 rounded-lg border border-white/5">{item.item_desc_th_long}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ความถี่</span>
+                                <div className="text-emerald-400">{FREQUENCY_MAP[item.frequency] || item.frequency}</div>
+                            </div>
+                            <div>
+                                <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ผู้รับผิดชอบ</span>
+                                <div className="text-purple-400">{item.responsible}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">วิธีการ</span>
+                            <div>{item.method}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- VIEWS ---
+
+        const DashboardView = ({ activeCases, historyCases, metrics, onSelectCase, onViewHistory, userProfile, onNewCase }) => {
+            const [filterWard, setFilterWard] = useState('ทั้งหมด');
+            const [tab, setTab] = useState('active');
+
+            const filteredData = (tab === 'active' ? activeCases : historyCases).filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard);
+
+            const chartData = useMemo(() => {
+                const counts = {};
+                filteredData.forEach(c => counts[c.bundle_type] = (counts[c.bundle_type] || 0) + 1);
+                return Object.keys(counts).map(k => ({ name: k, value: counts[k] }));
+            }, [filteredData]);
+
+            const COLORS = ['#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a855f7'];
+
+            return (
+                <div className="space-y-4 pb-24 px-2">
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-indigo-500/30">
+                            <span className="text-[10px] text-slate-400 uppercase">Active</span>
+                            <span className="text-2xl font-bold text-white">{metrics.totalActive}</span>
+                        </div>
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-emerald-500/30">
+                            <span className="text-[10px] text-slate-400 uppercase">Adherence</span>
+                            <span className="text-2xl font-bold text-emerald-400">{metrics.adherence}%</span>
+                        </div>
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-purple-500/30">
+                            <span className="text-[10px] text-slate-400 uppercase">Success</span>
+                            <span className="text-2xl font-bold text-purple-400">{metrics.successRate}%</span>
+                        </div>
+                    </div>
+
+                    {/* Filter & Tabs */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {WARD_OPTIONS.map(w => (
+                            <button 
+                                key={w} 
+                                onClick={() => setFilterWard(w)}
+                                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filterWard === w ? 'bg-indigo-600 text-white shadow-lg' : 'glass-panel text-slate-400'}`}
+                            >
+                                {w}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex bg-slate-800/50 p-1 rounded-xl">
+                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active Cases</button>
+                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History</button>
+                    </div>
+
+                    {/* List */}
+                    <div className="space-y-3">
+                        {filteredData.length === 0 ? (
+                            <div className="text-center py-10 text-slate-500 text-sm">ไม่พบข้อมูล</div>
+                        ) : (
+                            filteredData.map(c => {
+                                const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI'];
+                                return (
+                                    <div key={c.tracking_id} onClick={() => onSelectCase(c)} 
+                                         className={`glass-panel p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all active:scale-[0.98] ${conf.border}`}>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm ${conf.bg} ${conf.color} border border-white/10`}>
+                                                    {c.bundle_type}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                    <i data-lucide="clock" className="w-3 h-3"></i> {c.date_count} วัน
+                                                </span>
+                                                {tab === 'history' && <span className="text-[10px] bg-slate-700 px-1 rounded text-slate-300">{c.outcome}</span>}
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <div className="text-lg font-bold text-white">HN {c.hn}</div>
+                                                <div className="text-xs text-slate-400">| Bed {c.bed}</div>
+                                            </div>
+                                            <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
+                                                <i data-lucide="map-pin" className="w-3 h-3"></i> {c.ward}
+                                                <span className="text-slate-500 ml-1">• โดย {c.register || 'Staff'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-10 w-10 rounded-full bg-slate-800/50 flex items-center justify-center border border-white/5">
+                                            <i data-lucide="chevron-right" className="w-5 h-5 text-slate-400"></i>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+
+                    {/* Floating Action Button */}
+                    <button 
+                        onClick={onNewCase}
+                        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-full shadow-2xl flex items-center justify-center text-white btn-press z-30 border border-white/20"
+                    >
+                        <i data-lucide="plus" className="w-8 h-8"></i>
+                    </button>
+                </div>
+            );
+        };
+
+        const NewCaseView = ({ masterData, onSubmit, onCancel, existingCases, userProfile }) => {
+            const [form, setForm] = useState({ hn: '', bed: '', ward: 'ICU Med', bundle_type: 'CAUTI' });
+            const [loading, setLoading] = useState(false);
+            const [warning, setWarning] = useState('');
+            const [showScanner, setShowScanner] = useState(false);
+
+            const checkDuplicate = (hn, type) => {
+                const dup = existingCases.find(c => c.hn === hn && c.bundle_type === type);
+                if (dup) return `มีประวัติ Active Case: ${type} เริ่มเมื่อ ${new Date(dup.start_date).toLocaleDateString()}`;
+                return '';
+            };
+
+            const handleHnChange = (val) => {
+                setForm(prev => ({ ...prev, hn: val }));
+                setWarning(checkDuplicate(val, form.bundle_type));
+            };
+
+            const handleTypeChange = (type) => {
+                setForm(prev => ({ ...prev, bundle_type: type }));
+                setWarning(checkDuplicate(form.hn, type));
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (warning) return alert('กรุณาตรวจสอบประวัติซ้ำซ้อน');
+                setLoading(true);
+                await onSubmit({ ...form, register: userProfile?.name || 'Guest' });
+            };
+
+            return (
+                <div className="pb-10 px-2 min-h-screen flex flex-col">
+                    {showScanner && <ScannerModal onScan={(val) => { setShowScanner(false); handleHnChange(val); }} onClose={() => setShowScanner(false)} />}
+                    
+                    <div className="flex items-center gap-2 mb-4 text-slate-400 cursor-pointer" onClick={onCancel}>
+                        <i data-lucide="arrow-left" className="w-5 h-5"></i> <span className="text-sm">Back</span>
+                    </div>
+                    
+                    <h2 className="text-2xl font-bold text-white mb-6 px-2 neon-text">ลงทะเบียนเคสใหม่</h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-5 flex-grow">
+                        <div className="glass-panel p-4 rounded-xl">
+                            <label className="text-xs text-indigo-300 font-bold uppercase block mb-3">ประเภทอุปกรณ์ (Bundle Type)</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {Object.keys(BUNDLE_CONFIG).map(type => (
+                                    <button 
+                                        type="button"
+                                        key={type}
+                                        onClick={() => handleTypeChange(type)}
+                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${form.bundle_type === type 
+                                            ? `${BUNDLE_CONFIG[type].bg} ${BUNDLE_CONFIG[type].color} ${BUNDLE_CONFIG[type].border} shadow-lg scale-105` 
+                                            : 'border-slate-700 text-slate-500 bg-slate-800/30'}`}
+                                    >
+                                        <i data-lucide={BUNDLE_CONFIG[type].icon} className="w-6 h-6"></i>
+                                        <span className="text-xs font-bold">{type}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="glass-panel p-4 rounded-xl space-y-4">
+                            <div>
+                                <label className="text-xs text-slate-400 mb-1 block">HN ผู้ป่วย</label>
+                                <div className="flex gap-2">
+                                    <input type="text" required value={form.hn} onChange={e => handleHnChange(e.target.value)} 
+                                           className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center ${warning ? 'border-red-500 text-red-300' : ''}`} placeholder="HN" />
+                                    <button type="button" onClick={() => setShowScanner(true)} className="w-14 bg-slate-700 rounded-xl flex items-center justify-center text-white border border-slate-600 active:bg-slate-600">
+                                        <i data-lucide="qr-code" className="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                                {warning && <div className="text-xs text-red-400 mt-2 flex items-center gap-1 bg-red-900/20 p-2 rounded-lg border border-red-500/30"><i data-lucide="alert-triangle" className="w-3 h-3"></i> {warning}</div>}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1 block">เตียง</label>
+                                    <input type="text" required value={form.bed} onChange={e => setForm({...form, bed: e.target.value})} 
+                                           className="glass-input w-full p-3 rounded-xl text-center" placeholder="01" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 mb-1 block">หอผู้ป่วย</label>
+                                    <select value={form.ward} onChange={e => setForm({...form, ward: e.target.value})}
+                                            className="glass-input w-full p-3 rounded-xl appearance-none text-center">
+                                        {WARD_OPTIONS.slice(1).map(w => <option key={w} value={w} className="bg-slate-900 text-white">{w}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button disabled={loading || !!warning} type="submit" className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 border border-white/10">
+                            {loading ? <i data-lucide="loader-2" className="animate-spin w-5 h-5"></i> : <i data-lucide="save" className="w-5 h-5"></i>}
+                            <span>บันทึกและเริ่มประเมิน</span>
+                        </button>
+                    </form>
+                </div>
+            );
+        };
+
+        const ChecklistView = ({ caseData, masterData, mode, onSubmit, onDischarge, onCancel, userProfile }) => {
+            const items = useMemo(() => {
+                return masterData.filter(m => {
+                    if (m.bundle_type !== caseData.bundle_type) return false;
+                    return mode === 'Insertion' 
+                        ? (m.category === 'Insertion' || m.frequency === 'Once')
+                        : (m.category === 'Maintenance' || m.frequency === 'Daily' || m.frequency === 'Shift' || m.frequency === 'Event');
+                });
+            }, [masterData, caseData, mode]);
+
+            const [results, setResults] = useState({});
+            const [loading, setLoading] = useState(false);
+            const [detailItem, setDetailItem] = useState(null);
+
+            const handleCheck = (code, status) => setResults(prev => ({ ...prev, [code]: { ...prev[code], status } }));
+            const allChecked = items.length > 0 && items.every(i => results[i.item_code]?.status);
+
+            const handleSubmit = async () => {
+                setLoading(true);
+                const logs = Object.keys(results).map(code => ({
+                    tracking_id: caseData.tracking_id,
+                    item_code: code,
+                    result: results[code].status,
+                    remark: results[code].remark,
+                    user: userProfile?.name
+                }));
+                await onSubmit(logs);
+            };
+
+            return (
+                <div className="pb-32 px-2">
+                    {detailItem && <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}
+                    
+                    <div className="flex items-center justify-between mb-4 pt-2">
+                        <button onClick={onCancel} className="text-slate-400 flex items-center gap-2"><i data-lucide="arrow-left" className="w-5 h-5"></i></button>
+                        {mode === 'Maintenance' && (
+                            <button onClick={onDischarge} className="text-xs text-red-200 bg-red-500/20 border border-red-500/50 px-4 py-2 rounded-full flex items-center gap-2">
+                                <i data-lucide="log-out" className="w-3 h-3"></i> หย่าอุปกรณ์/จำหน่าย
+                            </button>
+                        )}
+                    </div>
+
+                    <div className={`p-5 rounded-2xl mb-6 flex justify-between items-center ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border} relative overflow-hidden`}>
+                        <div className="z-10">
+                            <div className="text-3xl font-bold text-white neon-text mb-1">{caseData.bundle_type}</div>
+                            <div className="text-sm text-slate-300 flex items-center gap-3">
+                                <span className="bg-black/20 px-2 py-0.5 rounded">HN {caseData.hn}</span>
+                                <span className="bg-black/20 px-2 py-0.5 rounded">Bed {caseData.bed}</span>
+                            </div>
+                        </div>
+                        <i data-lucide={BUNDLE_CONFIG[caseData.bundle_type].icon} className={`w-16 h-16 opacity-50 ${BUNDLE_CONFIG[caseData.bundle_type].color}`}></i>
+                    </div>
+
+                    <div className="space-y-4">
+                        {items.map((item, idx) => (
+                            <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col md:flex-row">
+                                <div className="p-4 flex-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setDetailItem(item)}>
+                                    <div className="flex gap-3">
+                                        <div className="text-2xl font-bold text-slate-600 select-none">#{idx + 1}</div>
+                                        <div>
+                                            <div className="text-sm font-bold text-white mb-1">{item.item_desc_th}</div>
+                                            <div className="text-xs text-slate-400 font-light line-clamp-2 mb-2">{item.item_desc_th_long}</div>
+                                            <div className="flex gap-2">
+                                                <span className="text-[9px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">{item.item_code}</span>
+                                                <span className="text-[9px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">{item.frequency}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-900/50 flex md:flex-col gap-2 border-t md:border-t-0 md:border-l border-white/5 items-center justify-center min-w-[120px]">
+                                    <button 
+                                        onClick={() => handleCheck(item.item_code, 'ผ่าน')}
+                                        className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ผ่าน' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
+                                    >ผ่าน</button>
+                                    <button 
+                                        onClick={() => handleCheck(item.item_code, 'ไม่ผ่าน')}
+                                        className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ไม่ผ่าน' ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
+                                    >ไม่ผ่าน</button>
+                                </div>
+                                {results[item.item_code]?.status === 'ไม่ผ่าน' && (
+                                    <div className="p-2 w-full border-t border-white/5 bg-red-900/20">
+                                        <input type="text" placeholder="ระบุเหตุผล..." className="w-full bg-slate-900/80 rounded p-2 text-xs text-white border border-red-500/30 outline-none" onChange={(e) => setResults(prev => ({...prev, [item.item_code]: {...prev[item.item_code], remark: e.target.value}}))} />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/90 backdrop-blur-xl border-t border-slate-700 z-40 pb-8">
+                        <button onClick={handleSubmit} disabled={!allChecked || loading} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale">
+                            {loading ? 'กำลังบันทึก...' : 'บันทึกผลการประเมิน'}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const DischargeModal = ({ onSubmit, onCancel }) => {
+            const [form, setForm] = useState({ outcome: 'หาย/ดีขึ้น', end_date: new Date().toISOString().split('T')[0] });
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async () => {
+                setLoading(true);
+                await onSubmit(form);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md">
+                    <div className="glass-panel w-full max-w-sm p-6 rounded-3xl border border-white/10 relative">
+                        <h3 className="text-xl font-bold text-white mb-6 text-center">จำหน่าย/หย่าอุปกรณ์</h3>
+                        
+                        <div className="space-y-4 mb-8">
+                            <div>
+                                <label className="text-xs text-slate-400 mb-1 block">วันที่</label>
+                                <input type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} className="glass-input w-full p-3 rounded-xl text-center" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 mb-1 block">ผลลัพธ์ (Outcome)</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {['หาย/ดีขึ้น', 'ติดเชื้อ (HAI)', 'เสียชีวิต', 'ส่งต่อ'].map(opt => (
+                                        <button key={opt} onClick={() => setForm({...form, outcome: opt})}
+                                            className={`p-3 rounded-xl border text-sm font-bold text-left px-4 transition-all ${form.outcome === opt 
+                                                ? (opt.includes('ติดเชื้อ') || opt.includes('เสียชีวิต') ? 'bg-red-500 text-white border-red-500' : 'bg-emerald-500 text-white border-emerald-500')
+                                                : 'border-slate-700 bg-slate-800 text-slate-400'}`}>
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300">ยกเลิก</button>
+                            <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3 rounded-xl bg-white text-slate-900 font-bold disabled:opacity-50">ยืนยัน</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+            const [data, setData] = useState({ master: [], activeCases: [], historyCases: [], metrics: {} });
+            const [loading, setLoading] = useState(true);
+            const [userProfile, setUserProfile] = useState(null);
+            const [selectedCase, setSelectedCase] = useState(null);
+            const [checklistMode, setChecklistMode] = useState('Maintenance');
+            const [showDischarge, setShowDischarge] = useState(false);
+
+            useEffect(() => {
+                const initLiff = async () => {
+                    try {
+                        if (window.liff) {
+                            await window.liff.init({ liffId: LIFF_ID }); 
+                            if (window.liff.isLoggedIn()) {
+                                const profile = await window.liff.getProfile();
+                                const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
+                                if (userDetails.found) {
+                                    setUserProfile({ ...userDetails, userId: profile.userId });
+                                } else {
+                                    setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId });
+                                }
+                            } else {
+                                // window.liff.login(); // Optional
+                            }
+                        }
+                    } catch (e) { console.log('LIFF Error or Dev Mode', e); }
+                };
+                initLiff();
+                refreshData();
+                if(window.lucide) window.lucide.createIcons();
+            }, []);
+
+            const refreshData = async () => {
+                setLoading(true);
+                try {
+                    const res = await fetchGAS('getInitialData');
+                    setData(res);
+                } catch (e) { console.error(e); }
+                setLoading(false);
+            };
+
+            const handleNewCase = async (formData) => {
+                const res = await fetchGAS('createNewCase', { payload: formData });
+                if (res.success) {
+                    await refreshData();
+                    // Manually construct new case from form data for immediate transition
+                    const newCase = { 
+                        ...formData, 
+                        tracking_id: res.trackingId, 
+                        start_date: new Date().toISOString(), 
+                        status: 'Active',
+                        date_count: 1
+                    };
+                    setSelectedCase(newCase);
+                    setChecklistMode('Insertion');
+                    setView('checklist');
+                } else {
+                    alert(res.message);
+                }
+            };
+
+            if (loading && !data.activeCases.length) return <LoadingSpinner />;
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen relative pb-10">
+                    {view === 'dashboard' && <Header userProfile={userProfile} />}
+                    
+                    <main>
+                        {view === 'dashboard' && (
+                            <DashboardView 
+                                activeCases={data.activeCases} 
+                                historyCases={data.historyCases}
+                                metrics={data.metrics} 
+                                onSelectCase={(c) => {
+                                    if(c.status === 'Active') {
+                                        setSelectedCase(c);
+                                        setChecklistMode('Maintenance');
+                                        setView('checklist');
+                                    } else {
+                                        alert('เคสนี้ถูกจำหน่ายแล้ว');
+                                    }
+                                }}
+                                onNewCase={() => setView('new_case')}
+                            />
+                        )}
+
+                        {view === 'new_case' && (
+                            <NewCaseView 
+                                masterData={data.master} 
+                                existingCases={data.activeCases}
+                                userProfile={userProfile}
+                                onSubmit={handleNewCase} 
+                                onCancel={() => setView('dashboard')} 
+                            />
+                        )}
+
+                        {view === 'checklist' && selectedCase && (
+                            <ChecklistView 
+                                caseData={selectedCase} 
+                                masterData={data.master}
+                                mode={checklistMode}
+                                userProfile={userProfile}
+                                onSubmit={async (logs) => {
+                                    await fetchGAS('saveChecklistLog', { payload: logs });
+                                    alert('บันทึกเรียบร้อย');
+                                    setView('dashboard');
+                                    setSelectedCase(null);
+                                }}
+                                onDischarge={() => setShowDischarge(true)}
+                                onCancel={() => { setView('dashboard'); setSelectedCase(null); }}
+                            />
+                        )}
+                    </main>
+
+                    {showDischarge && (
+                        <DischargeModal 
+                            onSubmit={async (form) => {
+                                await fetchGAS('closeCase', { payload: { tracking_id: selectedCase.tracking_id, ...form } });
+                                setShowDischarge(false);
+                                setView('dashboard');
+                                setSelectedCase(null);
+                                refreshData();
+                            }} 
+                            onCancel={() => setShowDischarge(false)} 
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
