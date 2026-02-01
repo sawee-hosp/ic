@@ -10,11 +10,16 @@
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM (Load first) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Prop-types (Required for Recharts) -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    <!-- Recharts -->
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- LIFF SDK -->
@@ -86,7 +91,14 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-        const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts || { PieChart:()=>null, Pie:()=>null, Cell:()=>null, ResponsiveContainer:({children})=>children };
+        
+        // Recharts Destructuring with Fallback to prevent crash if library fails
+        const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts || { 
+            PieChart: ({children}) => <div className="flex items-center justify-center h-full text-xs text-slate-500">Chart Error</div>, 
+            Pie: () => null, 
+            Cell: () => null, 
+            ResponsiveContainer: ({children}) => <div style={{width:'100%', height:'100%'}}>{children}</div> 
+        };
 
         // --- CONFIGURATION ---
         const GAS_URL = "https://script.google.com/macros/s/AKfycbypLTYWgle-SsRfHxwgfHpIT6Lyhh_iwEKK6lVxcuQyM-TQBCk6mIRWJ0pKd7sFxEY/exec";
@@ -113,33 +125,43 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: "POST",
+                    redirect: "follow", 
                     body: JSON.stringify(params)
                 });
+                if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
             } catch (error) {
                 console.error("GAS Error:", error);
-                throw error;
+                // Return fallback structure to prevent UI crash
+                return { error: true, master: [], activeCases: [], historyCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 } };
             }
         };
 
-        // --- HELPER COMPONENT FOR ICONS ---
+        // --- HELPER COMPONENT FOR ICONS (Robust Version) ---
+        // Uses lucide.createIcons which is more reliable on CDN
         const LucideIcon = ({ name, className }) => {
-            const [svgHtml, setSvgHtml] = useState('');
+            const iconRef = useRef(null);
 
             useEffect(() => {
-                if (window.lucide && window.lucide.icons) {
-                    const iconName = name.charAt(0).toUpperCase() + name.slice(1);
-                    const iconNode = window.lucide.icons[name] || window.lucide.icons[iconName];
+                if (window.lucide && window.lucide.createIcons && iconRef.current) {
+                    // Convert PascalCase to kebab-case for data-lucide attribute if needed
+                    // But standard lucide names usually work. 
+                    // Let's try to map React-like names to Lucide names roughly
+                    const kebabName = name.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase().replace(/^-/, '');
                     
-                    if (iconNode) {
-                        const svg = iconNode.toSvg({ class: className });
-                        setSvgHtml(svg);
-                    }
+                    iconRef.current.setAttribute('data-lucide', kebabName);
+                    
+                    window.lucide.createIcons({
+                        root: iconRef.current.parentNode,
+                        nameAttr: 'data-lucide',
+                        attrs: {
+                            class: className
+                        }
+                    });
                 }
             }, [name, className]);
 
-            if (!svgHtml) return <span className={`inline-block w-5 h-5 ${className}`}></span>;
-            return <span dangerouslySetInnerHTML={{ __html: svgHtml }} className="flex items-center justify-center" />;
+            return <i ref={iconRef} className={className}></i>;
         };
 
         // --- COMPONENTS ---
@@ -149,7 +171,7 @@
                 <div className="relative">
                     <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-8 h-8 opacity-80" />
+                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-8 h-8 opacity-80" onError={(e) => e.target.style.display='none'}/>
                     </div>
                 </div>
                 <p className="mt-4 text-slate-400 text-sm animate-pulse">{text || 'Loading System...'}</p>
@@ -170,7 +192,7 @@
                 
                 <div className="flex items-center gap-3">
                     <div className="text-right hidden md:block">
-                        <div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div>
+                        <div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest'}</div>
                         <div className="text-[10px] text-slate-400 mt-0.5 flex gap-1 justify-end">
                             <span>{userProfile?.job || 'Staff'}</span>
                             {userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}
@@ -191,6 +213,9 @@
                 let html5QrcodeScanner;
                 const startScanner = async () => {
                     try {
+                        const element = document.getElementById("reader");
+                        if (!element) return;
+
                         html5QrcodeScanner = new Html5Qrcode("reader");
                         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
                         await html5QrcodeScanner.start(
@@ -199,20 +224,18 @@
                             (decodedText) => {
                                 html5QrcodeScanner.stop().then(() => {
                                     onScan(decodedText);
-                                });
+                                }).catch(err => console.error("Stop failed", err));
                             },
-                            (errorMessage) => {
-                                // Ignore scanning errors
-                            }
+                            (errorMessage) => { /* ignore */ }
                         );
                     } catch (err) {
                         console.error(err);
-                        alert("ไม่สามารถเปิดกล้องได้: " + err);
+                        alert("Camera Error: " + err);
                         onClose();
                     }
                 };
 
-                startScanner();
+                setTimeout(startScanner, 100);
 
                 return () => {
                     if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
@@ -223,8 +246,8 @@
 
             return (
                 <div className="fixed inset-0 z-[70] bg-black flex flex-col items-center justify-center">
-                    <div className="w-full max-w-sm overflow-hidden relative">
-                        <div id="reader" className="w-full h-[60vh] bg-black"></div>
+                    <div className="w-full max-w-sm overflow-hidden relative bg-black">
+                        <div id="reader" className="w-full h-[60vh]"></div>
                         <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/80 to-transparent text-white text-center">
                             สแกน Barcode / QR Code
                         </div>
@@ -326,7 +349,7 @@
                     {/* List */}
                     <div className="space-y-3">
                         {filteredData.length === 0 ? (
-                            <div className="text-center py-10 text-slate-500 text-sm">ไม่พบข้อมูล</div>
+                            <div className="text-center py-10 text-slate-500 text-sm glass-panel rounded-xl">ไม่พบข้อมูล</div>
                         ) : (
                             filteredData.map(c => {
                                 const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI'];
@@ -439,7 +462,7 @@
                                            className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center ${warning ? 'border-red-500 text-red-300' : ''}`} placeholder="HN" />
                                     <button type="button" onClick={() => setShowScanner(true)} className="w-auto px-4 bg-indigo-600 rounded-xl flex items-center justify-center gap-2 text-white border border-indigo-500 active:bg-indigo-700 shadow-lg">
                                         <LucideIcon name="QrCode" className="w-5 h-5"/>
-                                        <span className="text-xs font-bold">สแกน Barcode</span>
+                                        <span className="text-xs font-bold">สแกน</span>
                                     </button>
                                 </div>
                                 {warning && <div className="text-xs text-red-400 mt-2 flex items-center gap-1 bg-red-900/20 p-2 rounded-lg border border-red-500/30"><LucideIcon name="AlertTriangle" className="w-3 h-3"/> {warning}</div>}
@@ -622,56 +645,88 @@
             const [showDischarge, setShowDischarge] = useState(false);
 
             useEffect(() => {
-                const initLiff = async () => {
+                const initApp = async () => {
+                    // Force timeout to prevent infinite loading (e.g. if LIFF/Fetch hangs)
+                    const timeout = setTimeout(() => {
+                        if (loading) {
+                            console.warn("Loading timed out, showing app anyway");
+                            setLoading(false);
+                        }
+                    }, 8000); // 8 seconds timeout
+
                     try {
+                        // 1. Init LIFF
                         if (window.liff) {
-                            await window.liff.init({ liffId: LIFF_ID });
-                            
-                            // FORCE LOGIN IF NOT LOGGED IN
-                            if (!window.liff.isLoggedIn()) {
-                                window.liff.login({ redirectUri: window.location.href });
-                                return;
-                            }
-                            
-                            if (window.liff.isLoggedIn()) {
+                            try {
+                                await window.liff.init({ liffId: LIFF_ID });
+                                if (!window.liff.isLoggedIn()) {
+                                    window.liff.login({ redirectUri: window.location.href });
+                                    return; // Stop here, wait for redirect
+                                }
                                 const profile = await window.liff.getProfile();
                                 const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
-                                if (userDetails.found) {
+                                if (userDetails && userDetails.found) {
                                     setUserProfile({ ...userDetails, userId: profile.userId });
                                 } else {
                                     setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId });
                                 }
+                            } catch (liffErr) {
+                                console.error("LIFF Init Error:", liffErr);
+                                // Continue loading even if LIFF fails
                             }
                         }
-                    } catch (e) { console.log('LIFF Error', e); }
-                };
-                initLiff();
-                refreshData();
-            }, []);
 
-            const refreshData = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetchGAS('getInitialData');
-                    setData(res);
-                } catch (e) { console.error(e); }
-                setLoading(false);
-            };
+                        // 2. Fetch Data
+                        const res = await fetchGAS('getInitialData');
+                        if (res && !res.error) {
+                            setData(res);
+                        }
+                    } catch (e) { 
+                        console.error('App Init Error', e); 
+                    } finally {
+                        clearTimeout(timeout);
+                        setLoading(false);
+                    }
+                };
+                initApp();
+            }, []);
 
             const handleNewCase = async (formData) => {
                 const res = await fetchGAS('createNewCase', { payload: formData });
-                if (res.success) {
-                    await refreshData();
+                if (res && res.success) {
+                    // Refresh data in background
+                    fetchGAS('getInitialData').then(res => { if(res && !res.error) setData(res); });
+                    
                     const newCase = { ...formData, tracking_id: res.trackingId, start_date: new Date().toISOString(), status: 'Active', date_count: 1 };
                     setSelectedCase(newCase);
                     setChecklistMode('Insertion');
                     setView('checklist');
                 } else {
-                    alert(res.message);
+                    alert(res?.message || 'เกิดข้อผิดพลาด');
                 }
             };
 
-            if (loading && !data.activeCases.length) return <LoadingSpinner />;
+            const handleChecklistSubmit = async (logs) => {
+                await fetchGAS('saveChecklistLog', { payload: logs });
+                alert('บันทึกเรียบร้อย');
+                setView('dashboard');
+                setSelectedCase(null);
+                // Refresh data
+                fetchGAS('getInitialData').then(res => { if(res && !res.error) setData(res); });
+            };
+
+            const handleDischargeSubmit = async (form) => {
+                await fetchGAS('closeCase', { payload: { tracking_id: selectedCase.tracking_id, ...form } });
+                setShowDischarge(false);
+                setView('dashboard');
+                setSelectedCase(null);
+                setLoading(true); // Short loading to reflect changes
+                const res = await fetchGAS('getInitialData');
+                if (res && !res.error) setData(res);
+                setLoading(false);
+            };
+
+            if (loading && data.activeCases.length === 0 && data.historyCases.length === 0) return <LoadingSpinner />;
 
             return (
                 <div className="max-w-md mx-auto min-h-screen relative pb-10">
@@ -712,12 +767,7 @@
                                 masterData={data.master} 
                                 mode={checklistMode}
                                 userProfile={userProfile}
-                                onSubmit={async (logs) => {
-                                    await fetchGAS('saveChecklistLog', { payload: logs });
-                                    alert('บันทึกเรียบร้อย');
-                                    setView('dashboard');
-                                    setSelectedCase(null);
-                                }}
+                                onSubmit={handleChecklistSubmit}
                                 onDischarge={() => setShowDischarge(true)}
                                 onCancel={() => { setView('dashboard'); setSelectedCase(null); }}
                             />
@@ -726,13 +776,7 @@
 
                     {showDischarge && (
                         <DischargeModal 
-                            onSubmit={async (form) => {
-                                await fetchGAS('closeCase', { payload: { tracking_id: selectedCase.tracking_id, ...form } });
-                                setShowDischarge(false);
-                                setView('dashboard');
-                                setSelectedCase(null);
-                                refreshData();
-                            }} 
+                            onSubmit={handleDischargeSubmit} 
                             onCancel={() => setShowDischarge(false)} 
                         />
                     )}
