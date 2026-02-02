@@ -107,14 +107,14 @@
             return 'เวรดึก';
         };
 
-        // --- FETCH GAS FIX (ใช้ text/plain เพื่อแก้ Fail to Fetch) ---
+        // --- FETCH GAS FIX (ใช้ text/plain เพื่อแก้ Fail to Fetch เหมือนแอปตัวอย่าง) ---
         const fetchGAS = async (action, data = {}) => {
             try {
                 const response = await fetch(GAS_URL, { 
                     method: "POST", 
                     redirect: "follow", 
                     body: JSON.stringify({ action, ...data }),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } // สำคัญมากสำหรับ GAS
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
                 });
                 if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
@@ -136,7 +136,7 @@
             return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
         };
 
-        // --- LINE SHARE LOGIC (รองรับ Browser และป้องกัน about:blank) ---
+        // --- LINE SHARE LOGIC FIX (ใช้ชื่อฟังก์ชันให้ตรงกันและรองรับ Browser) ---
         const getLiffUrl = (params = {}) => {
             const baseUrl = `https://liff.line.me/${LIFF_ID}`;
             const query = Object.entries(params)
@@ -149,7 +149,7 @@
         const shareToLine = async (flexMessage) => {
             if (!window.liff) return false;
             
-            // ตรวจสอบ Login ก่อนแชร์ (Browser จำเป็นต้อง Login ก่อน)
+            // สำหรับ Browser ต้องมั่นใจว่า Login แล้วถึงจะเรียก shareTargetPicker ได้
             if (!window.liff.isLoggedIn()) {
                 window.liff.login({ redirectUri: window.location.href });
                 return false;
@@ -157,7 +157,6 @@
             
             if (window.liff.isApiAvailable('shareTargetPicker')) {
                 try {
-                    // shareTargetPicker ทำงานได้ทั้งในแอป LINE และ External Browser
                     const res = await window.liff.shareTargetPicker([flexMessage]);
                     return !!res;
                 } catch (err) {
@@ -166,7 +165,7 @@
                     return false;
                 }
             } else {
-                alert("Share API ไม่พร้อมใช้งาน (โปรดเช็คการเปิดสิทธิ์ใน LINE Console)");
+                alert("Share API ไม่พร้อมใช้งาน (โปรดเช็คสิทธิ์ใน LINE Console)");
                 return false;
             }
         };
@@ -208,7 +207,7 @@
             </div>
         );
 
-        // --- GLOBAL COMPONENTS ---
+        // --- GLOBAL COMPONENTS (UI คงเดิม) ---
 
         const Header = ({ userProfile }) => (
             <header className="glass-panel sticky top-0 z-40 px-4 py-3 flex justify-between items-center mb-4 rounded-b-2xl mx-1 mt-1 shadow-lg">
@@ -655,6 +654,8 @@
                         if (window.liff) {
                             try {
                                 await window.liff.init({ liffId: LIFF_ID });
+                                
+                                // ปรับ Logic Login เพื่อรองรับ Browser เหมือนตัวอย่าง
                                 if (window.liff.isLoggedIn()) {
                                     const profile = await window.liff.getProfile();
                                     const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
@@ -668,8 +669,7 @@
                                         setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId, job: 'Staff', dept: 'General' });
                                     }
                                 } else {
-                                    // สำหรับ Browser ทั่วไป ให้เรียก login() เพื่อให้ shareTargetPicker ทำงานได้
-                                    window.liff.login();
+                                    window.liff.login(); // Login ทุกกรณีที่ยังไม่ได้ Login เพื่อความพร้อมของ shareTargetPicker
                                 }
                             } catch (e) { console.error("LIFF Init error", e); }
                         }
@@ -689,6 +689,7 @@
                 const res = await fetchGAS('createNewCase', { payload: formData });
                 if (res && res.success) { 
                     if(share) {
+                        // ส่ง tracking_id ที่ได้จาก GAS กลับไปสร้าง Flex URL
                         await shareToLine(createBundleFlex({...formData, tracking_id: res.trackingId, register: userProfile?.name}));
                     }
                     alert('ลงทะเบียนสำเร็จ');
