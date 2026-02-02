@@ -25,7 +25,7 @@
             color: #f8fafc; 
             -webkit-tap-highlight-color: transparent; 
             overflow-x: hidden;
-            touch-action: manipulation; /* Faster touch response */
+            touch-action: manipulation;
         }
         .glass-panel { 
             background: rgba(30, 41, 59, 0.7); 
@@ -50,7 +50,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyX0pC3eLOod07tKyR3loiCecqps6er8EDcGhbtHVm885s2R2Zri6HSr94tKw3GosMI/exec";
-        const LIFF_ID = "2008690634-UG4TJcVB"; // Updated LIFF ID
+        const LIFF_ID = "2008690634-UG4TJcVB";
 
         // Icon Helper
         const LucideIcon = ({ name, className }) => {
@@ -67,9 +67,27 @@
             return <i data-lucide={name} ref={ref} className={className}></i>;
         };
 
+        const ProgressBar = ({ current = 0, target = 100 }) => {
+            const percent = Math.min((current / target) * 100, 100);
+            return (
+                <div className="glass-panel p-3 rounded-xl mb-4">
+                    <div className="flex justify-between items-end mb-1">
+                        <span className="text-xs text-slate-400">เป้าหมายประจำเดือน</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-bold text-white">{current}</span>
+                            <span className="text-xs text-slate-400">/ {target} ครั้ง</span>
+                        </div>
+                    </div>
+                    <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                        <div className="bg-gradient-to-r from-green-400 to-emerald-600 h-2.5 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style={{ width: `${percent}%` }}></div>
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             // Data State
-            const [meta, setMeta] = useState({ locations: [], hcws: [] });
+            const [meta, setMeta] = useState({ locations: [], hcws: [], totalCount: 0 });
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
 
@@ -83,11 +101,9 @@
             // Initialize
             useEffect(() => {
                 const init = async () => {
-                    // 1. Load cached meta if available
                     const cachedMeta = localStorage.getItem('hh_meta');
                     if (cachedMeta) setMeta(JSON.parse(cachedMeta));
 
-                    // 2. LIFF & User
                     if (window.liff) {
                         try {
                             await window.liff.init({ liffId: LIFF_ID });
@@ -97,29 +113,24 @@
                             }
                             const profile = await window.liff.getProfile();
                             
-                            // Check Local Storage for User Profile first (Super Fast)
                             const cachedUser = localStorage.getItem('hh_user_' + profile.userId);
                             if (cachedUser) {
                                 setUser(JSON.parse(cachedUser));
                             } else {
-                                // Fetch from Sheet if not cached
                                 fetch(GAS_URL, {
                                     method: 'POST',
                                     body: JSON.stringify({ action: 'getUserProfile', userId: profile.userId })
                                 }).then(r => r.json()).then(res => {
-                                    if (res.found) {
-                                        const userData = { ...res, picture: profile.pictureUrl };
-                                        setUser(userData);
-                                        localStorage.setItem('hh_user_' + profile.userId, JSON.stringify(userData));
-                                    } else {
-                                        setUser({ name: profile.displayName, picture: profile.pictureUrl, dept: 'Guest' });
-                                    }
+                                    const userData = res.found 
+                                        ? { ...res, picture: profile.pictureUrl }
+                                        : { name: profile.displayName, picture: profile.pictureUrl, dept: 'Guest' };
+                                    setUser(userData);
+                                    localStorage.setItem('hh_user_' + profile.userId, JSON.stringify(userData));
                                 });
                             }
                         } catch (e) { console.error(e); }
                     }
 
-                    // 3. Background Fetch Meta (Update Cache)
                     fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getMetaData' }) })
                         .then(r => r.json())
                         .then(data => {
@@ -130,7 +141,6 @@
                             setLoading(false);
                         });
                         
-                    // Restore previous selection (Location is usually static for one observer)
                     const lastLoc = localStorage.getItem('hh_last_loc');
                     if(lastLoc) setLocation(lastLoc);
                 };
@@ -147,29 +157,29 @@
                     return;
                 }
 
-                // Optimistic UI: Reset form immediately for next input
                 const payload = {
                     location, hcw, moment, method,
                     ...steps,
                     observer: user?.name || 'Unknown'
                 };
 
-                // Save Location preference
                 localStorage.setItem('hh_last_loc', location);
 
-                // Reset specific fields for next person
+                // Reset
                 setMoment('');
                 setMethod('');
-                setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true }); // Reset steps to all true default
+                setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
                 
-                // Show toast or subtle feedback
+                // Show toast
                 const toast = document.createElement('div');
                 toast.className = "fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg z-50 animate-bounce";
                 toast.innerText = "บันทึกสำเร็จ!";
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 1500);
 
-                // Send to background
+                // Optimistically update count
+                setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
+
                 await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'saveRecord', payload })
@@ -181,60 +191,81 @@
             );
 
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-10 p-2">
+                <div className="max-w-md mx-auto min-h-screen pb-20 p-2">
                     {/* Header */}
-                    <div className="glass-panel p-3 rounded-xl mb-3 flex items-center justify-between">
+                    <div className="glass-panel p-3 rounded-xl mb-3 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 border-l-4 border-l-yellow-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-indigo-500/50">
-                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-5 h-5"/></div>}
+                            <div className="text-3xl">🍍</div>
+                            <div>
+                                <div className="text-xl font-bold text-white leading-none">SW-1</div>
+                                <div className="text-[10px] text-slate-400 tracking-wider">Hand Hygiene App</div>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-right">
                             <div>
                                 <div className="text-sm font-bold text-white">{user?.name || 'Guest'}</div>
                                 <div className="text-[10px] text-slate-400">{user?.dept || '-'}</div>
                             </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-xs text-indigo-300 font-bold">Hand Hygiene</div>
-                            <div className="text-[10px] text-slate-500">Observation</div>
+                            <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm">
+                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-5 h-5"/></div>}
+                            </div>
                         </div>
                     </div>
 
+                    {/* Progress */}
+                    <ProgressBar current={meta.totalCount || 0} target={100} />
+
                     {/* 1. Location */}
-                    <div className="mb-2">
-                        <label className="text-xs text-slate-400 ml-1 mb-1 block">สถานที่ (Location)</label>
-                        <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+                    <div className="mb-3">
+                        <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">1. สถานที่ (Location)</label>
+                        <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto no-scrollbar pb-1">
                             {meta.locations.map(l => (
                                 <button key={l.code} 
                                     onClick={() => setLocation(l.code)}
-                                    className={`item-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-bold border ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                    className={`item-btn whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold border relative min-w-[100px] text-left ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                     {l.label}
+                                    {l.count > 0 && <span className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-indigo-400 rounded-full animate-ping"></span>}
+                                    {l.count > 0 && <span className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-indigo-500 rounded-full flex items-center justify-center text-[8px] text-white ring-2 ring-[#0f172a]">{l.count}</span>}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* 2. HCW */}
-                    <div className="mb-2">
-                        <label className="text-xs text-slate-400 ml-1 mb-1 block">ผู้ถูกสังเกต (HCW)</label>
-                        <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+                    <div className="mb-3">
+                        <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">2. ผู้ถูกสังเกต (HCW)</label>
+                        <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto no-scrollbar pb-1">
                             {meta.hcws.map(h => (
                                 <button key={h.code} 
                                     onClick={() => setHcw(h.code)}
-                                    className={`item-btn whitespace-nowrap px-3 py-2 rounded-lg text-xs font-bold border ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                    className={`item-btn whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold border relative min-w-[100px] text-left ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                     {h.label}
+                                    {h.count > 0 && <span className="absolute top-0 right-0 -mt-1 -mr-1 w-2.5 h-2.5 bg-pink-500 rounded-full flex items-center justify-center text-[8px] text-white ring-2 ring-[#0f172a]">{h.count}</span>}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* 3. Moments (Grid) */}
+                    {/* 3. Moments */}
                     <div className="mb-3">
-                        <label className="text-xs text-slate-400 ml-1 mb-1 block">5 Moments</label>
-                        <div className="grid grid-cols-5 gap-1.5">
-                            {[1,2,3,4,5].map(m => (
-                                <button key={m} onClick={() => setMoment(m)} className={`item-btn flex flex-col items-center justify-center p-2 rounded-xl border aspect-square ${moment === m ? 'bg-blue-500 border-blue-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <span className="text-xl font-black mb-1">{m}</span>
-                                    <span className="text-[8px] leading-none text-center">Moment</span>
+                        <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">3. ข้อบ่งชี้ (5 Moments)</label>
+                        <div className="space-y-1.5">
+                            {[
+                                { id: 1, label: 'ก่อนสัมผัสผู้ป่วย', icon: 'hand-helping' },
+                                { id: 2, label: 'ก่อนทำหัตถการสะอาด', icon: 'syringe' },
+                                { id: 3, label: 'หลังสัมผัสสารคัดหลั่ง', icon: 'droplets' },
+                                { id: 4, label: 'หลังสัมผัสผู้ป่วย', icon: 'users' },
+                                { id: 5, label: 'หลังสัมผัสสิ่งแวดล้อม', icon: 'bed' }
+                            ].map(m => (
+                                <button key={m.id} onClick={() => setMoment(m.id)} 
+                                    className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/50' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${moment === m.id ? 'bg-white/20' : 'bg-slate-700'}`}>
+                                        <span className="font-black text-sm">{m.id}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-semibold">{m.label}</div>
+                                    </div>
+                                    <LucideIcon name={m.icon} className={`w-5 h-5 ${moment === m.id ? 'text-white' : 'text-slate-600'}`}/>
                                 </button>
                             ))}
                         </div>
@@ -242,45 +273,64 @@
 
                     {/* 4. Method */}
                     <div className="mb-3">
-                        <label className="text-xs text-slate-400 ml-1 mb-1 block">วิธีการ (Method)</label>
+                        <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">4. วิธีการ (Method)</label>
                         <div className="grid grid-cols-3 gap-2">
                             <button onClick={() => setMethod(1)} className={`item-btn p-3 rounded-xl border text-center ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                <LucideIcon name="droplets" className="w-5 h-5 mx-auto mb-1"/>
-                                <span className="text-xs">สบู่</span>
+                                <LucideIcon name="droplets" className="w-6 h-6 mx-auto mb-1.5"/>
+                                <span className="text-xs font-bold">สบู่</span>
                             </button>
                             <button onClick={() => setMethod(2)} className={`item-btn p-3 rounded-xl border text-center ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                <LucideIcon name="spray-can" className="w-5 h-5 mx-auto mb-1"/>
-                                <span className="text-xs">แอลกอฮอล์</span>
+                                <LucideIcon name="spray-can" className="w-6 h-6 mx-auto mb-1.5"/>
+                                <span className="text-xs font-bold">แอลกอฮอล์</span>
                             </button>
                             <button onClick={() => { setMethod(0); setSteps({ 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false }); }} className={`item-btn p-3 rounded-xl border text-center ${method === 0 ? 'bg-red-600 border-red-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                <LucideIcon name="x-circle" className="w-5 h-5 mx-auto mb-1"/>
-                                <span className="text-xs">ไม่ล้าง</span>
+                                <LucideIcon name="x-circle" className="w-6 h-6 mx-auto mb-1.5"/>
+                                <span className="text-xs font-bold">ไม่ล้าง</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* 5. Steps (Show only if washed) */}
+                    {/* 5. Steps */}
                     {method !== 0 && method !== '' && (
-                        <div className="mb-6">
-                            <label className="text-xs text-slate-400 ml-1 mb-1 block">ขั้นตอน (แตะเพื่อเอาออก)</label>
-                            <div className="grid grid-cols-4 gap-2">
+                        <div className="mb-6 animate-fade-in">
+                            <label className="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase flex justify-between">
+                                <span>5. ขั้นตอน (7 Steps)</span>
+                                <span className="text-[10px] text-slate-500 font-normal">*แตะเพื่อระบุว่าไม่ได้ทำ</span>
+                            </label>
+                            <div className="grid grid-cols-1 gap-2">
                                 {[
-                                    {id:1, t:'ฝ่ามือ'}, {id:2, t:'หลังมือ'}, {id:3, t:'ซอกนิ้ว'}, 
-                                    {id:4, t:'กำปั้น'}, {id:5, t:'หัวแม่มือ'}, {id:6, t:'ปลายนิ้ว'}, {id:7, t:'ข้อมือ'}
+                                    {id:1, t:'ฝ่ามือถูฝ่ามือ', i:'hand'},
+                                    {id:2, t:'ฝ่ามือถูหลังมือและซอกนิ้ว', i:'layers'},
+                                    {id:3, t:'ฝ่ามือถูฝ่ามือและนิ้วถูซอกนิ้ว', i:'grip'},
+                                    {id:4, t:'หลังนิ้วมือถูฝ่ามือ', i:'grab'},
+                                    {id:5, t:'ถูหัวแม่มือโดยรอบด้วยฝ่ามือ', i:'thumbs-up'},
+                                    {id:6, t:'ปลายนิ้วมือถูขวางฝ่ามือ', i:'fingerprint'},
+                                    {id:7, t:'ถูรอบข้อมือ', i:'watch'}
                                 ].map(s => (
                                     <button key={s.id} onClick={() => toggleStep(s.id)} 
-                                        className={`item-btn p-2 rounded-lg text-xs font-bold border transition-all ${steps[s.id] ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-slate-800/50 border-slate-700 text-slate-600 line-through decoration-slate-500'}`}>
-                                        {s.id}. {s.t}
+                                        className={`item-btn p-3 rounded-xl border flex items-center justify-between transition-all ${steps[s.id] ? 'bg-slate-800 border-slate-700' : 'bg-red-900/20 border-red-900/50'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${steps[s.id] ? 'bg-slate-700 text-slate-300' : 'bg-red-900/50 text-red-400'}`}>
+                                                <LucideIcon name={s.i} className="w-4 h-4"/>
+                                            </div>
+                                            <span className={`text-sm ${steps[s.id] ? 'text-slate-200' : 'text-red-300 line-through'}`}>{s.id}. {s.t}</span>
+                                        </div>
+                                        {steps[s.id] 
+                                            ? <div className="bg-emerald-500/20 p-1 rounded-full"><LucideIcon name="check" className="w-4 h-4 text-emerald-400"/></div>
+                                            : <div className="bg-red-500/20 p-1 rounded-full"><LucideIcon name="x" className="w-4 h-4 text-red-400"/></div>
+                                        }
                                     </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    <button onClick={handleSubmit} disabled={!location || !hcw || !moment || method===''} 
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:grayscale">
-                        บันทึกผลการสังเกต
-                    </button>
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/90 backdrop-blur border-t border-slate-800 z-50">
+                        <button onClick={handleSubmit} disabled={!location || !hcw || !moment || method===''} 
+                            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-900/50 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2">
+                            <LucideIcon name="save" className="w-5 h-5"/> บันทึกผลการสังเกต
+                        </button>
+                    </div>
                 </div>
             );
         };
