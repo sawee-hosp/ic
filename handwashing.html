@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SW-Hand Hygiene</title>
     
+    <!-- Favicon (Hand Icon) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0'/><path d='M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2'/><path d='M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8'/><path d='M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15'/></svg>">
+    
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -16,11 +19,11 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
         body { 
-            font-family: 'Google Sans', 'Sarabun', sans-serif; 
+            font-family: 'Sarabun', sans-serif; 
             background: #0f172a; 
             color: #f8fafc; 
             -webkit-tap-highlight-color: transparent; 
@@ -33,12 +36,8 @@
             border: 1px solid rgba(255, 255, 255, 0.08); 
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
-        .item-btn {
-            transition: all 0.1s;
-        }
-        .item-btn:active {
-            transform: scale(0.95);
-        }
+        .item-btn { transition: all 0.1s; }
+        .item-btn:active { transform: scale(0.95); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -57,6 +56,7 @@
         const { useState, useEffect, useRef } = React;
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyX0pC3eLOod07tKyR3loiCecqps6er8EDcGhbtHVm885s2R2Zri6HSr94tKw3GosMI/exec";
         const LIFF_ID = "2008690634-UG4TJcVB";
+        const REGISTER_URL = "https://sawee-hosp.github.io/ic/index.html";
 
         // Icon Helper
         const LucideIcon = ({ name, className }) => {
@@ -75,31 +75,29 @@
 
         const SuccessModal = ({ onClose }) => (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer" onClick={onClose}>
-                <div className="text-center p-8 pointer-events-none"> {/* content ignores click to allow parent click */}
+                <div className="text-center p-8 pointer-events-none">
                     <div className="text-emerald-400 mb-6 animate-glow inline-block">
                         <LucideIcon name="hand-metal" className="w-32 h-32"/>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">บันทึกสำเร็จ!</h2>
-                    <p className="text-slate-400 text-sm">แตะที่หน้าจอเพื่อเริ่มใหม่</p>
+                    <h2 className="text-3xl font-bold text-white mb-2">บันทึกสำเร็จ!</h2>
+                    <p className="text-slate-400 text-lg">แตะที่หน้าจอเพื่อเริ่มใหม่</p>
                 </div>
             </div>
         );
 
         const App = () => {
-            // Data State
             const [meta, setMeta] = useState({ locations: [], hcws: [], totalCount: 0 });
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
             const [showSuccess, setShowSuccess] = useState(false);
 
-            // Form State
+            // Form
             const [location, setLocation] = useState('');
             const [hcw, setHcw] = useState('');
             const [moment, setMoment] = useState('');
             const [method, setMethod] = useState('');
             const [steps, setSteps] = useState({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-            // Initialize
             useEffect(() => {
                 const init = async () => {
                     const cachedMeta = localStorage.getItem('hh_meta');
@@ -110,31 +108,29 @@
                             await window.liff.init({ liffId: LIFF_ID });
                             if (!window.liff.isLoggedIn()) {
                                 window.liff.login({ redirectUri: window.location.href });
-                                return; // Stop here, wait for redirect
+                                return;
                             }
                             const profile = await window.liff.getProfile();
                             
-                            // Check Local Storage first
-                            const cachedUser = localStorage.getItem('hh_user_' + profile.userId);
-                            if (cachedUser) {
-                                setUser(JSON.parse(cachedUser));
+                            // Check User in Sheet
+                            const res = await fetch(GAS_URL, {
+                                method: 'POST',
+                                body: JSON.stringify({ action: 'getUserProfile', userId: profile.userId })
+                            }).then(r => r.json());
+
+                            if (res.found) {
+                                const userData = { ...res, picture: profile.pictureUrl };
+                                setUser(userData);
+                                localStorage.setItem('hh_user', JSON.stringify(userData));
                             } else {
-                                // Fetch from Sheet
-                                fetch(GAS_URL, {
-                                    method: 'POST',
-                                    body: JSON.stringify({ action: 'getUserProfile', userId: profile.userId })
-                                }).then(r => r.json()).then(res => {
-                                    const userData = res.found 
-                                        ? { ...res, picture: profile.pictureUrl }
-                                        : { name: profile.displayName, picture: profile.pictureUrl, dept: '-' };
-                                    setUser(userData);
-                                    localStorage.setItem('hh_user_' + profile.userId, JSON.stringify(userData));
-                                });
+                                alert("ไม่พบข้อมูลผู้ใช้งาน กรุณาลงทะเบียนก่อน");
+                                window.location.href = REGISTER_URL; // Redirect to Register
+                                return;
                             }
                         } catch (e) { console.error(e); }
                     }
 
-                    // Background Fetch Meta
+                    // Load Meta
                     fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getMetaData' }) })
                         .then(r => r.json())
                         .then(data => {
@@ -157,7 +153,7 @@
 
             const handleSubmit = async () => {
                 if (!location || !hcw || !moment || !method) {
-                    alert("กรุณาเลือกข้อมูลให้ครบ");
+                    alert("กรุณาเลือกข้อมูลให้ครบถ้วน");
                     return;
                 }
 
@@ -169,18 +165,13 @@
 
                 localStorage.setItem('hh_last_loc', location);
                 
-                // Show Success Modal immediately
                 setShowSuccess(true);
-                
-                // Optimistic Update
                 setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
 
-                // Reset Form (Background)
                 setMoment('');
                 setMethod('');
                 setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-                // Send to Server
                 await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'saveRecord', payload })
@@ -188,54 +179,53 @@
             };
 
             if (loading && meta.locations.length === 0) return (
-                <div className="flex h-screen items-center justify-center text-slate-400">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mr-2"></div>
-                    Loading...
-                </div>
+                <div className="flex h-screen items-center justify-center text-slate-400 font-bold">กำลังโหลด...</div>
             );
 
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-16 p-2 flex flex-col">
+                <div className="max-w-md mx-auto min-h-screen pb-20 p-2 flex flex-col">
                     {/* Header */}
-                    <div className="glass-panel p-2.5 rounded-xl mb-2 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 border-l-4 border-l-emerald-500">
-                        <div className="flex items-center gap-2.5">
-                            <div className="text-2xl text-emerald-400 animate-pulse"><LucideIcon name="hand-metal" className="w-8 h-8"/></div>
+                    <div className="glass-panel p-3 rounded-xl mb-3 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 border-l-4 border-l-emerald-500">
+                        <div className="flex items-center gap-3">
+                            <div className="text-3xl animate-bounce">✋</div>
                             <div>
-                                <div className="text-lg font-bold text-white leading-none tracking-tight">SW-Hand Hygiene</div>
+                                <div className="text-xl font-bold text-white leading-none tracking-tight">SW-Hand Hygiene</div>
                                 <div className="text-[10px] text-slate-400">บันทึกการล้างมือ</div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-right">
                              <div>
-                                <div className="text-xs font-bold text-white truncate max-w-[80px]">{user?.name || 'Loading...'}</div>
-                                <div className="text-[9px] text-slate-400 truncate max-w-[80px]">{user?.dept || ''}</div>
+                                <div className="text-sm font-bold text-white truncate max-w-[100px]">{user?.name || 'Loading...'}</div>
+                                <div className="text-[10px] text-slate-400 truncate max-w-[100px]">{user?.dept || ''}</div>
                             </div>
-                            <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
-                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-4 h-4"/></div>}
+                            <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
+                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-5 h-5"/></div>}
                             </div>
                         </div>
                     </div>
 
-                    {/* Compact Progress */}
+                    {/* Progress */}
                     <div className="glass-panel px-3 py-2 rounded-xl mb-2 flex justify-between items-center">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
+                        <span className="text-xs text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
                         <div className="flex items-center gap-2">
-                             <div className="w-24 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(((meta.totalCount||0)/100)*100, 100)}%` }}></div>
+                             <div className="w-32 bg-slate-700 rounded-full h-2 overflow-hidden">
+                                <div className="bg-emerald-500 h-2 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)]" style={{ width: `${Math.min(((meta.totalCount||0)/100)*100, 100)}%` }}></div>
                             </div>
-                            <span className="text-xs font-bold text-emerald-400">{meta.totalCount || 0}<span className="text-slate-500 text-[10px]">/100</span></span>
+                            <span className="text-sm font-bold text-emerald-400">{meta.totalCount || 0}<span className="text-slate-500 text-[10px]">/100</span></span>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                         {/* 1. Location */}
                         <div>
-                            <div className="flex overflow-x-auto gap-1.5 no-scrollbar pb-1">
+                            <label className="text-sm font-bold text-slate-300 ml-1 mb-1 block uppercase">1. สถานที่สังเกต (Location)</label>
+                            <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto no-scrollbar pb-1">
                                 {meta.locations.map(l => (
                                     <button key={l.code} 
                                         onClick={() => setLocation(l.code)}
-                                        className={`item-btn whitespace-nowrap px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        className={`item-btn whitespace-nowrap px-3 py-2.5 rounded-lg text-xs font-bold border relative min-w-[120px] text-left transition-all ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg scale-105' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {l.label}
+                                        {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-indigo-500 rounded-full flex items-center justify-center text-[9px] text-white ring-2 ring-[#0f172a] shadow-sm">{l.count}</span>}
                                     </button>
                                 ))}
                             </div>
@@ -243,34 +233,36 @@
 
                         {/* 2. HCW */}
                         <div>
-                            <div className="flex overflow-x-auto gap-1.5 no-scrollbar pb-1">
+                            <label className="text-sm font-bold text-slate-300 ml-1 mb-1 block uppercase">2. ผู้ถูกสังเกต (HCW)</label>
+                            <div className="grid grid-rows-2 grid-flow-col gap-2 overflow-x-auto no-scrollbar pb-1">
                                 {meta.hcws.map(h => (
                                     <button key={h.code} 
                                         onClick={() => setHcw(h.code)}
-                                        className={`item-btn whitespace-nowrap px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-md' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        className={`item-btn whitespace-nowrap px-3 py-2.5 rounded-lg text-xs font-bold border relative min-w-[120px] text-left transition-all ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg scale-105' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {h.label}
+                                        {h.count > 0 && <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-pink-500 rounded-full flex items-center justify-center text-[9px] text-white ring-2 ring-[#0f172a] shadow-sm">{h.count}</span>}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 3. Moments (Compact Grid) */}
+                        {/* 3. Moments (Vertical Stack) */}
                         <div>
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wide">3. ข้อบ่งชี้ (5 Moments)</label>
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <label className="text-sm font-bold text-slate-300 ml-1 mb-2 block uppercase">3. ข้อบ่งชี้ (Moments)</label>
+                            <div className="flex flex-col gap-2">
                                 {[
-                                    { id: 1, label: '1. ก่อนสัมผัสผู้ป่วย', icon: 'hand-helping' },
-                                    { id: 2, label: '2. ก่อนทำหัตถการ', icon: 'syringe' },
-                                    { id: 3, label: '3. หลังสัมผัสสารคัดหลั่ง', icon: 'droplets' },
-                                    { id: 4, label: '4. หลังสัมผัสผู้ป่วย', icon: 'users' },
-                                    { id: 5, label: '5. หลังสัมผัสสิ่งแวดล้อม', icon: 'bed' }
+                                    { id: 1, label: 'ก่อนสัมผัสผู้ป่วย' },
+                                    { id: 2, label: 'ก่อนทำหัตถการสะอาด/Aseptic' },
+                                    { id: 3, label: 'หลังสัมผัสสารคัดหลั่ง' },
+                                    { id: 4, label: 'หลังสัมผัสผู้ป่วย' },
+                                    { id: 5, label: 'หลังสัมผัสสิ่งแวดล้อมรอบตัวผู้ป่วย' }
                                 ].map(m => (
                                     <button key={m.id} onClick={() => setMoment(m.id)} 
-                                        className={`item-btn text-left px-2 py-1.5 rounded-lg border flex items-center gap-2 ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow-md' : 'bg-slate-800/50 border-slate-700 text-slate-400'} ${m.id===5 ? 'col-span-2' : ''}`}>
-                                        <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center ${moment === m.id ? 'bg-white/20' : 'bg-slate-700 text-slate-500'}`}>
-                                            <LucideIcon name={m.icon} className="w-3 h-3"/>
+                                        className={`w-full text-left p-3 rounded-xl border flex items-center gap-4 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow-md transform scale-[1.02]' : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black shadow-inner ${moment === m.id ? 'bg-white text-blue-600' : 'bg-slate-900 text-slate-600'}`}>
+                                            {m.id}
                                         </div>
-                                        <span className="text-[10px] font-medium leading-tight line-clamp-1">{m.label}</span>
+                                        <div className="text-sm font-medium">{m.label}</div>
                                     </button>
                                 ))}
                             </div>
@@ -278,47 +270,46 @@
 
                         {/* 4. Method */}
                         <div>
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wide">4. วิธีการ (Method)</label>
-                            <div className="flex gap-2">
-                                <button onClick={() => setMethod(1)} className={`item-btn flex-1 py-2 rounded-lg border flex items-center justify-center gap-1.5 ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="droplets" className="w-3.5 h-3.5"/>
-                                    <span className="text-xs font-bold">สบู่</span>
+                            <label className="text-sm font-bold text-slate-300 ml-1 mb-2 block uppercase">4. วิธีการ (Method)</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button onClick={() => setMethod(1)} className={`item-btn flex flex-col items-center justify-center py-4 rounded-xl border gap-2 transition-all ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="droplets" className="w-8 h-8"/>
+                                    <span className="text-sm font-bold">สบู่</span>
                                 </button>
-                                <button onClick={() => setMethod(2)} className={`item-btn flex-1 py-2 rounded-lg border flex items-center justify-center gap-1.5 ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="spray-can" className="w-3.5 h-3.5"/>
-                                    <span className="text-xs font-bold">Alcohol</span>
+                                <button onClick={() => setMethod(2)} className={`item-btn flex flex-col items-center justify-center py-4 rounded-xl border gap-2 transition-all ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="spray-can" className="w-8 h-8"/>
+                                    <span className="text-sm font-bold">Alcohol</span>
                                 </button>
-                                <button onClick={() => { setMethod(0); setSteps({ 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false }); }} className={`item-btn flex-1 py-2 rounded-lg border flex items-center justify-center gap-1.5 ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="x-circle" className="w-3.5 h-3.5"/>
-                                    <span className="text-xs font-bold">ไม่ล้าง</span>
+                                <button onClick={() => { setMethod(0); setSteps({ 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false }); }} className={`item-btn flex flex-col items-center justify-center py-4 rounded-xl border gap-2 transition-all ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="x-circle" className="w-8 h-8"/>
+                                    <span className="text-sm font-bold">ไม่ล้าง</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* 5. Steps */}
+                        {/* 5. Steps (Grid 4 cols) */}
                         {method !== 0 && method !== '' && (
-                            <div className="animate-fade-in">
-                                <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block uppercase flex justify-between">
-                                    <span>5. ขั้นตอน (7 Steps)</span>
-                                    <span className="font-normal opacity-70">*แตะเพื่อระบุว่าไม่ได้ทำ</span>
+                            <div className="animate-fade-in pb-4">
+                                <label className="text-sm font-bold text-slate-300 ml-1 mb-2 block uppercase flex justify-between items-end">
+                                    <span>5. 7 Steps</span>
+                                    <span className="text-xs text-slate-500 font-normal">*คลิกข้อที่ไม่ได้ทำออก</span>
                                 </label>
-                                <div className="grid grid-cols-2 gap-1.5">
+                                <div className="grid grid-cols-4 gap-2">
                                     {[
                                         {id:1, t:'ฝ่ามือถูฝ่ามือ'},
                                         {id:2, t:'ฝ่ามือถูหลังมือ'},
-                                        {id:3, t:'ฝ่ามือถูฝ่ามือ/ซอกนิ้ว'},
+                                        {id:3, t:'ถูซอกนิ้ว'},
                                         {id:4, t:'หลังนิ้วถูฝ่ามือ'},
-                                        {id:5, t:'ถูนิ้วหัวแม่มือ'},
-                                        {id:6, t:'ปลายนิ้วถูฝ่ามือ'},
+                                        {id:5, t:'ถูหัวแม่มือ'},
+                                        {id:6, t:'ปลายนิ้วถู'},
                                         {id:7, t:'ถูรอบข้อมือ'}
                                     ].map(s => (
                                         <button key={s.id} onClick={() => toggleStep(s.id)} 
-                                            className={`item-btn px-2 py-1.5 rounded-lg text-[10px] font-bold border flex items-center justify-between ${s.id===7 ? 'col-span-2' : ''} ${steps[s.id] ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-red-900/30 border-red-900/50 text-red-400'}`}>
-                                            <span className={!steps[s.id] ? 'line-through opacity-70' : ''}>{s.id}. {s.t}</span>
-                                            {steps[s.id] 
-                                                ? <LucideIcon name="check" className="w-3 h-3 text-emerald-500"/>
-                                                : <LucideIcon name="x" className="w-3 h-3 text-red-500"/>
-                                            }
+                                            className={`item-btn px-1 py-3 rounded-xl text-[10px] font-bold border flex flex-col items-center justify-center gap-1 min-h-[80px] text-center leading-tight transition-all ${steps[s.id] ? 'bg-slate-800 border-emerald-500/50 text-emerald-400 shadow-sm' : 'bg-red-900/20 border-red-500/50 text-red-400 opacity-80'}`}>
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${steps[s.id] ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                                                {steps[s.id] ? <LucideIcon name="check" className="w-5 h-5"/> : <LucideIcon name="x" className="w-5 h-5"/>}
+                                            </div>
+                                            <span>{s.t}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -326,10 +317,10 @@
                         )}
                     </div>
 
-                    <div className="fixed bottom-0 left-0 right-0 p-3 bg-[#0f172a]/95 backdrop-blur border-t border-slate-800 z-40">
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0f172a]/95 backdrop-blur border-t border-slate-800 z-50">
                         <button onClick={handleSubmit} disabled={!location || !hcw || !moment || method===''} 
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-900/40 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 text-sm">
-                            <LucideIcon name="save" className="w-4 h-4"/> บันทึกข้อมูล
+                            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-lg font-bold shadow-lg shadow-emerald-900/50 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3">
+                            <LucideIcon name="save" className="w-6 h-6"/> บันทึกข้อมูล
                         </button>
                     </div>
 
