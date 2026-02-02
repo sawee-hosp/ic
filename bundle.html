@@ -130,7 +130,16 @@
             return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
         };
 
-        // --- LINE SHARE LOGIC (OUTSIDE COMPONENT) ---
+        // --- IMPROVED LINE SHARE LOGIC (Fixing Fail to Fetch) ---
+        const getLiffUrl = (params = {}) => {
+            const baseUrl = `https://liff.line.me/${LIFF_ID}`;
+            const query = Object.entries(params)
+                .filter(([_, v]) => v)
+                .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+                .join('&');
+            return query ? `${baseUrl}?${query}` : baseUrl;
+        };
+
         const shareToLine = async (flexMessage) => {
             if (!window.liff) return false;
             
@@ -139,54 +148,48 @@
                 return false;
             }
             
-            // Removed strict isInClient check, rely on API availability
             if (window.liff.isApiAvailable('shareTargetPicker')) {
                 try {
                     const res = await window.liff.shareTargetPicker([flexMessage]);
-                    if (res) {
-                        return true;
-                    } else {
-                        console.log("Share cancelled");
-                        return false;
-                    }
+                    return !!res;
                 } catch (err) {
                     console.error("Share failed", err);
                     alert("แชร์ไม่สำเร็จ: " + (err.message || "Unknown Error"));
                     return false;
                 }
             } else {
-                alert("ไม่สามารถแชร์ได้ (API ไม่รองรับ หรือไม่ได้เปิดใน LINE App)");
+                alert("ไม่สามารถแชร์ได้ (โปรดตรวจสอบการตั้งค่าสิทธิ์ ShareTargetPicker ใน LINE Console)");
                 return false;
             }
         };
 
         const createBundleFlex = (data) => ({
-            type: "flex", altText: "New Bundle Registered",
+            type: "flex", altText: `แจ้งเตือน Bundle ใหม่: ${data.bundle_type || '-'}`,
             contents: {
                 type: "bubble",
                 styles: { header: { backgroundColor: "#1e1b4b" }, body: { backgroundColor: "#312e81" } },
-                header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "NEW BUNDLE", color: "#4ade80", weight: "bold", size: "sm" }, { type: "text", text: data.bundle_type || '-', color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                body: { type: "box", layout: "vertical", contents: [
-                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.hn || '-', color: "#ffffff", size: "sm", flex: 4 }] },
+                header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "NEW BUNDLE REGISTERED", color: "#4ade80", weight: "bold", size: "sm" }, { type: "text", text: String(data.bundle_type || '-'), color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
+                body: { type: "box", layout: "vertical", spacing: "sm", contents: [
+                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: String(data.hn || '-'), color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "Ward", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: `${data.ward || '-'} (${data.bed || '-'})`, color: "#ffffff", size: "sm", flex: 4 }] },
-                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "By", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.register || '-', color: "#ffffff", size: "sm", flex: 4 }] }
+                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "By", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: String(data.register || '-'), color: "#ffffff", size: "sm", flex: 4 }] }
                 ]},
-                footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ประเมิน Checklist", uri: `https://liff.line.me/${LIFF_ID}?tracking_id=${data.tracking_id}` }, style: "primary", color: "#6366f1" }] }
+                footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ประเมิน Checklist", uri: getLiffUrl({ tracking_id: data.tracking_id }) }, style: "primary", color: "#6366f1" }] }
             }
         });
 
         const createHaiFlex = (data) => ({
-            type: "flex", altText: "HAI Report Alert",
+            type: "flex", altText: `แจ้งเตือนเคสติดเชื้อ (HAI): ${data.hai_type || '-'}`,
             contents: {
                 type: "bubble",
                 styles: { header: { backgroundColor: "#450a0a" }, body: { backgroundColor: "#7f1d1d" } },
-                header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "HAI ALERT", color: "#fca5a5", weight: "bold", size: "sm" }, { type: "text", text: data.hai_type || '-', color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                body: { type: "box", layout: "vertical", contents: [
-                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: data.hn || '-', color: "#ffffff", size: "sm", flex: 4 }] },
+                header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "HAI ALERT", color: "#fca5a5", weight: "bold", size: "sm" }, { type: "text", text: String(data.hai_type || '-'), color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
+                body: { type: "box", layout: "vertical", spacing: "sm", contents: [
+                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: String(data.hn || '-'), color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "Loc", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: `${data.ward || '-'} (${data.bed || '-'})`, color: "#ffffff", size: "sm", flex: 4 }] },
-                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "Criteria", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: (data.criteria || '-'), color: "#ffffff", size: "xxs", flex: 4, wrap: true }] }
+                    { type: "box", layout: "baseline", contents: [{ type: "text", text: "Criteria", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: String(data.criteria || '-'), color: "#ffffff", size: "xxs", flex: 4, wrap: true }] }
                 ]},
-                footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ตรวจสอบ", uri: `https://liff.line.me/${LIFF_ID}` }, style: "primary", color: "#ef4444" }] }
+                footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ตรวจสอบ", uri: getLiffUrl() }, style: "primary", color: "#ef4444" }] }
             }
         });
 
@@ -399,7 +402,6 @@
                                 </div>
                             ))}
                         </div>
-                        {/* Hide Assess button for History tab items (conceptually passed caseData should indicate status) */}
                         {caseData.status === 'Active' && <button onClick={onAssess} className="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2"><LucideIcon name="ClipboardCheck" className="w-5 h-5"/> ประเมิน Checklist</button>}
                     </div>
                 </div>
@@ -427,7 +429,6 @@
                 const map = {};
                 safeActiveCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
                     const todayStr = new Date().toDateString();
-                    // LOGIC: Check strict match
                     const assessedToday = logs.some(l => String(l.tracking_id) === String(c.tracking_id) && safeDate(l.timestamp).toDateString() === todayStr);
                     map[`${c.ward}-${c.bed}`] = { ...c, type: 'bundle', needsAction: !assessedToday };
                 });
@@ -449,7 +450,6 @@
                             const activeClass = bundleType ? `bed-active bed-${bundleType}` : '';
                             const blinkClass = (data && data.needsAction) ? 'bed-waiting' : '';
                             const haiClass = (data && data.isHaiAlert) ? 'bed-hai-alert' : '';
-                            // FIXED: Showing full bed name (removed replace)
                             return (<div key={bedId} onClick={() => data ? (data.type === 'hai' ? onSelectHai(data) : onSelectCase(data)) : onNewCase(wardName, bedId)} className={`bed-box ${activeClass} ${blinkClass} ${haiClass}`}>{bedId}</div>)
                         })}
                     </div>
@@ -484,7 +484,6 @@
                                  const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI']; 
                                  return (
                                      <div key={c.tracking_id} onClick={() => onSelectCase(c)} className={`glass-panel p-4 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-white/5 transition-all active:scale-[0.98] ${conf.border}`}>
-                                         {/* Card Header: Bundle + HN + Time */}
                                          <div className="flex justify-between items-start mb-2">
                                              <div className="flex items-center gap-2">
                                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm ${conf.bg} ${conf.color} border border-white/10`}>{c.bundle_type}</span>
@@ -495,15 +494,12 @@
                                              </div>
                                              <span className="text-[10px] text-slate-400 flex items-center gap-1"><LucideIcon name="Clock" className="w-3 h-3"/> {c.date_count} วัน</span>
                                          </div>
-                                         
-                                         {/* Card Body: Ward & Actions (NEW LAYOUT) */}
                                          <div className="flex justify-between items-center border-t border-white/5 pt-2 mt-1">
                                              <div className="text-xs text-indigo-300 flex items-center gap-1 min-w-0">
                                                  <LucideIcon name="MapPin" className="w-3 h-3 text-indigo-400 shrink-0"/> 
                                                  <span className="truncate">{c.ward}</span>
                                                  <span className="text-white font-bold ml-1 bg-slate-700 px-1.5 py-0.5 rounded border border-slate-600 shrink-0">{c.bed}</span>
                                              </div>
-                                             
                                              <div className="flex gap-2 shrink-0">
                                                  <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded bg-red-500/20 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap">จำหน่าย/ถอดอุปกรณ์</button>
                                                  <button onClick={(e) => { e.stopPropagation(); onReportHai(c); }} className="px-2 py-1 rounded bg-orange-500/20 text-orange-300 text-[9px] border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap">รายงานติดเชื้อในรพ.</button>
@@ -523,9 +519,7 @@
         const NewCaseView = ({ onSubmit, onCancel, existingCases, userProfile, preWard, preBed }) => {
             const [form, setForm] = useState({ hn: '', ward: preWard || 'Wardชาย', bed: preBed || '', bundle_type: 'CAUTI' });
             const [loading, setLoading] = useState(false);
-            const [warning, setWarning] = useState('');
             const [showScanner, setShowScanner] = useState(false);
-            const handleWardChange = (e) => { setForm({...form, ward: e.target.value, bed: ''}); };
             const handleSubmit = async (e, share) => { e.preventDefault(); const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); setLoading(true); await onSubmit({ ...form, register: userProfile?.name || 'Guest' }, share); };
             const currentBeds = BED_CONFIG[form.ward] || [];
 
@@ -534,7 +528,7 @@
                     {showScanner && <ScannerModal onScan={(val) => { setShowScanner(false); setForm(prev => ({...prev, hn: val})); }} onClose={() => setShowScanner(false)} />}
                     <div className="flex items-center gap-2 mb-4 text-slate-400 cursor-pointer" onClick={onCancel}><LucideIcon name="ArrowLeft" className="w-5 h-5"/> <span className="text-sm">Back</span></div>
                     <h2 className="text-2xl font-bold text-white mb-6 px-2 neon-text">ลงทะเบียนเคสใหม่</h2>
-                    <form onSubmit={handleSubmit} className="space-y-5 flex-grow">
+                    <form className="space-y-5 flex-grow">
                         <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-2">1. เลือกหอผู้ป่วย (Ward)</label><div className="grid grid-cols-2 gap-2">{Object.keys(BED_CONFIG).map(w => (<button type="button" key={w} onClick={() => setForm({...form, ward: w, bed: ''})} className={`p-2 rounded-lg text-sm border transition-all ${form.ward === w ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 text-slate-400'}`}>{w}</button>))}</div></div>
                         <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-3">2. ประเภทอุปกรณ์</label><div className="grid grid-cols-3 gap-3">{Object.keys(BUNDLE_CONFIG).map(type => (<button type="button" key={type} onClick={() => setForm({...form, bundle_type: type})} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${form.bundle_type === type ? `${BUNDLE_CONFIG[type].bg} ${BUNDLE_CONFIG[type].color} ${BUNDLE_CONFIG[type].border} shadow-lg scale-105` : 'border-slate-700 text-slate-500 bg-slate-800/30'}`}><LucideIcon name={BUNDLE_CONFIG[type].icon} className="w-6 h-6"/><span className="text-xs font-bold">{type}</span></button>))}</div></div>
                         <div className="glass-panel p-4 rounded-xl space-y-4"><div><label className="text-xs text-slate-400 mb-1 block">3. HN ผู้ป่วย</label><div className="flex gap-2"><input type="text" required value={form.hn} onChange={e => setForm({...form, hn: e.target.value})} className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center`} placeholder="HN" /><button type="button" onClick={() => setShowScanner(true)} className="w-auto px-4 bg-indigo-600 rounded-xl flex items-center justify-center gap-2 text-white border border-indigo-500 active:bg-indigo-700 shadow-lg"><LucideIcon name="QrCode" className="w-5 h-5"/><span className="text-xs font-bold">สแกน</span></button></div></div><div><label className="text-xs text-slate-400 mb-1 block">เตียง (เลือกจาก Ward)</label><select required value={form.bed} onChange={e => setForm({...form, bed: e.target.value})} className="glass-input w-full p-3 rounded-xl appearance-none text-center"><option value="" disabled>-- เลือกเตียง --</option>{currentBeds.map(b => <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>)}</select></div></div>
@@ -552,21 +546,17 @@
                 return masterData.filter(m => {
                     if (m.bundle_type !== caseData.bundle_type) return false;
                     const freq = normalizeFreq(m.frequency);
-                    
                     if (mode === 'Insertion') {
                         if (freq !== 'once') return false;
                         const passed = logs.some(l => String(l.tracking_id) === String(caseData.tracking_id) && l.item_code === m.item_code && (l.result === 'ผ่าน' || l.result === 'Pass'));
                         return !passed;
                     } 
-                    
                     if (freq === 'once') return false;
-                    
                     if (freq === 'daily') {
                         const todayStr = new Date().toDateString();
                         const doneToday = logs.some(l => String(l.tracking_id) === String(caseData.tracking_id) && l.item_code === m.item_code && safeDate(l.timestamp).toDateString() === todayStr);
                         return !doneToday;
                     }
-                    
                     if (freq === 'shift') {
                         const now = new Date();
                         const currentShift = getShift(now);
@@ -579,7 +569,6 @@
                         });
                         return !doneShift;
                     }
-                    
                     return true;
                 });
             }, [masterData, caseData, mode, logs]);
@@ -649,24 +638,28 @@
                 const initApp = async () => {
                     const timeout = setTimeout(() => { if (loading) setLoading(false); }, 5000); 
                     try {
-                        // --- PREVIEW MODE (Bypassing Force Login for Testing) ---
                         if (window.liff) {
                             try {
                                 await window.liff.init({ liffId: LIFF_ID });
                                 if (window.liff.isLoggedIn()) {
                                     const profile = await window.liff.getProfile();
                                     const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
-                                    setUserProfile({ ...(userDetails.found ? userDetails : {}), name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId });
+                                    if (userDetails && userDetails.found) {
+                                        if (userDetails.authorized) {
+                                            setUserProfile({ ...userDetails, picture: profile.pictureUrl, userId: profile.userId });
+                                        } else {
+                                            setAccessDenied(true);
+                                        }
+                                    } else {
+                                        setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId, job: 'Staff', dept: 'General' });
+                                    }
                                 } else {
-                                    // Normally we force login here, but for preview we use Guest
-                                    // window.liff.login({ redirectUri: window.location.href });
-                                    setUserProfile({ name: 'Guest User', job: 'Visitor', dept: '', picture: '' });
+                                    window.liff.login();
                                 }
-                            } catch (e) { setUserProfile({ name: 'Guest Preview', job: 'Test', dept: '', picture: '' }); }
+                            } catch (e) { console.error("LIFF Init error", e); }
                         }
                         const res = await fetchGAS('getInitialData');
                         if (res && !res.error) setData({ ...res, logs: res.logs || [] });
-                        else setData({ master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] });
                     } catch (e) { console.error(e); } finally { clearTimeout(timeout); setLoading(false); }
                 };
                 initApp();
@@ -677,17 +670,18 @@
             };
 
             const handleNewCase = async (formData, share) => {
-                const newCase = { ...formData, tracking_id: 'temp-'+Date.now(), start_date: new Date().toISOString(), status: 'Active', date_count: 1 };
-                setData(prev => ({ ...prev, activeCases: [...prev.activeCases, newCase] }));
-                
+                setLoading(true);
                 const res = await fetchGAS('createNewCase', { payload: formData });
                 if (res && res.success) { 
-                    refreshDataInBackground(); 
                     if(share) {
-                        shareToLine(createBundleFlex({...formData, tracking_id: res.trackingId, register: userProfile?.name}));
+                        await shareToLine(createBundleFlex({...formData, tracking_id: res.trackingId, register: userProfile?.name}));
                     }
-                    setSelectedCase(newCase); setChecklistMode('Insertion'); setView('checklist'); 
+                    alert('ลงทะเบียนสำเร็จ');
+                    const updated = await fetchGAS('getInitialData');
+                    if(updated && !updated.error) setData({...updated, logs: updated.logs || []});
+                    setView('dashboard');
                 } else { alert(res?.message || 'Error'); }
+                setLoading(false);
             };
 
             const handleChecklistSubmit = async (newLogs) => {
@@ -696,6 +690,7 @@
                 setView('dashboard');
                 setSelectedCase(null);
                 await fetchGAS('saveChecklistLog', { payload: newLogs });
+                refreshDataInBackground();
             };
 
             const handleDischargeSubmit = async (form) => {
@@ -714,15 +709,8 @@
             const handleCardClick = async (c) => {
                 if (c.status !== 'Active') { alert('เคสนี้ถูกจำหน่ายแล้ว'); return; }
                 if (c.discharge) { setSelectedCase(c); setShowDischarge(true); return; }
-                
                 setSelectedCase(c);
                 setShowHistory(true);
-                
-                // Fetch latest data silently to ensure logs are up-to-date
-                const res = await fetchGAS('getInitialData');
-                if (res && !res.error) {
-                    setData({...res, logs: res.logs || []});
-                }
             };
             
             const handleHaiUpdate = (updatedHai) => {
@@ -755,15 +743,8 @@
                                 onSelectHai={(c) => { setEditingHai(c); setShowHaiModal(true); }}
                                 onReportHai={(c) => { 
                                     if(c) {
-                                        setEditingHai({ 
-                                            hn: c.hn, 
-                                            ward: c.ward, 
-                                            bed: c.bed, 
-                                            related_bundle_id: c.tracking_id 
-                                        });
-                                    } else {
-                                        setEditingHai(null);
-                                    }
+                                        setEditingHai({ hn: c.hn, ward: c.ward, bed: c.bed, related_bundle_id: c.tracking_id });
+                                    } else { setEditingHai(null); }
                                     setShowHaiModal(true); 
                                 }}
                                 onNewCase={(ward = '', bed = '') => { setPreFill({ ward, bed }); setView('new_case'); }}
@@ -771,7 +752,7 @@
                         )}
 
                         {view === 'new_case' && (
-                            <NewCaseView masterData={data.master} existingCases={data.activeCases} userProfile={userProfile} preWard={preFill.ward} preBed={preFill.bed} onSubmit={handleNewCase} onCancel={() => setView('dashboard')} />
+                            <NewCaseView existingCases={data.activeCases} userProfile={userProfile} preWard={preFill.ward} preBed={preFill.bed} onSubmit={handleNewCase} onCancel={() => setView('dashboard')} />
                         )}
 
                         {view === 'checklist' && selectedCase && (
@@ -783,12 +764,7 @@
                                 userProfile={userProfile} 
                                 onSubmit={handleChecklistSubmit} 
                                 onReportHai={() => { 
-                                    setEditingHai({ 
-                                        hn: selectedCase.hn, 
-                                        ward: selectedCase.ward, 
-                                        bed: selectedCase.bed, 
-                                        related_bundle_id: selectedCase.tracking_id 
-                                    }); 
+                                    setEditingHai({ hn: selectedCase.hn, ward: selectedCase.ward, bed: selectedCase.bed, related_bundle_id: selectedCase.tracking_id }); 
                                     setShowHaiModal(true); 
                                 }} 
                                 onDischarge={() => setShowDischarge(true)} 
