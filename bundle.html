@@ -42,7 +42,7 @@
         .bundle-ssi { border-left: 4px solid #10b981; } 
         .bundle-mdr { border-left: 4px solid #a855f7; } 
         .bed-grid-container { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; }
-        .bed-box { font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; border-radius: 2px; cursor: pointer; border: 1px solid rgba(71, 85, 105, 0.5); background: rgba(30, 41, 59, 0.8); color: #64748b; height: 18px; white-space: nowrap; overflow: hidden; letter-spacing: -0.5px; }
+        .bed-box { font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border-radius: 3px; transition: all 0.2s; cursor: pointer; border: 1px solid rgba(71, 85, 105, 0.5); background: rgba(30, 41, 59, 0.8); color: #64748b; height: 22px; white-space: nowrap; overflow: hidden; letter-spacing: -0.5px; }
         .bed-box:hover { background: rgba(59, 130, 246, 0.3); border-color: rgba(59, 130, 246, 1); color: white; }
         .bed-active { color: white; border: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.5); text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
         .bed-CAUTI { background: #fbbf24; color: #451a03; }
@@ -86,14 +86,10 @@
         const WARD_OPTIONS = ['ทั้งหมด', ...Object.keys(BED_CONFIG)];
         const FREQUENCY_MAP = { 'Once': 'ครั้งแรก', 'ครั้งแรก': 'ครั้งแรก', 'Daily': 'ทุกวัน', 'ทุกวัน': 'ทุกวัน', 'Shift': 'ทุกเวร', 'ทุกเวร': 'ทุกเวร', 'Event': 'ทุกครั้ง', 'ทุกครั้ง': 'ทุกครั้ง' };
         
-        const MOCK_HAI_MASTER = [
-            { id: 1, hai_group: 'VAP', criteria_text: 'ใส่ท่อช่วยหายใจเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
-            { id: 2, hai_group: 'VAP', criteria_text: 'มีไข้ > 38.0°C หรือ อุณหภูมิต่ำ < 36.0°C', type: 'Clinical', weight: 'Major' },
-            { id: 5, hai_group: 'CAUTI', criteria_text: 'ใส่สายสวนปัสสาวะเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
-            { id: 6, hai_group: 'CAUTI', criteria_text: 'ปัสสาวะขุ่น / มีตะกอน / มีหนอง', type: 'Clinical', weight: 'Major' }
-        ];
+        const MOCK_HAI_MASTER = []; 
 
         const safeDate = (dateStr) => { if (!dateStr) return new Date(); const d = new Date(dateStr); return isNaN(d.getTime()) ? new Date() : d; };
+
         const normalizeFreq = (f) => {
             if (!f) return '';
             const s = f.toLowerCase();
@@ -103,6 +99,7 @@
             if (s.includes('event') || s.includes('ทุกครั้ง')) return 'event';
             return 'other';
         };
+
         const getShift = (date) => {
             const hour = date.getHours();
             if (hour >= 8 && hour < 16) return 'เวรเช้า';
@@ -135,19 +132,28 @@
 
         // --- LINE SHARE ---
         const shareToLine = (flexMessage) => {
-            if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
-                if (!window.liff.isInClient()) {
-                    alert("การแชร์ลงกลุ่มต้องเปิดใน LINE App เท่านั้น");
-                    return;
-                }
+            if (!window.liff) {
+                 alert("LIFF SDK ยังไม่พร้อม");
+                 return;
+            }
+            if (!window.liff.isLoggedIn()) {
+                 alert("กรุณา Login LINE ก่อนแชร์");
+                 window.liff.login();
+                 return;
+            }
+            
+            if (window.liff.isApiAvailable('shareTargetPicker')) {
                 window.liff.shareTargetPicker([flexMessage])
-                    .then(() => console.log("Share success"))
+                    .then((res) => {
+                        if(res) alert("แชร์สำเร็จ!");
+                    })
                     .catch((err) => {
                         console.error("Share failed", err);
-                        alert("เกิดข้อผิดพลาดในการแชร์: " + err.message);
+                        // ถ้าแชร์ไม่ได้ ให้แสดง alert เตือน
+                        alert("เกิดข้อผิดพลาดในการแชร์: " + (err.message || err));
                     });
             } else {
-                alert("อุปกรณ์นี้ไม่รองรับการแชร์ลงกลุ่ม หรือยังไม่เปิดฟีเจอร์");
+                alert("อุปกรณ์นี้ไม่รองรับการแชร์ลงกลุ่ม หรือยังไม่ได้เปิดฟีเจอร์ใน LINE Developers");
             }
         };
         const createBundleFlex = (data) => ({
@@ -195,8 +201,8 @@
                     <div><div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300 leading-tight">SW-1 Bundle</div><div className="text-[10px] text-slate-400 uppercase tracking-widest">Infection Control</div></div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-right hidden md:block"><div className="text-xs font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div><div className="text-[9px] text-slate-400 mt-0.5 flex gap-1 justify-end"><span>{userProfile?.job || 'Staff'}</span>{userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}</div></div>
-                    <div className="relative w-8 h-8 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">{userProfile?.picture ? <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-4 h-4"/></div>}</div>
+                    <div className="text-right hidden md:block"><div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div><div className="text-[10px] text-slate-400 mt-0.5 flex gap-1 justify-end"><span>{userProfile?.job || 'Staff'}</span>{userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}</div></div>
+                    <div className="relative w-10 h-10 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">{userProfile?.picture ? <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-5 h-5"/></div>}</div>
                 </div>
             </header>
         );
@@ -279,9 +285,10 @@
 
             const handleSubmit = async () => {
                 setLoading(true);
+                const dayCount = calculateDays();
                 const payload = {
                     ...form,
-                    admit_day_to_infect: form.admit_date ? Math.ceil((new Date(form.infection_date) - new Date(form.admit_date)) / (1000 * 60 * 60 * 24)) : 0,
+                    admit_day_to_infect: dayCount,
                     criteria: selectedCriteria.join(', '),
                     register: userProfile?.name
                 };
@@ -395,31 +402,75 @@
                 </div>
             );
         };
+        
+        const AdherenceModal = ({ logs, onClose }) => {
+            const [range, setRange] = useState('7'); // 7, 30, all
+            
+            const filteredLogs = useMemo(() => {
+                if (range === 'all') return logs;
+                const now = new Date();
+                const limit = new Date(now.setDate(now.getDate() - parseInt(range)));
+                return logs.filter(l => new Date(l.timestamp) >= limit);
+            }, [range, logs]);
+            
+            const total = filteredLogs.length;
+            const pass = filteredLogs.filter(l => l.result === 'ผ่าน' || l.result === 'Pass').length;
+            const percent = total > 0 ? Math.round((pass / total) * 100) : 0;
+            
+            return (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={onClose}>
+                    <div className="glass-panel w-full max-w-sm p-6 rounded-2xl relative" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold text-white mb-4 text-center">Bundle Adherence</h3>
+                        <div className="flex justify-center gap-2 mb-6">
+                            {['7', '30', 'all'].map(r => (
+                                <button key={r} onClick={() => setRange(r)} className={`px-4 py-1 rounded-full text-xs font-bold transition-all ${range === r ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                                    {r === 'all' ? 'ทั้งหมด' : `${r} วัน`}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="text-center mb-6">
+                            <div className="text-5xl font-bold text-emerald-400 mb-2">{percent}%</div>
+                            <div className="text-sm text-slate-400">Compliance Rate</div>
+                            <div className="text-xs text-slate-500 mt-1">({pass} / {total} รายการ)</div>
+                        </div>
+                         <button onClick={onClose} className="w-full py-3 rounded-xl bg-slate-700 text-white">ปิด</button>
+                    </div>
+                </div>
+            );
+        };
 
         const DashboardView = ({ activeCases, historyCases, haiCases, metrics, logs, onSelectCase, onSelectHai, onNewCase, onReportHai, initialWard }) => {
             const [filterWard, setFilterWard] = useState(initialWard || 'ทั้งหมด');
             const [tab, setTab] = useState('active');
+            const [showAdherence, setShowAdherence] = useState(false);
+
+            const safeActiveCases = activeCases || [];
+            const safeHistoryCases = historyCases || [];
+            const safeHaiCases = haiCases || [];
+
             const getFilteredData = () => {
                 const baseFilter = (list) => list.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard);
-                if (tab === 'active') return baseFilter(activeCases);
-                if (tab === 'history') return baseFilter(historyCases);
-                if (tab === 'hai') return baseFilter(haiCases);
+                if (tab === 'active') return baseFilter(safeActiveCases);
+                if (tab === 'history') return baseFilter(safeHistoryCases);
+                if (tab === 'hai') return baseFilter(safeHaiCases);
                 return [];
             };
             const displayList = getFilteredData();
+
             const activeBeds = useMemo(() => {
                 const map = {};
-                activeCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
+                safeActiveCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
                     const todayStr = new Date().toDateString();
                     const assessedToday = logs.some(l => String(l.tracking_id) === String(c.tracking_id) && safeDate(l.timestamp).toDateString() === todayStr);
                     map[`${c.ward}-${c.bed}`] = { ...c, type: 'bundle', needsAction: !assessedToday };
                 });
-                haiCases.filter(c => (filterWard === 'ทั้งหมด' || c.ward === filterWard) && c.status === 'แจ้ง ICN').forEach(c => {
+                safeHaiCases.filter(c => (filterWard === 'ทั้งหมด' || c.ward === filterWard) && c.status === 'แจ้ง ICN').forEach(c => {
                     const key = `${c.ward}-${c.bed}`;
-                    if (map[key]) { map[key].isHaiAlert = true; } else { map[key] = { ...c, type: 'hai', isHaiAlert: true }; } 
+                    if (map[key]) { map[key].isHaiAlert = true; } 
+                    else { map[key] = { ...c, type: 'hai', isHaiAlert: true }; } 
                 });
                 return map;
-            }, [activeCases, haiCases, filterWard, logs]);
+            }, [safeActiveCases, safeHaiCases, filterWard, logs]);
 
             const renderBedGrid = (wardName) => (
                 <div key={wardName} className="min-w-[300px] glass-panel p-3 rounded-xl border border-white/5 snap-center">
@@ -431,7 +482,7 @@
                             const activeClass = bundleType ? `bed-active bed-${bundleType}` : '';
                             const blinkClass = (data && data.needsAction) ? 'bed-waiting' : '';
                             const haiClass = (data && data.isHaiAlert) ? 'bed-hai-alert' : '';
-                            return (<div key={bedId} onClick={() => data ? (data.type === 'hai' ? onSelectHai(data) : onSelectCase(data)) : onNewCase(wardName, bedId)} className={`bed-box ${activeClass} ${blinkClass} ${haiClass}`}>{bedId}</div>)
+                            return (<div key={bedId} onClick={() => data ? (data.type === 'hai' ? onSelectHai(data) : onSelectCase(data)) : onNewCase(wardName, bedId)} className={`bed-box ${activeClass} ${blinkClass} ${haiClass}`}>{bedId.replace(/[a-zA-Z]/g, '')}</div>)
                         })}
                     </div>
                 </div>
@@ -439,18 +490,19 @@
 
             return (
                 <div className="space-y-4 pb-28 px-2">
+                    {showAdherence && <AdherenceModal logs={logs} onClose={() => setShowAdherence(false)} />}
                     <div className="grid grid-cols-3 gap-2">
                         <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-indigo-500/30"><span className="text-[10px] text-slate-400 uppercase">Active</span><span className="text-2xl font-bold text-white">{metrics.totalActive}</span></div>
-                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-emerald-500/30"><span className="text-[10px] text-slate-400 uppercase">Adherence</span><span className="text-2xl font-bold text-emerald-400">{metrics.adherence}%</span></div>
+                        <div onClick={() => setShowAdherence(true)} className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-emerald-500/30 cursor-pointer hover:bg-emerald-900/20"><span className="text-[10px] text-slate-400 uppercase">Adherence</span><span className="text-2xl font-bold text-emerald-400">{metrics.adherence}%</span></div>
                         <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-purple-500/30"><span className="text-[10px] text-slate-400 uppercase">Success</span><span className="text-2xl font-bold text-purple-400">{metrics.successRate}%</span></div>
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">{WARD_OPTIONS.map(w => (<button key={w} onClick={() => setFilterWard(w)} className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterWard === w ? 'bg-indigo-600 text-white shadow-lg' : 'glass-panel text-slate-400'}`}>{w}</button>))}</div>
                     <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">{filterWard === 'ทั้งหมด' ? Object.keys(BED_CONFIG).map(w => renderBedGrid(w)) : renderBedGrid(filterWard)}</div>
                     
                     <div className="flex bg-slate-800/50 p-1 rounded-xl mt-2 relative">
-                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active <span className="ml-1 text-[10px] bg-indigo-500 text-white px-1.5 rounded-full">{activeCases.length}</span></button>
-                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History <span className="ml-1 text-[10px] bg-slate-600 text-slate-300 px-1.5 rounded-full">{historyCases.length}</span></button>
-                        <button onClick={() => setTab('hai')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'hai' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>HAI <span className="ml-1 text-[10px] bg-red-600 text-white px-1.5 rounded-full">{haiCases.length}</span></button>
+                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active <span className="ml-1 text-[10px] bg-indigo-500 text-white px-1.5 rounded-full">{safeActiveCases.length}</span></button>
+                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History <span className="ml-1 text-[10px] bg-slate-600 text-slate-300 px-1.5 rounded-full">{safeHistoryCases.length}</span></button>
+                        <button onClick={() => setTab('hai')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'hai' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>HAI <span className="ml-1 text-[10px] bg-red-600 text-white px-1.5 rounded-full">{safeHaiCases.length}</span></button>
                     </div>
 
                     <div className="space-y-3">
@@ -478,9 +530,8 @@
                                                  <span className="truncate">{c.ward}</span>
                                                  <span className="text-white font-bold ml-1 bg-slate-700 px-1.5 py-0.5 rounded border border-slate-600 shrink-0">{c.bed}</span>
                                              </div>
-                                             {/* Horizontal Buttons */}
                                              <div className="flex gap-2 shrink-0">
-                                                 <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded-lg bg-red-500/20 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap">จำหน่าย/ถอดอุปกรณ์</button>
+                                                 {tab === 'active' && <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded-lg bg-red-500/20 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap">จำหน่าย/ถอดอุปกรณ์</button>}
                                                  <button onClick={(e) => { e.stopPropagation(); onReportHai(c); }} className="px-2 py-1 rounded-lg bg-orange-500/20 text-orange-300 text-[9px] border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap">รายงานติดเชื้อในรพ.</button>
                                              </div>
                                          </div>
@@ -501,7 +552,13 @@
             const [warning, setWarning] = useState('');
             const [showScanner, setShowScanner] = useState(false);
             const handleWardChange = (e) => { setForm({...form, ward: e.target.value, bed: ''}); };
-            const handleSubmit = async (e) => { e.preventDefault(); const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); setLoading(true); await onSubmit({ ...form, register: userProfile?.name || 'Guest' }); };
+            const handleSubmit = async (e, share) => { 
+                e.preventDefault(); 
+                const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); 
+                if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); 
+                setLoading(true); 
+                await onSubmit({ ...form, register: userProfile?.name || 'Guest' }, share); 
+            };
             const currentBeds = BED_CONFIG[form.ward] || [];
 
             return (
@@ -509,11 +566,14 @@
                     {showScanner && <ScannerModal onScan={(val) => { setShowScanner(false); setForm(prev => ({...prev, hn: val})); }} onClose={() => setShowScanner(false)} />}
                     <div className="flex items-center gap-2 mb-4 text-slate-400 cursor-pointer" onClick={onCancel}><LucideIcon name="ArrowLeft" className="w-5 h-5"/> <span className="text-sm">Back</span></div>
                     <h2 className="text-2xl font-bold text-white mb-6 px-2 neon-text">ลงทะเบียนเคสใหม่</h2>
-                    <form onSubmit={handleSubmit} className="space-y-5 flex-grow">
+                    <form className="space-y-5 flex-grow">
                         <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-2">1. เลือกหอผู้ป่วย (Ward)</label><div className="grid grid-cols-2 gap-2">{Object.keys(BED_CONFIG).map(w => (<button type="button" key={w} onClick={() => setForm({...form, ward: w, bed: ''})} className={`p-2 rounded-lg text-sm border transition-all ${form.ward === w ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 text-slate-400'}`}>{w}</button>))}</div></div>
                         <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-3">2. ประเภทอุปกรณ์</label><div className="grid grid-cols-3 gap-3">{Object.keys(BUNDLE_CONFIG).map(type => (<button type="button" key={type} onClick={() => setForm({...form, bundle_type: type})} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${form.bundle_type === type ? `${BUNDLE_CONFIG[type].bg} ${BUNDLE_CONFIG[type].color} ${BUNDLE_CONFIG[type].border} shadow-lg scale-105` : 'border-slate-700 text-slate-500 bg-slate-800/30'}`}><LucideIcon name={BUNDLE_CONFIG[type].icon} className="w-6 h-6"/><span className="text-xs font-bold">{type}</span></button>))}</div></div>
                         <div className="glass-panel p-4 rounded-xl space-y-4"><div><label className="text-xs text-slate-400 mb-1 block">3. HN ผู้ป่วย</label><div className="flex gap-2"><input type="text" required value={form.hn} onChange={e => setForm({...form, hn: e.target.value})} className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center`} placeholder="HN" /><button type="button" onClick={() => setShowScanner(true)} className="w-auto px-4 bg-indigo-600 rounded-xl flex items-center justify-center gap-2 text-white border border-indigo-500 active:bg-indigo-700 shadow-lg"><LucideIcon name="QrCode" className="w-5 h-5"/><span className="text-xs font-bold">สแกน</span></button></div></div><div><label className="text-xs text-slate-400 mb-1 block">เตียง (เลือกจาก Ward)</label><select required value={form.bed} onChange={e => setForm({...form, bed: e.target.value})} className="glass-input w-full p-3 rounded-xl appearance-none text-center"><option value="" disabled>-- เลือกเตียง --</option>{currentBeds.map(b => <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>)}</select></div></div>
-                        <button disabled={loading} type="submit" className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 border border-white/10">{loading ? <LucideIcon name="Loader2" className="animate-spin w-5 h-5"/> : <LucideIcon name="Save" className="w-5 h-5"/>} <span>บันทึกและเริ่มประเมิน</span></button>
+                        <div className="grid grid-cols-2 gap-2">
+                             <button disabled={loading} onClick={(e) => handleSubmit(e, false)} className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2 border border-white/10">{loading ? <LucideIcon name="Loader2" className="animate-spin w-5 h-5"/> : <LucideIcon name="Save" className="w-5 h-5"/>} <span>บันทึก</span></button>
+                             <button disabled={loading} onClick={(e) => handleSubmit(e, true)} className="w-full mt-4 bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2 border border-white/10"><LucideIcon name="Share2" className="w-5 h-5"/> <span>บันทึกและแชร์</span></button>
+                        </div>
                     </form>
                 </div>
             );
@@ -576,7 +636,6 @@
                         <div className="flex gap-2">
                             <button onClick={onCancel} className="text-xs text-slate-300 bg-slate-700/50 border border-slate-600 px-4 py-2 rounded-full flex items-center gap-2">ข้าม (Skip)</button>
                             <button onClick={onReportHai} className="text-xs text-orange-200 bg-orange-500/20 border border-orange-500/50 px-4 py-2 rounded-full flex items-center gap-2">รายงานติดเชื้อในรพ.</button>
-                            <button onClick={onDischarge} className="text-xs text-red-200 bg-red-500/20 border border-red-500/50 px-4 py-2 rounded-full flex items-center gap-2"><LucideIcon name="LogOut" className="w-3 h-3"/> จำหน่าย/ถอดอุปกรณ์</button>
                         </div>
                     </div>
                     <div className={`p-5 rounded-2xl mb-6 flex justify-between items-center ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border} relative overflow-hidden`}>
@@ -585,8 +644,11 @@
                     </div>
                     <div className="space-y-4">
                         {items.length === 0 ? <div className="text-center py-10 text-emerald-400 text-sm glass-panel rounded-xl border border-emerald-500/30 bg-emerald-900/10 flex flex-col items-center gap-2"><LucideIcon name="CheckCircle" className="w-8 h-8"/><span>เยี่ยมมาก! ครบถ้วนแล้ว</span></div> : items.map((item, idx) => {
+                            const freq = normalizeFreq(item.frequency);
+                            const isDue = (freq === 'daily' || freq === 'shift');
                             return (
-                                <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col relative">
+                                <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col md:flex-row relative">
+                                    {isDue && !results[item.item_code]?.status && <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg z-10">ถึงรอบประเมิน</div>}
                                     <div className="p-4 flex-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setDetailItem(item)}><div className="flex gap-3"><div className="text-2xl font-bold text-slate-600 select-none">#{idx + 1}</div><div><div className="text-sm font-bold text-white mb-1">{item.item_desc_th}</div><div className="text-xs text-slate-400 font-light line-clamp-2 mb-2">{item.item_desc_th_long}</div><div className="flex gap-2"><span className="text-[9px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">{item.item_code}</span><span className="text-[9px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">{item.frequency}</span></div></div></div></div>
                                     <div className="p-2 bg-slate-900/50 flex flex-col gap-2 border-t border-white/5 items-center justify-center w-full">
                                         <div className="flex w-full gap-2">
@@ -671,13 +733,13 @@
                 fetchGAS('getInitialData').then(res => { if(res && !res.error) setData({...res, logs: res.logs || []}); });
             };
 
-            const handleNewCase = async (formData) => {
+            const handleNewCase = async (formData, share) => {
                 const newCase = { ...formData, tracking_id: 'temp-'+Date.now(), start_date: new Date().toISOString(), status: 'Active', date_count: 1 };
                 setData(prev => ({ ...prev, activeCases: [...prev.activeCases, newCase] }));
                 const res = await fetchGAS('createNewCase', { payload: formData });
                 if (res && res.success) { 
                     refreshDataInBackground(); 
-                    if(confirm("บันทึกสำเร็จ! ต้องการแชร์ลงกลุ่มไลน์ไหม?")) {
+                    if(share) {
                         shareToLine(createBundleFlex({...formData, tracking_id: res.trackingId, register: userProfile?.name}));
                     }
                     setSelectedCase(newCase); setChecklistMode('Insertion'); setView('checklist'); 
@@ -724,53 +786,6 @@
                  });
                  refreshDataInBackground();
             };
-            
-            const shareToLine = (flexMessage) => {
-                if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
-                    if (!window.liff.isInClient()) {
-                        alert("การแชร์ลงกลุ่มต้องเปิดใน LINE App เท่านั้น");
-                        return;
-                    }
-                    window.liff.shareTargetPicker([flexMessage])
-                        .then(() => console.log("Share success"))
-                        .catch((err) => {
-                            console.error("Share failed", err);
-                            alert("เกิดข้อผิดพลาดในการแชร์: " + err.message);
-                        });
-                } else {
-                    alert("อุปกรณ์นี้ไม่รองรับการแชร์ลงกลุ่ม หรือยังไม่เปิดฟีเจอร์");
-                }
-            };
-            
-            const createBundleFlex = (data) => ({
-                type: "flex", altText: "New Bundle Registered",
-                contents: {
-                    type: "bubble",
-                    styles: { header: { backgroundColor: "#1e1b4b" }, body: { backgroundColor: "#312e81" } },
-                    header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "NEW BUNDLE", color: "#4ade80", weight: "bold", size: "sm" }, { type: "text", text: data.bundle_type, color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                    body: { type: "box", layout: "vertical", contents: [
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.hn, color: "#ffffff", size: "sm", flex: 4 }] },
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Ward", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: `${data.ward} (${data.bed})`, color: "#ffffff", size: "sm", flex: 4 }] },
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "By", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.register, color: "#ffffff", size: "sm", flex: 4 }] }
-                    ]},
-                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ประเมิน Checklist", uri: `https://liff.line.me/${LIFF_ID}?tracking_id=${data.tracking_id}` }, style: "primary", color: "#6366f1" }] }
-                }
-            });
-            
-            const createHaiFlex = (data) => ({
-                type: "flex", altText: "HAI Report Alert",
-                contents: {
-                    type: "bubble",
-                    styles: { header: { backgroundColor: "#450a0a" }, body: { backgroundColor: "#7f1d1d" } },
-                    header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "HAI ALERT", color: "#fca5a5", weight: "bold", size: "sm" }, { type: "text", text: data.hai_type, color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                    body: { type: "box", layout: "vertical", contents: [
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: data.hn, color: "#ffffff", size: "sm", flex: 4 }] },
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Loc", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: `${data.ward} (${data.bed})`, color: "#ffffff", size: "sm", flex: 4 }] },
-                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Criteria", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: data.criteria, color: "#ffffff", size: "xxs", flex: 4, wrap: true }] }
-                    ]},
-                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ตรวจสอบ", uri: `https://liff.line.me/${LIFF_ID}` }, style: "primary", color: "#ef4444" }] }
-                }
-            });
 
             if (accessDenied) return <div className="min-h-screen flex items-center justify-center text-white bg-[#0f172a] p-4 text-center"><div><LucideIcon name="Lock" className="w-16 h-16 mx-auto mb-4 text-red-500"/><h2 className="text-xl font-bold">ขออภัย</h2><p className="text-slate-400 mt-2">ท่านไม่มีสิทธิ์เข้าใช้งานระบบนี้<br/>โปรดติดต่อ Admin เพื่อขอสิทธิ์ Bundle: Y</p></div></div>;
             if (loading && !data.activeCases) return <LoadingSpinner />;
