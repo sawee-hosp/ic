@@ -61,6 +61,7 @@
             padding: 0.75rem;
             border-radius: 0.5rem;
             margin-top: 0.25rem;
+            appearance: none; /* for select */
         }
         .glass-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
         
@@ -105,6 +106,29 @@
         const LIFF_ID = "2008690634-Mr6OanUA"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzG8WjNpWdC-JwFFIrRRJ2w7_sHdKx3D3ZIykPqwFuaWmvrPpOOJCv7CVYAGOY7tk60/exec";
 
+        const DEPT_OPTIONS = [
+            "กลุ่มงานบริหารทั่วไป", "กลุ่มงานการแพทย์", "กลุ่มงานทันตกรรม", "กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค",
+            "กลุ่มงานเทคนิคการแพทย์", "กลุ่มรังสีวิทยา", "กลุ่มงานเวชกรรมฟื้นฟู", "กลุ่มงานประกันสุขภาพและสารสนเทศทางการแพทย์",
+            "กลุ่มงานบริการด้านปฐมภูมิและองค์รวม", "กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก", "กลุ่มงานจิตเวชและยาเสพติด",
+            "งานการพยาบาลผู้ป่วยอุบัติเหตุและฉุกเฉิน (ER)", "งานการพยาบาลผู้ป่วยนอก (OPD)", "งานการพยาบาลผู้ป่วยใน (IPD)",
+            "ตึกผู้ป่วยในชาย (Wardชาย)", "ตึกผู้ป่วยในหญิง (Wardหญิง)", "กลุ่มงานการพยาบาลผู้คลอด (LR)",
+            "งานฝากครรภ์ (ANC)", "คลินิกพิเศษ", "งานจ่ายกลางและซักฟอก", "กลุ่มงานอื่นๆ", "รพ.สต."
+        ];
+
+        const JOB_OPTIONS = [
+            "คนสวน", "เจ้าหน้าที่บันทึกข้อมูล", "เจ้าหน้าที่โรงครัว", "เจ้าพนักงานการเงินและบัญชี",
+            "เจ้าพนักงานเภสัชกรรม", "เจ้าพนักงานวิทยาศาสตร์การแพทย์", "เจ้าพนักงานเวชกิจฉุกเฉิน",
+            "เจ้าพนักงานทันตสาธารณสุข", "เจ้าพนักงานธุรการ", "เจ้าพนักงานพัสดุ",
+            "เจ้าพนักงานรังสีการแพทย์", "เจ้าพนักงานเวชสถิติ", "เจ้าพนักงานสาธารณสุข",
+            "เจ้าพนักงานโสตทัศนศึกษา", "นักกายภาพบำบัด", "นักจัดการงานทั่วไป", "นักโภชนาการ",
+            "นักเทคนิคการแพทย์", "นักวิชาการคอมพิวเตอร์", "นักวิชาการพัสดุ", "นักวิชาการสาธารณสุข",
+            "นักวิทยาศาสตร์การแพทย์", "นักวิชาการการเงินและบัญชี", "นักสาธารณสุข", "นายช่างเทคนิค",
+            "นายแพทย์", "พนักงานขับรถยนต์", "พนักงานการเงินและบัญชี", "พนักงานบริการ",
+            "พนักงานช่วยเหลือคนไข้", "พนักงานธุรการ", "พนักงานประจำตึก", "พนักงานประจำห้องยา",
+            "ผู้ช่วยช่างทั่วไป", "เภสัชกร", "แพทย์แผนไทย", "ทันตแพทย์", "พยาบาลวิชาชีพ",
+            "ลูกมือช่าง", "อื่นๆ"
+        ];
+
         const Preloader = () => (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]">
                 <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-32 h-32 animate-logo mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
@@ -123,12 +147,11 @@
             const [profile, setProfile] = useState(null);
             const [formData, setFormData] = useState({
                 userId: '', DisplayName: '', pictureProfile: '',
-                Title: 'นาย', Name: '', Dept: '', Job: '', Gender: 'ชาย', Age: '', HN: ''
+                Title: 'นาย', Name: '', Dept: DEPT_OPTIONS[0], Job: JOB_OPTIONS[0], Gender: 'ชาย', Age: '', HN: ''
             });
 
             useEffect(() => {
                 const init = async () => {
-                    // Min load time for smooth transition
                     const minLoad = new Promise(resolve => setTimeout(resolve, 1500));
                     
                     try {
@@ -141,7 +164,6 @@
                             const p = await window.liff.getProfile();
                             setProfile(p);
                             
-                            // Check Registration
                             const res = await fetch(GAS_URL, {
                                 method: "POST",
                                 body: JSON.stringify({ action: 'checkRegistration', userId: p.userId })
@@ -149,20 +171,25 @@
 
                             if (res.isRegistered) {
                                 setIsRegistered(true);
-                                setFormData(res.data);
+                                // Ensure Dept and Job are in the lists, otherwise default to first option or keep value
+                                setFormData(res.data); 
                             } else {
                                 setIsRegistered(false);
                                 setFormData(prev => ({
                                     ...prev,
                                     userId: p.userId,
                                     DisplayName: p.displayName,
-                                    pictureProfile: p.pictureUrl
+                                    pictureProfile: p.pictureUrl,
+                                    Dept: DEPT_OPTIONS[0],
+                                    Job: JOB_OPTIONS[0]
                                 }));
                             }
                         }
                     } catch (e) {
                         console.error(e);
-                        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ LIFF");
+                        // Dev Mock for testing outside LIFF
+                        // setFormData(prev => ({ ...prev, userId: 'dev', DisplayName: 'DevUser' }));
+                        // setIsRegistered(false);
                     }
                     
                     await minLoad;
@@ -181,10 +208,20 @@
                     }).then(r => r.json());
                     
                     alert("บันทึกข้อมูลเรียบร้อย");
-                    window.location.href = "https://sawee-hosp.github.io/ic/health.html";
+                    setIsRegistered(true); // Update state to show registered view if desired, or stay editable
+                    setLoading(false);
+                    // Stay on page, do not redirect
                 } catch (err) {
                     alert("บันทึกไม่สำเร็จ: " + err);
                     setLoading(false);
+                }
+            };
+
+            const closeWindow = () => {
+                if (window.liff) {
+                    window.liff.closeWindow();
+                } else {
+                    window.close();
                 }
             };
 
@@ -208,54 +245,50 @@
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="glass-panel p-6 rounded-2xl space-y-4">
-                            {isRegistered && (
-                                <div className="bg-indigo-900/30 p-4 rounded-xl border border-indigo-500/30 mb-6 text-center">
-                                    <div className="text-xl font-bold text-indigo-300">{formData.Title}{formData.Name}</div>
-                                    <div className="text-sm text-indigo-400 mt-1">{formData.Job} • {formData.Dept}</div>
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="col-span-1">
+                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">คำนำหน้า</label>
+                                    <select className="glass-input text-black" value={formData.Title} onChange={e => setFormData({...formData, Title: e.target.value})}>
+                                        <option>นาย</option>
+                                        <option>นาง</option>
+                                        <option>นางสาว</option>
+                                    </select>
                                 </div>
-                            )}
+                                <div className="col-span-2">
+                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ชื่อ-สกุล</label>
+                                    <input required type="text" className="glass-input" value={formData.Name} onChange={e => setFormData({...formData, Name: e.target.value})} placeholder="สมชาย ใจดี" />
+                                </div>
+                            </div>
 
-                            {!isRegistered && (
-                                <>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="col-span-1">
-                                            <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">คำนำหน้า</label>
-                                            <select className="glass-input" value={formData.Title} onChange={e => setFormData({...formData, Title: e.target.value})}>
-                                                <option className="text-black">นาย</option>
-                                                <option className="text-black">นาง</option>
-                                                <option className="text-black">นางสาว</option>
-                                            </select>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ชื่อ-สกุล</label>
-                                            <input required type="text" className="glass-input" value={formData.Name} onChange={e => setFormData({...formData, Name: e.target.value})} placeholder="สมชาย ใจดี" />
-                                        </div>
-                                    </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">เพศ</label>
+                                    <select className="glass-input text-black" value={formData.Gender} onChange={e => setFormData({...formData, Gender: e.target.value})}>
+                                        <option>ชาย</option>
+                                        <option>หญิง</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">อายุ</label>
+                                    <input required type="number" className="glass-input" value={formData.Age} onChange={e => setFormData({...formData, Age: e.target.value})} />
+                                </div>
+                            </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">เพศ</label>
-                                            <select className="glass-input" value={formData.Gender} onChange={e => setFormData({...formData, Gender: e.target.value})}>
-                                                <option className="text-black">ชาย</option>
-                                                <option className="text-black">หญิง</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">อายุ</label>
-                                            <input required type="number" className="glass-input" value={formData.Age} onChange={e => setFormData({...formData, Age: e.target.value})} />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">หน่วยงาน (Dept)</label>
-                                        <input required type="text" className="glass-input" value={formData.Dept} onChange={e => setFormData({...formData, Dept: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ตำแหน่ง (Job)</label>
-                                        <input required type="text" className="glass-input" value={formData.Job} onChange={e => setFormData({...formData, Job: e.target.value})} />
-                                    </div>
-                                </>
-                            )}
+                            <div>
+                                <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">หน่วยงาน (Dept)</label>
+                                <select required className="glass-input text-black" value={formData.Dept} onChange={e => setFormData({...formData, Dept: e.target.value})}>
+                                    <option value="" disabled>-- เลือกหน่วยงาน --</option>
+                                    {DEPT_OPTIONS.map((dept, i) => <option key={i} value={dept}>{dept}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ตำแหน่ง (Job)</label>
+                                <select required className="glass-input text-black" value={formData.Job} onChange={e => setFormData({...formData, Job: e.target.value})}>
+                                    <option value="" disabled>-- เลือกตำแหน่ง --</option>
+                                    {JOB_OPTIONS.map((job, i) => <option key={i} value={job}>{job}</option>)}
+                                </select>
+                            </div>
 
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-2">
@@ -267,17 +300,11 @@
 
                         <div className="pt-4 space-y-3">
                             <button type="submit" className="btn-primary shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-                                {isRegistered ? 'ยืนยันข้อมูลล่าสุด' : 'ลงทะเบียนเข้าใช้งาน'}
+                                {isRegistered ? 'บันทึกการแก้ไข' : 'ลงทะเบียนเข้าใช้งาน'}
                             </button>
                             
-                            {isRegistered && (
-                                <button type="button" onClick={() => window.location.href = "https://sawee-hosp.github.io/ic/health.html"} className="btn-secondary text-indigo-300 border-indigo-500/30 hover:bg-indigo-900/20">
-                                    ดูประวัติสุขภาพ
-                                </button>
-                            )}
-                            
-                            <button type="button" onClick={() => window.history.back()} className="w-full py-3 text-sm text-slate-500 hover:text-white transition-colors">
-                                ย้อนกลับ
+                            <button type="button" onClick={closeWindow} className="btn-secondary text-slate-400 border-slate-700 hover:bg-slate-800">
+                                ปิดหน้าต่าง
                             </button>
                         </div>
                     </form>
