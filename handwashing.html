@@ -16,7 +16,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
         body { 
@@ -55,7 +55,7 @@
         const LIFF_ID = "2008690634-UG4TJcVB";
         const REG_URL = "https://sawee-hosp.github.io/ic/index.html";
 
-        // Custom Hand Icon
+        // SVG Icons
         const HandIcon = () => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-emerald-400 animate-glow">
                 <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
@@ -65,23 +65,18 @@
             </svg>
         );
 
-        // Fixed LucideIcon
         const LucideIcon = ({ name, className }) => {
-            const containerRef = useRef(null);
-
+            const ref = useRef(null);
             useEffect(() => {
-                if (window.lucide && window.lucide.createIcons && containerRef.current) {
-                    const kebabName = name.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase().replace(/^-/, '');
-                    containerRef.current.innerHTML = `<i data-lucide="${kebabName}" class="${className}"></i>`;
+                if (window.lucide && ref.current) {
                     window.lucide.createIcons({
-                        root: containerRef.current,
+                        root: ref.current.parentNode,
                         nameAttr: 'data-lucide',
                         attrs: { class: className }
                     });
                 }
-            }, [name, className]);
-
-            return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
+            }, [name]);
+            return <i data-lucide={name} ref={ref} className={className}></i>;
         };
 
         const SuccessModal = ({ onClose }) => (
@@ -115,11 +110,12 @@
             const [method, setMethod] = useState('');
             const [steps, setSteps] = useState({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-            // Fetch Helper with CORS Fix
+            // Fetch Helper (Fixed CORS)
             const fetchAPI = async (action, payload = {}) => {
+                // Use 'no-cors' mode is NOT possible if we need response JSON. 
+                // Instead, use 'text/plain' content type to avoid preflight CORS
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                     body: JSON.stringify({ action, ...payload })
                 });
                 if (!response.ok) throw new Error('Network error');
@@ -148,7 +144,11 @@
                             
                             // Check User
                             try {
-                                const res = await fetchAPI('getUserProfile', { userId: profile.userId });
+                                // Using fetch directly for clarity
+                                const res = await fetch(GAS_URL, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ action: 'getUserProfile', userId: profile.userId })
+                                }).then(r => r.json());
 
                                 if (res.found) {
                                     const userData = { ...res, picture: profile.pictureUrl };
@@ -161,22 +161,25 @@
                                 }
                             } catch (err) {
                                 console.error("Fetch User Error:", err);
+                                // Fallback cache
                                 const cached = localStorage.getItem('hh_user_' + profile.userId);
                                 if(cached) setUser(JSON.parse(cached));
-                                else setErrorMsg("เชื่อมต่อ Server ไม่ได้ (" + err.message + ")");
+                                else setErrorMsg("เชื่อมต่อ Server ไม่ได้: " + err.message);
                             }
 
                             // Fetch Meta Data
-                            fetchAPI('getMetaData').then(data => {
-                                if (data.locations) {
-                                    setMeta(data);
-                                    localStorage.setItem('hh_meta', JSON.stringify(data));
-                                }
-                                setLoading(false);
-                            }).catch(e => {
-                                console.error("Meta Fetch Error:", e);
-                                setLoading(false);
-                            });
+                            fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getMetaData' }) })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.locations) {
+                                        setMeta(data);
+                                        localStorage.setItem('hh_meta', JSON.stringify(data));
+                                    }
+                                    setLoading(false);
+                                }).catch(e => {
+                                    console.error("Meta Error:", e);
+                                    setLoading(false);
+                                });
 
                         } catch (e) { 
                             console.error("LIFF Init Error:", e);
@@ -214,17 +217,16 @@
                 };
 
                 localStorage.setItem('hh_last_loc', location);
-                
-                // Show Success & Optimistic Update
                 setShowSuccess(true);
                 setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
-
-                // Reset Form
                 setMoment('');
                 setMethod('');
                 setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-                fetchAPI('saveRecord', { payload }).catch(e => console.error("Save Error", e));
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'saveRecord', payload })
+                }).catch(e => console.error("Save Error", e));
             };
 
             if (loading && meta.locations.length === 0) return (
@@ -269,27 +271,36 @@
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-                        {/* 1. Location */}
+                        {/* 1. Location (Auto Width) */}
                         <div>
                             <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">สถานที่</div>
-                            <div className="grid grid-rows-2 grid-flow-col gap-1 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
-                                {meta.locations.map(l => (
-                                    <button key={l.code} onClick={() => setLocation(l.code)}
-                                        className={`item-btn px-3 py-2 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                                        {l.label}
-                                        {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-indigo-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{l.count}</span>}
-                                    </button>
-                                ))}
+                            <div className="flex flex-wrap gap-1.5 h-auto overflow-y-hidden"> 
+                                {/* Using Flex Wrap with container adjustments for scrolling if needed, but '2 rows' logic is better handled by grid with auto-flow column if we want horizontal scroll.
+                                    But to satisfy "Auto Width" + "2 Rows" + "Horizontal Scroll" is tricky.
+                                    Best approach for auto-width horizontal scroll: Flex container. 
+                                    If we strictly want 2 rows: We can map and split, OR use grid-rows-2 with grid-flow-col. 
+                                    But grid cells stretch to widest content in column.
+                                    Let's stick to flex row (horizontal scroll) for simplicity and true auto-width, OR grid with auto-cols-max.
+                                */}
+                                <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max w-full">
+                                    {meta.locations.map(l => (
+                                        <button key={l.code} onClick={() => setLocation(l.code)}
+                                            className={`item-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                            {l.label}
+                                            {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-indigo-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{l.count}</span>}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* 2. HCW */}
+                        {/* 2. HCW (Auto Width) */}
                         <div>
                             <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">ผู้ถูกสังเกต</div>
-                            <div className="grid grid-rows-2 grid-flow-col gap-1 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
+                            <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
                                 {meta.hcws.map(h => (
                                     <button key={h.code} onClick={() => setHcw(h.code)}
-                                        className={`item-btn px-3 py-2 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        className={`item-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {h.label}
                                         {h.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-pink-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{h.count}</span>}
                                     </button>
@@ -309,9 +320,9 @@
                                     { id: 5, label: 'หลังสัมผัสสิ่งแวดล้อม' }
                                 ].map(m => (
                                     <button key={m.id} onClick={() => setMoment(m.id)} 
-                                        className={`item-btn h-14 rounded-lg border flex flex-col items-center justify-center p-1 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                        <span className="text-lg font-black leading-none mb-0.5">{m.id}</span>
-                                        <span className="text-[8px] leading-tight text-center line-clamp-2 h-[20px] w-full flex items-center justify-center">{m.label}</span>
+                                        className={`item-btn h-12 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                        <span className="text-base font-black leading-none">{m.id}</span>
+                                        <span className="text-[6px] leading-tight text-center line-clamp-2 w-full px-0.5">{m.label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -352,7 +363,7 @@
                                         const id = i + 1;
                                         return (
                                             <button key={id} onClick={() => toggleStep(id)} 
-                                                className={`item-btn px-0.5 py-1.5 rounded-lg text-[9px] font-bold border flex flex-col items-center justify-center leading-none min-h-[40px] ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
+                                                className={`item-btn px-0.5 py-1 rounded-lg text-[8px] font-bold border flex flex-col items-center justify-center leading-none min-h-[40px] ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
                                                 <style>{`.grid-cols-4 > button:nth-child(n+5) { grid-column: span 1.33; }`}</style>
                                                 {steps[id] ? <LucideIcon name="check" className="w-3 h-3 text-emerald-500 mb-0.5"/> : <LucideIcon name="x" className="w-3 h-3 text-red-500 mb-0.5"/>}
                                                 {t}
