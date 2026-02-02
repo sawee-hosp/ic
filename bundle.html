@@ -107,14 +107,20 @@
             return 'เวรดึก';
         };
 
+        // --- FETCH GAS FIX (เพิ่ม Headers เพื่อแก้ Fail to Fetch) ---
         const fetchGAS = async (action, data = {}) => {
             try {
-                const response = await fetch(GAS_URL, { method: "POST", redirect: "follow", body: JSON.stringify({ action, ...data }) });
+                const response = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    redirect: "follow", 
+                    body: JSON.stringify({ action, ...data }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } // ป้องกัน CORS Preflight
+                });
                 if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
             } catch (error) {
                 console.error("GAS Error:", error);
-                return { error: true, master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] };
+                return { error: true, success: false, master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] };
             }
         };
 
@@ -130,7 +136,7 @@
             return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
         };
 
-        // --- IMPROVED LINE SHARE LOGIC (Fixing Fail to Fetch) ---
+        // --- LINE SHARE LOGIC FIX (เพิ่มการเช็ค isInClient เพื่อแก้ block about:blank) ---
         const getLiffUrl = (params = {}) => {
             const baseUrl = `https://liff.line.me/${LIFF_ID}`;
             const query = Object.entries(params)
@@ -143,6 +149,13 @@
         const shareToLine = async (flexMessage) => {
             if (!window.liff) return false;
             
+            // ป้องกันการแชร์จาก Browser ภายนอกซึ่งจะโดน block
+            if (!liff.isInClient()) {
+                console.warn("ShareTargetPicker works only in LINE app.");
+                alert("กรุณาใช้งานผ่านแอป LINE เพื่อแชร์ข้อมูล");
+                return false;
+            }
+
             if (!window.liff.isLoggedIn()) {
                 window.liff.login();
                 return false;
@@ -158,18 +171,18 @@
                     return false;
                 }
             } else {
-                alert("ไม่สามารถแชร์ได้ (โปรดตรวจสอบการตั้งค่าสิทธิ์ ShareTargetPicker ใน LINE Console)");
+                alert("สิทธิ์การแชร์ยังไม่ถูกเปิดใช้งานใน LINE Developers Console");
                 return false;
             }
         };
 
         const createBundleFlex = (data) => ({
-            type: "flex", altText: `แจ้งเตือน Bundle ใหม่: ${data.bundle_type || '-'}`,
+            type: "flex", altText: `แจ้งเตือน Bundle: ${data.bundle_type || '-'}`,
             contents: {
                 type: "bubble",
                 styles: { header: { backgroundColor: "#1e1b4b" }, body: { backgroundColor: "#312e81" } },
                 header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "NEW BUNDLE REGISTERED", color: "#4ade80", weight: "bold", size: "sm" }, { type: "text", text: String(data.bundle_type || '-'), color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                body: { type: "box", layout: "vertical", spacing: "sm", contents: [
+                body: { type: "box", layout: "vertical", contents: [
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: String(data.hn || '-'), color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "Ward", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: `${data.ward || '-'} (${data.bed || '-'})`, color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "By", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: String(data.register || '-'), color: "#ffffff", size: "sm", flex: 4 }] }
@@ -179,12 +192,12 @@
         });
 
         const createHaiFlex = (data) => ({
-            type: "flex", altText: `แจ้งเตือนเคสติดเชื้อ (HAI): ${data.hai_type || '-'}`,
+            type: "flex", altText: `🚨 แจ้งเตือน HAI: ${data.hai_type || '-'}`,
             contents: {
                 type: "bubble",
                 styles: { header: { backgroundColor: "#450a0a" }, body: { backgroundColor: "#7f1d1d" } },
                 header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "HAI ALERT", color: "#fca5a5", weight: "bold", size: "sm" }, { type: "text", text: String(data.hai_type || '-'), color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
-                body: { type: "box", layout: "vertical", spacing: "sm", contents: [
+                body: { type: "box", layout: "vertical", contents: [
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: String(data.hn || '-'), color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "Loc", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: `${data.ward || '-'} (${data.bed || '-'})`, color: "#ffffff", size: "sm", flex: 4 }] },
                     { type: "box", layout: "baseline", contents: [{ type: "text", text: "Criteria", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: String(data.criteria || '-'), color: "#ffffff", size: "xxs", flex: 4, wrap: true }] }
@@ -520,7 +533,13 @@
             const [form, setForm] = useState({ hn: '', ward: preWard || 'Wardชาย', bed: preBed || '', bundle_type: 'CAUTI' });
             const [loading, setLoading] = useState(false);
             const [showScanner, setShowScanner] = useState(false);
-            const handleSubmit = async (e, share) => { e.preventDefault(); const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); setLoading(true); await onSubmit({ ...form, register: userProfile?.name || 'Guest' }, share); };
+            const handleSubmit = async (e, share) => { 
+                e.preventDefault(); 
+                const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); 
+                if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); 
+                setLoading(true); 
+                await onSubmit({ ...form, register: userProfile?.name || 'Guest' }, share); 
+            };
             const currentBeds = BED_CONFIG[form.ward] || [];
 
             return (
@@ -622,7 +641,7 @@
 
         const App = () => {
             const [view, setView] = useState('dashboard');
-            const [data, setData] = useState({ master: [], activeCases: [], historyCases: [], haiCases: [], metrics: {}, logs: [] });
+            const [data, setData] = useState({ master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] });
             const [loading, setLoading] = useState(true);
             const [userProfile, setUserProfile] = useState(null);
             const [selectedCase, setSelectedCase] = useState(null);
@@ -654,7 +673,7 @@
                                         setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId, job: 'Staff', dept: 'General' });
                                     }
                                 } else {
-                                    window.liff.login();
+                                    if (liff.isInClient()) liff.login();
                                 }
                             } catch (e) { console.error("LIFF Init error", e); }
                         }
