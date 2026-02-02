@@ -10,16 +10,11 @@
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM (Load first) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Prop-types (Required for Recharts) -->
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    <!-- Recharts -->
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- LIFF SDK -->
@@ -28,14 +23,14 @@
     <!-- QR Scanner -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <!-- Fonts: Google Sans -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
         body { 
-            font-family: 'Google Sans', sans-serif; 
+            font-family: 'Google Sans', 'Sarabun', sans-serif; 
             background: #0f172a; 
             color: #f8fafc; 
             -webkit-tap-highlight-color: transparent; 
@@ -57,15 +52,15 @@
         }
 
         .glass-panel { 
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
+            background: rgba(30, 41, 59, 0.85); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
         }
 
         .glass-input { 
             background: rgba(15, 23, 42, 0.6); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.15); 
             color: white; 
         }
         .glass-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
@@ -73,14 +68,69 @@
         .btn-press:active { transform: scale(0.97); }
         .neon-text { text-shadow: 0 0 10px currentColor; }
         
+        /* Bundle Colors */
         .bundle-cauti { border-left: 4px solid #fbbf24; } 
         .bundle-vap { border-left: 4px solid #3b82f6; } 
         .bundle-pvc { border-left: 4px solid #ef4444; } 
         .bundle-ssi { border-left: 4px solid #10b981; } 
         .bundle-mdr { border-left: 4px solid #a855f7; } 
 
+        /* Bed Grid Styles - Micro Size (15 per row) */
+        .bed-grid-container {
+            display: grid;
+            grid-template-columns: repeat(15, minmax(0, 1fr)); 
+            gap: 2px;
+        }
+        .bed-box {
+            font-size: 9px; 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid rgba(71, 85, 105, 0.5); 
+            background: rgba(30, 41, 59, 0.8);
+            color: #64748b;
+            height: 20px; 
+            white-space: nowrap;
+            overflow: hidden;
+            letter-spacing: -0.5px;
+        }
+        .bed-box:hover { background: rgba(59, 130, 246, 0.3); border-color: rgba(59, 130, 246, 1); color: white; }
+        
+        /* Active Bed Colors */
+        .bed-active { color: white; border: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.5); text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
+        .bed-CAUTI { background: #fbbf24; color: #451a03; }
+        .bed-VAP { background: #3b82f6; }
+        .bed-PVC { background: #ef4444; }
+        .bed-SSI { background: #10b981; }
+        .bed-MDR { background: #a855f7; }
+
+        /* HAI Alert Style */
+        .bed-hai-alert { 
+            box-shadow: 0 0 0 2px #ef4444, 0 0 8px #ef4444 !important;
+            animation: pulse-red 1.5s infinite; 
+            z-index: 20;
+        }
+        @keyframes pulse-red { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.1); } 
+        }
+        
+        /* Waiting List Blink */
+        @keyframes slow-blink {
+            0%, 100% { opacity: 1; border-color: white; }
+            50% { opacity: 0.6; border-color: transparent; }
+        }
+        .bed-waiting {
+            animation: slow-blink 2s infinite ease-in-out;
+            border: 1px solid white !important;
+        }
+
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
@@ -91,14 +141,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-        
-        // Recharts Destructuring with Fallback to prevent crash if library fails
-        const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts || { 
-            PieChart: ({children}) => <div className="flex items-center justify-center h-full text-xs text-slate-500">Chart Error</div>, 
-            Pie: () => null, 
-            Cell: () => null, 
-            ResponsiveContainer: ({children}) => <div style={{width:'100%', height:'100%'}}>{children}</div> 
-        };
+        const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts || { PieChart:()=>null, Pie:()=>null, Cell:()=>null, ResponsiveContainer:({children})=>children };
 
         // --- CONFIGURATION ---
         const GAS_URL = "https://script.google.com/macros/s/AKfycbypLTYWgle-SsRfHxwgfHpIT6Lyhh_iwEKK6lVxcuQyM-TQBCk6mIRWJ0pKd7sFxEY/exec";
@@ -111,99 +154,95 @@
             'SSI': { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', icon: 'scissors', label: 'SSI' },
             'MDR': { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/50', icon: 'bug', label: 'MDR' },
         };
-        const WARD_OPTIONS = ['ทั้งหมด', 'Wardชาย', 'Wardหญิง', 'LR', 'ER'];
-        const FREQUENCY_MAP = {
-            'Once': 'ครั้งแรก (Insertion)',
-            'Daily': 'ทุกวัน (Daily)',
-            'Shift': 'ทุกเวร (Shift)',
-            'Event': 'ทุกครั้งเมื่อมีเหตุ'
+        
+        const BED_CONFIG = {
+            'Wardชาย': [...Array.from({length: 25}, (_, i) => `M${i+1}`), ...Array.from({length: 6}, (_, i) => `P${i+7}`), ...Array.from({length: 10}, (_, i) => `SM${i+1}`)],
+            'Wardหญิง': [...Array.from({length: 25}, (_, i) => `F${i+1}`), ...Array.from({length: 6}, (_, i) => `P${i+1}`), ...Array.from({length: 10}, (_, i) => `SF${i+1}`)],
+            'LR': Array.from({length: 5}, (_, i) => `LR${i+1}`),
+            'ER': Array.from({length: 5}, (_, i) => `ER${i+1}`),
+        };
+        const WARD_OPTIONS = ['ทั้งหมด', ...Object.keys(BED_CONFIG)];
+        const FREQUENCY_MAP = { 'Once': 'ครั้งแรก', 'ครั้งแรก': 'ครั้งแรก', 'Daily': 'ทุกวัน', 'ทุกวัน': 'ทุกวัน', 'Shift': 'ทุกเวร', 'ทุกเวร': 'ทุกเวร', 'Event': 'ทุกครั้ง', 'ทุกครั้ง': 'ทุกครั้ง' };
+        
+        const MOCK_HAI_MASTER = [
+            { id: 1, hai_group: 'VAP', criteria_text: 'ใส่ท่อช่วยหายใจเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
+            { id: 2, hai_group: 'VAP', criteria_text: 'มีไข้ > 38.0°C หรือ อุณหภูมิต่ำ < 36.0°C', type: 'Clinical', weight: 'Major' },
+            { id: 5, hai_group: 'CAUTI', criteria_text: 'ใส่สายสวนปัสสาวะเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
+            { id: 6, hai_group: 'CAUTI', criteria_text: 'ปัสสาวะขุ่น / มีตะกอน / มีหนอง', type: 'Clinical', weight: 'Major' }
+        ];
+
+        // --- UTILS ---
+        const safeDate = (dateStr) => {
+            if (!dateStr) return new Date();
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? new Date() : d;
+        };
+
+        const normalizeFreq = (f) => {
+            if (!f) return '';
+            const s = f.toLowerCase();
+            if (s.includes('once') || s.includes('ครั้งแรก')) return 'once';
+            if (s.includes('daily') || s.includes('ทุกวัน')) return 'daily';
+            if (s.includes('shift') || s.includes('ทุกเวร')) return 'shift';
+            if (s.includes('event') || s.includes('ทุกครั้ง')) return 'event';
+            return 'other';
+        };
+
+        const getShift = (date) => {
+            const hour = date.getHours();
+            if (hour >= 8 && hour < 16) return 'เวรเช้า';
+            if (hour >= 16) return 'เวรบ่าย';
+            return 'เวรดึก';
         };
 
         // --- API UTILS ---
         const fetchGAS = async (action, data = {}) => {
-            const params = { action, ...data };
             try {
                 const response = await fetch(GAS_URL, {
                     method: "POST",
                     redirect: "follow", 
-                    body: JSON.stringify(params)
+                    body: JSON.stringify({ action, ...data })
                 });
                 if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
             } catch (error) {
                 console.error("GAS Error:", error);
-                // Return fallback structure to prevent UI crash
-                return { error: true, master: [], activeCases: [], historyCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 } };
+                return { error: true, master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] };
             }
         };
 
-        // --- HELPER COMPONENT FOR ICONS (Robust Version) ---
-        // Uses lucide.createIcons which is more reliable on CDN
+        // --- HELPER COMPONENTS ---
         const LucideIcon = ({ name, className }) => {
-            const iconRef = useRef(null);
-
+            const containerRef = useRef(null);
             useEffect(() => {
-                if (window.lucide && window.lucide.createIcons && iconRef.current) {
-                    // Convert PascalCase to kebab-case for data-lucide attribute if needed
-                    // But standard lucide names usually work. 
-                    // Let's try to map React-like names to Lucide names roughly
+                if (window.lucide && window.lucide.createIcons && containerRef.current) {
                     const kebabName = name.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase().replace(/^-/, '');
-                    
-                    iconRef.current.setAttribute('data-lucide', kebabName);
-                    
-                    window.lucide.createIcons({
-                        root: iconRef.current.parentNode,
-                        nameAttr: 'data-lucide',
-                        attrs: {
-                            class: className
-                        }
-                    });
+                    containerRef.current.innerHTML = `<i data-lucide="${kebabName}" class="${className}"></i>`;
+                    window.lucide.createIcons({ root: containerRef.current });
                 }
             }, [name, className]);
-
-            return <i ref={iconRef} className={className}></i>;
+            return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
         };
 
-        // --- COMPONENTS ---
-
         const LoadingSpinner = ({ text }) => (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]">
-                <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-8 h-8 opacity-80" onError={(e) => e.target.style.display='none'}/>
-                    </div>
-                </div>
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]">
+                <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
                 <p className="mt-4 text-slate-400 text-sm animate-pulse">{text || 'Loading System...'}</p>
             </div>
         );
 
+        // --- GLOBAL COMPONENTS ---
+
         const Header = ({ userProfile }) => (
             <header className="glass-panel sticky top-0 z-40 px-4 py-3 flex justify-between items-center mb-4 rounded-b-2xl mx-1 mt-1 shadow-lg">
                 <div className="flex items-center gap-3">
-                     <div className="relative group">
-                        <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="h-10 w-auto drop-shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
-                    </div>
-                    <div>
-                        <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300 leading-tight">SW-1 Bundle</div>
-                        <div className="text-[10px] text-slate-400 uppercase tracking-widest">Infection Control</div>
-                    </div>
+                     <div className="relative group"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="h-10 w-auto drop-shadow-[0_0_10px_rgba(99,102,241,0.6)]" /></div>
+                    <div><div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300 leading-tight">SW-1 Bundle</div><div className="text-[10px] text-slate-400 uppercase tracking-widest">Infection Control</div></div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    <div className="text-right hidden md:block">
-                        <div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest'}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 flex gap-1 justify-end">
-                            <span>{userProfile?.job || 'Staff'}</span>
-                            {userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}
-                        </div>
-                    </div>
-                    <div className="relative w-10 h-10 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">
-                        {userProfile?.picture ? 
-                            <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : 
-                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-5 h-5"/></div>
-                        }
-                    </div>
+                    <div className="text-right hidden md:block"><div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div><div className="text-[10px] text-slate-400 mt-0.5 flex gap-1 justify-end"><span>{userProfile?.job || 'Staff'}</span>{userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}</div></div>
+                    <div className="relative w-10 h-10 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">{userProfile?.picture ? <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-5 h-5"/></div>}</div>
                 </div>
             </header>
         );
@@ -215,46 +254,17 @@
                     try {
                         const element = document.getElementById("reader");
                         if (!element) return;
-
                         html5QrcodeScanner = new Html5Qrcode("reader");
-                        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                        await html5QrcodeScanner.start(
-                            { facingMode: "environment" }, 
-                            config, 
-                            (decodedText) => {
-                                html5QrcodeScanner.stop().then(() => {
-                                    onScan(decodedText);
-                                }).catch(err => console.error("Stop failed", err));
-                            },
-                            (errorMessage) => { /* ignore */ }
-                        );
-                    } catch (err) {
-                        console.error(err);
-                        alert("Camera Error: " + err);
-                        onClose();
-                    }
+                        await html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (decodedText) => { html5QrcodeScanner.stop().then(() => onScan(decodedText)); }, () => {});
+                    } catch (err) { alert("Camera Error: " + err); onClose(); }
                 };
-
                 setTimeout(startScanner, 100);
-
-                return () => {
-                    if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-                        html5QrcodeScanner.stop().catch(err => console.error(err));
-                    }
-                };
+                return () => { if (html5QrcodeScanner?.isScanning) html5QrcodeScanner.stop().catch(console.error); };
             }, []);
-
             return (
                 <div className="fixed inset-0 z-[70] bg-black flex flex-col items-center justify-center">
-                    <div className="w-full max-w-sm overflow-hidden relative bg-black">
-                        <div id="reader" className="w-full h-[60vh]"></div>
-                        <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/80 to-transparent text-white text-center">
-                            สแกน Barcode / QR Code
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="mt-8 px-8 py-3 bg-white text-black rounded-full font-bold flex items-center gap-2 shadow-xl">
-                        <LucideIcon name="X" className="w-5 h-5 text-black"/> ยกเลิก
-                    </button>
+                    <div className="w-full max-w-sm overflow-hidden relative bg-black"><div id="reader" className="w-full h-[60vh]"></div><div className="absolute top-0 left-0 w-full p-4 bg-black/50 text-white text-center">สแกน Barcode</div></div>
+                    <button onClick={onClose} className="mt-8 px-8 py-3 bg-white text-black rounded-full font-bold flex items-center gap-2 shadow-xl"><LucideIcon name="X" className="w-5 h-5 text-black"/> ยกเลิก</button>
                 </div>
             );
         };
@@ -262,329 +272,150 @@
         const ItemDetailModal = ({ item, onClose }) => (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
                 <div className="glass-panel w-full max-w-sm p-6 rounded-2xl relative" onClick={e => e.stopPropagation()}>
-                    <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-                        <LucideIcon name="X" className="w-5 h-5"/>
-                    </button>
-                    <h3 className="text-xl font-bold text-indigo-300 mb-4 flex items-center gap-2">
-                        <LucideIcon name="Info" className="w-5 h-5"/> ข้อมูลมาตรฐาน
-                    </h3>
+                    <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><LucideIcon name="X" className="w-5 h-5"/></button>
+                    <h3 className="text-xl font-bold text-indigo-300 mb-4 flex items-center gap-2"><LucideIcon name="Info" className="w-5 h-5"/> ข้อมูลมาตรฐาน</h3>
                     <div className="space-y-4 text-sm text-slate-200">
-                        <div>
-                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">หัวข้อประเมิน</span>
-                            <div className="font-semibold">{item.item_desc_th}</div>
-                        </div>
-                        <div>
-                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">รายละเอียด</span>
-                            <div className="font-light leading-relaxed bg-slate-800/50 p-3 rounded-lg border border-white/5">{item.item_desc_th_long}</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ความถี่</span>
-                                <div className="text-emerald-400">{FREQUENCY_MAP[item.frequency] || item.frequency}</div>
-                            </div>
-                            <div>
-                                <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ผู้รับผิดชอบ</span>
-                                <div className="text-purple-400">{item.responsible}</div>
-                            </div>
-                        </div>
-                        <div>
-                            <span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">วิธีการ</span>
-                            <div>{item.method}</div>
-                        </div>
+                        <div><span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">หัวข้อประเมิน</span><div className="font-semibold">{item.item_desc_th}</div></div>
+                        <div><span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">รายละเอียด</span><div className="font-light leading-relaxed bg-slate-800/50 p-3 rounded-lg border border-white/5">{item.item_desc_th_long}</div></div>
+                        <div className="grid grid-cols-2 gap-4"><div><span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ความถี่</span><div className="text-emerald-400">{FREQUENCY_MAP[item.frequency] || item.frequency}</div></div><div><span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">ผู้รับผิดชอบ</span><div className="text-purple-400">{item.responsible}</div></div></div>
+                        <div><span className="text-xs text-slate-500 block mb-1 uppercase tracking-wider">วิธีการ</span><div>{item.method}</div></div>
                     </div>
                 </div>
             </div>
         );
 
-        // --- VIEWS ---
-
-        const DashboardView = ({ activeCases, historyCases, metrics, onSelectCase, onNewCase }) => {
-            const [filterWard, setFilterWard] = useState('ทั้งหมด');
-            const [tab, setTab] = useState('active');
-
-            const filteredData = (tab === 'active' ? activeCases : historyCases).filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard);
-
-            const chartData = useMemo(() => {
-                const counts = {};
-                filteredData.forEach(c => counts[c.bundle_type] = (counts[c.bundle_type] || 0) + 1);
-                return Object.keys(counts).map(k => ({ name: k, value: counts[k] }));
-            }, [filteredData]);
-
-            return (
-                <div className="space-y-4 pb-28 px-2">
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-indigo-500/30">
-                            <span className="text-[10px] text-slate-400 uppercase">Active</span>
-                            <span className="text-2xl font-bold text-white">{metrics.totalActive}</span>
-                        </div>
-                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-emerald-500/30">
-                            <span className="text-[10px] text-slate-400 uppercase">Adherence</span>
-                            <span className="text-2xl font-bold text-emerald-400">{metrics.adherence}%</span>
-                        </div>
-                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-purple-500/30">
-                            <span className="text-[10px] text-slate-400 uppercase">Success</span>
-                            <span className="text-2xl font-bold text-purple-400">{metrics.successRate}%</span>
-                        </div>
-                    </div>
-
-                    {/* Filter & Tabs */}
-                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {WARD_OPTIONS.map(w => (
-                            <button 
-                                key={w} 
-                                onClick={() => setFilterWard(w)}
-                                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterWard === w ? 'bg-indigo-600 text-white shadow-lg' : 'glass-panel text-slate-400'}`}
-                            >
-                                {w}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex bg-slate-800/50 p-1 rounded-xl">
-                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active Cases</button>
-                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History</button>
-                    </div>
-
-                    {/* List */}
-                    <div className="space-y-3">
-                        {filteredData.length === 0 ? (
-                            <div className="text-center py-10 text-slate-500 text-sm glass-panel rounded-xl">ไม่พบข้อมูล</div>
-                        ) : (
-                            filteredData.map(c => {
-                                const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI'];
-                                return (
-                                    <div key={c.tracking_id} onClick={() => onSelectCase(c)} 
-                                         className={`glass-panel p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all active:scale-[0.98] ${conf.border}`}>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm ${conf.bg} ${conf.color} border border-white/10`}>
-                                                    {c.bundle_type}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                    <LucideIcon name="Clock" className="w-3 h-3"/> {c.date_count} วัน
-                                                </span>
-                                                {tab === 'history' && <span className="text-[10px] bg-slate-700 px-1 rounded text-slate-300">{c.outcome}</span>}
-                                            </div>
-                                            <div className="flex items-baseline gap-2">
-                                                <div className="text-lg font-bold text-white">HN {c.hn}</div>
-                                                <div className="text-xs text-slate-400">| Bed {c.bed}</div>
-                                            </div>
-                                            <div className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
-                                                <LucideIcon name="MapPin" className="w-3 h-3"/> {c.ward}
-                                                <span className="text-slate-500 ml-1">• โดย {c.register || 'Staff'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="h-10 w-10 rounded-full bg-slate-800/50 flex items-center justify-center border border-white/5">
-                                            <LucideIcon name="ChevronRight" className="w-5 h-5 text-slate-400"/>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        )}
-                    </div>
-
-                    {/* Extended Floating Action Button */}
-                    <button 
-                        onClick={onNewCase}
-                        className="fixed bottom-6 right-6 px-6 py-4 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-full shadow-2xl flex items-center gap-3 text-white btn-press z-30 border border-white/20 transition-all hover:scale-105 group"
-                    >
-                        <LucideIcon name="Plus" className="w-6 h-6 group-hover:rotate-90 transition-transform"/>
-                        <span className="font-bold text-lg">เพิ่มรายใหม่</span>
-                    </button>
-                </div>
-            );
-        };
-
-        const NewCaseView = ({ onSubmit, onCancel, existingCases, userProfile }) => {
-            const [form, setForm] = useState({ hn: '', bed: '', ward: 'ICU Med', bundle_type: 'CAUTI' });
+        const HaiReportModal = ({ activeCases, preSelectedCase, onClose, userProfile, onUpdate }) => {
+            const [step, setStep] = useState(1);
+            const [form, setForm] = useState({
+                hai_id: preSelectedCase?.hai_id || '',
+                hn: preSelectedCase?.hn || '',
+                ward: preSelectedCase?.ward || 'Wardชาย',
+                bed: preSelectedCase?.bed || '',
+                admit_date: preSelectedCase?.admit_date ? preSelectedCase.admit_date.split('T')[0] : '',
+                infection_date: preSelectedCase?.infection_date ? preSelectedCase.infection_date.split('T')[0] : new Date().toISOString().split('T')[0],
+                hai_type: preSelectedCase?.hai_type || '',
+                status: preSelectedCase?.status || 'แจ้ง ICN',
+                related_bundle_id: preSelectedCase?.related_bundle_id || ''
+            });
+            const [criteriaList, setCriteriaList] = useState([]);
+            const [selectedCriteria, setSelectedCriteria] = useState(preSelectedCase?.criteria ? preSelectedCase.criteria.split(', ') : []);
             const [loading, setLoading] = useState(false);
-            const [warning, setWarning] = useState('');
-            const [showScanner, setShowScanner] = useState(false);
+            const [bundleOptions, setBundleOptions] = useState([]);
 
-            const checkDuplicate = (hn, type) => {
-                const dup = existingCases.find(c => c.hn === hn && c.bundle_type === type);
-                return dup ? `มีประวัติ Active Case: ${type} เริ่มเมื่อ ${new Date(dup.start_date).toLocaleDateString()}` : '';
-            };
+            useEffect(() => {
+                if (form.hn) {
+                    const matches = activeCases.filter(c => String(c.hn) === String(form.hn) && c.status === 'Active');
+                    setBundleOptions(matches);
+                    if (matches.length > 0 && !form.related_bundle_id) {
+                        setForm(prev => ({...prev, related_bundle_id: matches[0].tracking_id, ward: matches[0].ward, bed: matches[0].bed}));
+                    }
+                }
+            }, [form.hn, activeCases]);
 
-            const handleHnChange = (val) => {
-                setForm(prev => ({ ...prev, hn: val }));
-                setWarning(checkDuplicate(val, form.bundle_type));
-            };
-
-            const handleTypeChange = (type) => {
-                setForm(prev => ({ ...prev, bundle_type: type }));
-                setWarning(checkDuplicate(form.hn, type));
-            };
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                if (warning) return alert('กรุณาตรวจสอบประวัติซ้ำซ้อน');
-                setLoading(true);
-                await onSubmit({ ...form, register: userProfile?.name || 'Guest' });
-            };
-
-            return (
-                <div className="pb-10 px-2 min-h-screen flex flex-col">
-                    {showScanner && <ScannerModal onScan={(val) => { setShowScanner(false); handleHnChange(val); }} onClose={() => setShowScanner(false)} />}
-                    
-                    <div className="flex items-center gap-2 mb-4 text-slate-400 cursor-pointer" onClick={onCancel}>
-                        <LucideIcon name="ArrowLeft" className="w-5 h-5"/> <span className="text-sm">Back</span>
-                    </div>
-                    
-                    <h2 className="text-2xl font-bold text-white mb-6 px-2 neon-text">ลงทะเบียนเคสใหม่</h2>
-                    
-                    <form onSubmit={handleSubmit} className="space-y-5 flex-grow">
-                        <div className="glass-panel p-4 rounded-xl">
-                            <label className="text-xs text-indigo-300 font-bold uppercase block mb-3">ประเภทอุปกรณ์ (Bundle Type)</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {Object.keys(BUNDLE_CONFIG).map(type => (
-                                    <button 
-                                        type="button"
-                                        key={type}
-                                        onClick={() => handleTypeChange(type)}
-                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${form.bundle_type === type 
-                                            ? `${BUNDLE_CONFIG[type].bg} ${BUNDLE_CONFIG[type].color} ${BUNDLE_CONFIG[type].border} shadow-lg scale-105` 
-                                            : 'border-slate-700 text-slate-500 bg-slate-800/30'}`}
-                                    >
-                                        <LucideIcon name={BUNDLE_CONFIG[type].icon} className="w-6 h-6"/>
-                                        <span className="text-xs font-bold">{type}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="glass-panel p-4 rounded-xl space-y-4">
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1 block">HN ผู้ป่วย</label>
-                                <div className="flex gap-2">
-                                    <input type="text" required value={form.hn} onChange={e => handleHnChange(e.target.value)} 
-                                           className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center ${warning ? 'border-red-500 text-red-300' : ''}`} placeholder="HN" />
-                                    <button type="button" onClick={() => setShowScanner(true)} className="w-auto px-4 bg-indigo-600 rounded-xl flex items-center justify-center gap-2 text-white border border-indigo-500 active:bg-indigo-700 shadow-lg">
-                                        <LucideIcon name="QrCode" className="w-5 h-5"/>
-                                        <span className="text-xs font-bold">สแกน</span>
-                                    </button>
-                                </div>
-                                {warning && <div className="text-xs text-red-400 mt-2 flex items-center gap-1 bg-red-900/20 p-2 rounded-lg border border-red-500/30"><LucideIcon name="AlertTriangle" className="w-3 h-3"/> {warning}</div>}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">เตียง</label>
-                                    <input type="text" required value={form.bed} onChange={e => setForm({...form, bed: e.target.value})} 
-                                           className="glass-input w-full p-3 rounded-xl text-center" placeholder="01" />
-                                </div>
-                                <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">หอผู้ป่วย</label>
-                                    <select value={form.ward} onChange={e => setForm({...form, ward: e.target.value})}
-                                            className="glass-input w-full p-3 rounded-xl appearance-none text-center">
-                                        {WARD_OPTIONS.slice(1).map(w => <option key={w} value={w} className="bg-slate-900 text-white">{w}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button disabled={loading || !!warning} type="submit" className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 border border-white/10">
-                            {loading ? <LucideIcon name="Loader2" className="animate-spin w-5 h-5"/> : <LucideIcon name="Save" className="w-5 h-5"/>}
-                            <span>บันทึกและเริ่มประเมิน</span>
-                        </button>
-                    </form>
-                </div>
-            );
-        };
-
-        const ChecklistView = ({ caseData, masterData, mode, onSubmit, onDischarge, onCancel, userProfile }) => {
-            const items = useMemo(() => {
-                return masterData.filter(m => {
-                    if (m.bundle_type !== caseData.bundle_type) return false;
-                    return mode === 'Insertion' 
-                        ? (m.category === 'Insertion' || m.frequency === 'Once')
-                        : (m.category === 'Maintenance' || m.frequency === 'Daily' || m.frequency === 'Shift' || m.frequency === 'Event');
-                });
-            }, [masterData, caseData, mode]);
-
-            const [results, setResults] = useState({});
-            const [loading, setLoading] = useState(false);
-            const [detailItem, setDetailItem] = useState(null);
-
-            const handleCheck = (code, status) => setResults(prev => ({ ...prev, [code]: { ...prev[code], status } }));
-            const allChecked = items.length > 0 && items.every(i => results[i.item_code]?.status);
+            useEffect(() => {
+                if (form.hai_type) {
+                    setLoading(true);
+                    fetchGAS('getCriteriaByDisease', { diseaseName: form.hai_type }).then(res => {
+                        if (res && res.success) setCriteriaList(res.criteria);
+                        else setCriteriaList(MOCK_HAI_MASTER.filter(c => c.hai_group === form.hai_type));
+                        setLoading(false);
+                    });
+                }
+            }, [form.hai_type]);
 
             const handleSubmit = async () => {
                 setLoading(true);
-                const logs = Object.keys(results).map(code => ({
-                    tracking_id: caseData.tracking_id,
-                    item_code: code,
-                    result: results[code].status,
-                    remark: results[code].remark,
-                    user: userProfile?.name
-                }));
-                await onSubmit(logs);
+                const dayCount = calculateDays();
+                const payload = {
+                    ...form,
+                    admit_day_to_infect: dayCount,
+                    criteria: selectedCriteria.join(', '),
+                    register: userProfile?.name
+                };
+                const res = await fetchGAS('saveHaiReport', { payload });
+                if (res && res.success) {
+                    alert('บันทึกข้อมูล HAI เรียบร้อย');
+                    onUpdate({ ...payload, hai_id: res.haiId || form.hai_id }); 
+                    onClose();
+                } else {
+                    alert('เกิดข้อผิดพลาด');
+                }
+                setLoading(false);
             };
 
+            const toggleCriteria = (text) => {
+                setSelectedCriteria(prev => prev.includes(text) ? prev.filter(c => c !== text) : [...prev, text]);
+            };
+
+            const calculateDays = () => {
+                if(!form.admit_date || !form.infection_date) return 0;
+                const d1 = new Date(form.admit_date);
+                const d2 = new Date(form.infection_date);
+                return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+            };
+
+            const dayCount = calculateDays();
+            const isHaiRisk = dayCount >= 3;
+
             return (
-                <div className="pb-32 px-2">
-                    {detailItem && <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}
-                    
-                    <div className="flex items-center justify-between mb-4 pt-2">
-                        <button onClick={onCancel} className="text-slate-400 flex items-center gap-2"><LucideIcon name="ArrowLeft" className="w-5 h-5"/></button>
-                        {mode === 'Maintenance' && (
-                            <button onClick={onDischarge} className="text-xs text-red-200 bg-red-500/20 border border-red-500/50 px-4 py-2 rounded-full flex items-center gap-2">
-                                <LucideIcon name="LogOut" className="w-3 h-3"/> หย่าอุปกรณ์/จำหน่าย
-                            </button>
-                        )}
-                    </div>
-
-                    <div className={`p-5 rounded-2xl mb-6 flex justify-between items-center ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border} relative overflow-hidden`}>
-                        <div className="z-10">
-                            <div className="text-3xl font-bold text-white neon-text mb-1">{caseData.bundle_type}</div>
-                            <div className="text-sm text-slate-300 flex items-center gap-3">
-                                <span className="bg-black/20 px-2 py-0.5 rounded">HN {caseData.hn}</span>
-                                <span className="bg-black/20 px-2 py-0.5 rounded">Bed {caseData.bed}</span>
-                            </div>
-                        </div>
-                        <LucideIcon name={BUNDLE_CONFIG[caseData.bundle_type].icon} className={`w-16 h-16 opacity-50 ${BUNDLE_CONFIG[caseData.bundle_type].color}`}/>
-                    </div>
-
-                    <div className="space-y-4">
-                        {items.map((item, idx) => (
-                            <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col md:flex-row">
-                                <div className="p-4 flex-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setDetailItem(item)}>
-                                    <div className="flex gap-3">
-                                        <div className="text-2xl font-bold text-slate-600 select-none">#{idx + 1}</div>
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                    <div className="glass-panel w-full max-w-lg p-6 rounded-2xl relative flex flex-col max-h-[90vh]">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400"><LucideIcon name="X" className="w-5 h-5"/></button>
+                        <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center gap-2"><LucideIcon name="AlertTriangle" className="w-6 h-6"/> {form.hai_id ? 'แก้ไขข้อมูล HAI' : 'รายงาน HAI ใหม่'}</h3>
+                        <div className="overflow-y-auto flex-1 pr-2 space-y-4">
+                            {step === 1 && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-xs text-slate-400 block mb-1">HN</label><input type="text" value={form.hn} onChange={e=>setForm({...form, hn: e.target.value})} className="glass-input w-full p-2 rounded-lg"/></div>
+                                        <div><label className="text-xs text-slate-400 block mb-1">ประเภท HAI</label><select value={form.hai_type} onChange={e=>setForm({...form, hai_type: e.target.value})} className="glass-input w-full p-2 rounded-lg"><option value="">-- เลือก --</option>{['VAP','CAUTI','CLABSI','SSI','MDR-HAI'].map(t=><option key={t} value={t} className="text-black">{t}</option>)}</select></div>
+                                    </div>
+                                    {bundleOptions.length > 0 && (
+                                        <div><label className="text-xs text-slate-400 block mb-1">เชื่อมโยง Bundle (พบ {bundleOptions.length} รายการ)</label><select value={form.related_bundle_id} onChange={e=>setForm({...form, related_bundle_id: e.target.value})} className="glass-input w-full p-2 rounded-lg bg-indigo-900/30 border-indigo-500/50"><option value="">-- ไม่ระบุ --</option>{bundleOptions.map(b => <option key={b.tracking_id} value={b.tracking_id} className="text-black">{b.bundle_type} (เริ่ม {b.start_date.split('T')[0]})</option>)}</select></div>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-xs text-slate-400 block mb-1">วันที่ Admit</label><input type="date" value={form.admit_date} onChange={e=>setForm({...form, admit_date: e.target.value})} className="glass-input w-full p-2 rounded-lg"/></div>
+                                        <div><label className="text-xs text-slate-400 block mb-1">วันที่ติดเชื้อ</label><input type="date" value={form.infection_date} onChange={e=>setForm({...form, infection_date: e.target.value})} className="glass-input w-full p-2 rounded-lg"/></div>
+                                    </div>
+                                    
+                                    {/* ALERT BOX */}
+                                    <div className={`p-4 rounded-xl border flex items-center justify-between ${isHaiRisk ? 'bg-slate-800/50 border-slate-700 text-slate-300' : 'bg-red-500/20 border-red-500 text-red-100'}`}>
                                         <div>
-                                            <div className="text-sm font-bold text-white mb-1">{item.item_desc_th}</div>
-                                            <div className="text-xs text-slate-400 font-light line-clamp-2 mb-2">{item.item_desc_th_long}</div>
-                                            <div className="flex gap-2">
-                                                <span className="text-[9px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">{item.item_code}</span>
-                                                <span className="text-[9px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">{item.frequency}</span>
-                                            </div>
+                                            <div className="text-xs opacity-70">ระยะเวลา Admit - Infection</div>
+                                            <div className="text-xl font-bold">{dayCount} วัน</div>
                                         </div>
+                                        {!isHaiRisk && <div className="text-xs text-right font-bold text-red-300"> <LucideIcon name="AlertTriangle" className="w-4 h-4 inline mb-1"/> น้อยกว่า 3 วัน<br/>ไม่เข้าเกณฑ์ HAI</div>}
                                     </div>
-                                </div>
-                                <div className="p-2 bg-slate-900/50 flex md:flex-col gap-2 border-t md:border-t-0 md:border-l border-white/5 items-center justify-center min-w-[120px]">
-                                    <button 
-                                        onClick={() => handleCheck(item.item_code, 'ผ่าน')}
-                                        className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ผ่าน' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-                                    >ผ่าน</button>
-                                    <button 
-                                        onClick={() => handleCheck(item.item_code, 'ไม่ผ่าน')}
-                                        className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ไม่ผ่าน' ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-                                    >ไม่ผ่าน</button>
-                                </div>
-                                {results[item.item_code]?.status === 'ไม่ผ่าน' && (
-                                    <div className="p-2 w-full border-t border-white/5 bg-red-900/20">
-                                        <input type="text" placeholder="ระบุเหตุผล..." className="w-full bg-slate-900/80 rounded p-2 text-xs text-white border border-red-500/30 outline-none" onChange={(e) => setResults(prev => ({...prev, [item.item_code]: {...prev[item.item_code], remark: e.target.value}}))} />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
 
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/90 backdrop-blur-xl border-t border-slate-700 z-40 pb-8">
-                        <button onClick={handleSubmit} disabled={!allChecked || loading} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale">
-                            {loading ? 'กำลังบันทึก...' : 'บันทึกผลการประเมิน'}
-                        </button>
+                                    {form.hai_id && (
+                                        <div><label className="text-xs text-slate-400 block mb-1">สถานะ</label><select value={form.status} onChange={e=>setForm({...form, status: e.target.value})} className="glass-input w-full p-2 rounded-lg border-red-500 text-red-300"><option value="แจ้ง ICN" className="text-black">แจ้ง ICN</option><option value="ICN รับทราบ" className="text-black">ICN รับทราบ</option><option value="ยืนยันติดเชื้อ" className="text-black">ยืนยันติดเชื้อ</option><option value="ไม่ติดเชื้อ" className="text-black">ไม่ติดเชื้อ</option></select></div>
+                                    )}
+                                    <button disabled={!form.hai_type || !form.hn} onClick={()=>setStep(2)} className="w-full mt-4 bg-indigo-600 text-white p-3 rounded-xl disabled:opacity-50">ถัดไป</button>
+                                </>
+                            )}
+                            {step === 2 && (
+                                <>
+                                    {loading ? <LoadingSpinner text="โหลดเกณฑ์..." /> : (
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-slate-400 mb-2">เลือกเกณฑ์วินิจฉัย ({form.hai_type})</div>
+                                            {criteriaList.map((c, i) => (
+                                                <div key={i} onClick={()=>toggleCriteria(c.criteria_text)} className={`p-3 rounded-lg border cursor-pointer text-sm ${selectedCriteria.includes(c.criteria_text) ? 'bg-indigo-600/30 border-indigo-500 text-white' : 'border-slate-700 text-slate-300'}`}>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center ${selectedCriteria.includes(c.criteria_text) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-500'}`}>{selectedCriteria.includes(c.criteria_text) && <LucideIcon name="Check" className="w-3 h-3 text-white"/>}</div>
+                                                        <div><div>{c.criteria_text}</div><span className="text-[10px] bg-slate-800 px-1 rounded text-slate-400">{c.type}</span></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="flex gap-3 mt-6">
+                                        <button onClick={()=>setStep(1)} className="flex-1 border border-slate-600 p-3 rounded-xl text-slate-300">ย้อนกลับ</button>
+                                        <button onClick={handleSubmit} disabled={selectedCriteria.length===0 || !isHaiRisk} className="flex-1 bg-red-600 text-white p-3 rounded-xl disabled:opacity-50 disabled:bg-slate-700">
+                                            {!isHaiRisk ? 'วันไม่ถึงเกณฑ์' : 'ยืนยัน'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
@@ -593,193 +424,440 @@
         const DischargeModal = ({ onSubmit, onCancel }) => {
             const [form, setForm] = useState({ outcome: 'หาย/ดีขึ้น', end_date: new Date().toISOString().split('T')[0] });
             const [loading, setLoading] = useState(false);
-
-            const handleSubmit = async () => {
-                setLoading(true);
-                await onSubmit(form);
-            };
+            const handleSubmit = async () => { setLoading(true); await onSubmit(form); };
 
             return (
                 <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md">
                     <div className="glass-panel w-full max-w-sm p-6 rounded-3xl border border-white/10 relative">
-                        <h3 className="text-xl font-bold text-white mb-6 text-center">จำหน่าย/หย่าอุปกรณ์</h3>
-                        
+                        <h3 className="text-xl font-bold text-white mb-6 text-center">จำหน่าย/ถอดอุปกรณ์</h3>
                         <div className="space-y-4 mb-8">
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1 block">วันที่</label>
-                                <input type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} className="glass-input w-full p-3 rounded-xl text-center" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-400 mb-1 block">ผลลัพธ์ (Outcome)</label>
-                                <div className="grid grid-cols-1 gap-2">
-                                    {['หาย/ดีขึ้น', 'ติดเชื้อ (HAI)', 'เสียชีวิต', 'ส่งต่อ'].map(opt => (
-                                        <button key={opt} onClick={() => setForm({...form, outcome: opt})}
-                                            className={`p-3 rounded-xl border text-sm font-bold text-left px-4 transition-all ${form.outcome === opt 
-                                                ? (opt.includes('ติดเชื้อ') || opt.includes('เสียชีวิต') ? 'bg-red-500 text-white border-red-500' : 'bg-emerald-500 text-white border-emerald-500')
-                                                : 'border-slate-700 bg-slate-800 text-slate-400'}`}>
-                                            {opt}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <div><label className="text-xs text-slate-400 mb-1 block">วันที่</label><input type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})} className="glass-input w-full p-3 rounded-xl text-center" /></div>
+                            <div><label className="text-xs text-slate-400 mb-1 block">ผลลัพธ์ (Outcome)</label><div className="grid grid-cols-1 gap-2">{['หาย/ดีขึ้น', 'ติดเชื้อ (HAI)', 'เสียชีวิต', 'ส่งต่อ'].map(opt => (<button key={opt} onClick={() => setForm({...form, outcome: opt})} className={`p-3 rounded-xl border text-sm font-bold text-left px-4 transition-all ${form.outcome === opt ? (opt.includes('ติดเชื้อ') || opt.includes('เสียชีวิต') ? 'bg-red-500 text-white border-red-500' : 'bg-emerald-500 text-white border-emerald-500') : 'border-slate-700 bg-slate-800 text-slate-400'}`}>{opt}</button>))}</div></div>
                         </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300">ยกเลิก</button>
-                            <button onClick={handleSubmit} disabled={loading} className="flex-1 py-3 rounded-xl bg-white text-slate-900 font-bold disabled:opacity-50">ยืนยัน</button>
-                        </div>
+                        <div className="flex gap-3"><button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-slate-600 text-slate-300">ยกเลิก</button><button onClick={handleSubmit} disabled={loading} className="flex-1 py-3 rounded-xl bg-white text-slate-900 font-bold disabled:opacity-50">ยืนยัน</button></div>
                     </div>
                 </div>
             );
         };
 
-        // --- MAIN APP ---
+        const PatientHistoryModal = ({ caseData, logs, onDismiss, onAssess }) => {
+            const caseLogs = logs.filter(l => String(l.tracking_id) === String(caseData.tracking_id));
+            const passCount = caseLogs.filter(l => l.result === 'ผ่าน' || l.result === 'Pass').length;
+            const failCount = caseLogs.filter(l => l.result === 'ไม่ผ่าน' || l.result === 'Fail').length;
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={onDismiss}>
+                    <div className="glass-panel w-full max-w-md p-5 rounded-t-2xl sm:rounded-2xl relative h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <div><h3 className="text-xl font-bold text-white flex items-center gap-2"><LucideIcon name="User" className="w-5 h-5"/> HN {caseData.hn}</h3><div className="text-sm text-slate-400">{caseData.ward} • Bed {caseData.bed}</div></div>
+                            <button onClick={onDismiss} className="p-2 bg-slate-800 rounded-full"><LucideIcon name="X" className="w-5 h-5 text-white"/></button>
+                        </div>
+                        <div className={`p-4 rounded-xl mb-4 ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border}`}>
+                            <div className="flex justify-between items-center"><span className={`text-2xl font-bold ${BUNDLE_CONFIG[caseData.bundle_type].color}`}>{caseData.bundle_type}</span><div className="text-right"><div className="text-xs text-slate-300">ประเมินแล้ว</div><div className="text-xl font-bold text-white">{caseLogs.length} <span className="text-sm font-normal">ครั้ง</span></div></div></div>
+                            <div className="mt-2 flex gap-2 text-xs"><span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">ผ่าน {passCount}</span><span className="bg-red-500/20 text-red-300 px-2 py-0.5 rounded border border-red-500/30">ไม่ผ่าน {failCount}</span></div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                            <h4 className="text-xs text-slate-500 uppercase font-bold sticky top-0 bg-[#0f172a] py-2 z-10">ประวัติการประเมินล่าสุด</h4>
+                            {caseLogs.length === 0 ? <div className="text-center text-slate-600 py-4">ยังไม่มีประวัติ</div> : caseLogs.slice().reverse().map((log, i) => (
+                                <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 flex justify-between items-start">
+                                    <div><div className="text-sm text-white font-medium">{log.item_code} <span className="text-xs text-slate-500">({log.shift || 'N/A'})</span></div><div className="text-[10px] text-slate-400">{new Date(log.timestamp).toLocaleString('th-TH')} • {log.user}</div>{log.remark && <div className="text-xs text-red-300 mt-1">*{log.remark}</div>}</div>
+                                    <span className={`text-xs px-2 py-1 rounded ${log.result.includes('ไม่') || log.result === 'Fail' ? 'bg-red-900 text-red-200' : 'bg-emerald-900 text-emerald-200'}`}>{log.result}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={onAssess} className="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2"><LucideIcon name="ClipboardCheck" className="w-5 h-5"/> ประเมิน Checklist</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const DashboardView = ({ activeCases, historyCases, haiCases, metrics, logs, onSelectCase, onSelectHai, onNewCase, onReportHai, initialWard }) => {
+            const [filterWard, setFilterWard] = useState(initialWard || 'ทั้งหมด');
+            const [tab, setTab] = useState('active');
+
+            const safeActiveCases = activeCases || [];
+            const safeHistoryCases = historyCases || [];
+            const safeHaiCases = haiCases || [];
+
+            const getFilteredData = () => {
+                const baseFilter = (list) => list.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard);
+                if (tab === 'active') return baseFilter(safeActiveCases);
+                if (tab === 'history') return baseFilter(safeHistoryCases);
+                if (tab === 'hai') return baseFilter(safeHaiCases);
+                return [];
+            };
+            const displayList = getFilteredData();
+
+            const activeBeds = useMemo(() => {
+                const map = {};
+                safeActiveCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
+                    const todayStr = new Date().toDateString();
+                    // LOGIC: Check strict match
+                    const assessedToday = logs.some(l => String(l.tracking_id) === String(c.tracking_id) && safeDate(l.timestamp).toDateString() === todayStr);
+                    map[`${c.ward}-${c.bed}`] = { ...c, type: 'bundle', needsAction: !assessedToday };
+                });
+                safeHaiCases.filter(c => (filterWard === 'ทั้งหมด' || c.ward === filterWard) && c.status === 'แจ้ง ICN').forEach(c => {
+                    const key = `${c.ward}-${c.bed}`;
+                    if (map[key]) { map[key].isHaiAlert = true; } 
+                    else { map[key] = { ...c, type: 'hai', isHaiAlert: true }; } 
+                });
+                return map;
+            }, [safeActiveCases, safeHaiCases, filterWard, logs]);
+
+            const renderBedGrid = (wardName) => (
+                <div key={wardName} className="min-w-[300px] glass-panel p-3 rounded-xl border border-white/5 snap-center">
+                    <div className="text-[10px] text-slate-400 mb-2 uppercase tracking-widest pl-1 font-bold">{wardName}</div>
+                    <div className="bed-grid-container">
+                        {BED_CONFIG[wardName].map(bedId => {
+                            const data = activeBeds[`${wardName}-${bedId}`];
+                            const bundleType = data?.bundle_type;
+                            const activeClass = bundleType ? `bed-active bed-${bundleType}` : '';
+                            const blinkClass = (data && data.needsAction) ? 'bed-waiting' : '';
+                            const haiClass = (data && data.isHaiAlert) ? 'bed-hai-alert' : '';
+                            return (<div key={bedId} onClick={() => data ? (data.type === 'hai' ? onSelectHai(data) : onSelectCase(data)) : onNewCase(wardName, bedId)} className={`bed-box ${activeClass} ${blinkClass} ${haiClass}`}>{bedId.replace(/[a-zA-Z]/g, '')}</div>)
+                        })}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="space-y-4 pb-28 px-2">
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-indigo-500/30"><span className="text-[10px] text-slate-400 uppercase">Active</span><span className="text-2xl font-bold text-white">{metrics.totalActive}</span></div>
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-emerald-500/30"><span className="text-[10px] text-slate-400 uppercase">Adherence</span><span className="text-2xl font-bold text-emerald-400">{metrics.adherence}%</span></div>
+                        <div className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center border-t border-purple-500/30"><span className="text-[10px] text-slate-400 uppercase">Success</span><span className="text-2xl font-bold text-purple-400">{metrics.successRate}%</span></div>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">{WARD_OPTIONS.map(w => (<button key={w} onClick={() => setFilterWard(w)} className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterWard === w ? 'bg-indigo-600 text-white shadow-lg' : 'glass-panel text-slate-400'}`}>{w}</button>))}</div>
+                    <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">{filterWard === 'ทั้งหมด' ? Object.keys(BED_CONFIG).map(w => renderBedGrid(w)) : renderBedGrid(filterWard)}</div>
+                    
+                    <div className="flex bg-slate-800/50 p-1 rounded-xl mt-2 relative">
+                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active <span className="ml-1 text-[10px] bg-indigo-500 text-white px-1.5 rounded-full">{safeActiveCases.length}</span></button>
+                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History <span className="ml-1 text-[10px] bg-slate-600 text-slate-300 px-1.5 rounded-full">{safeHistoryCases.length}</span></button>
+                        <button onClick={() => setTab('hai')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'hai' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>HAI <span className="ml-1 text-[10px] bg-red-600 text-white px-1.5 rounded-full">{safeHaiCases.length}</span></button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {displayList.length === 0 ? <div className="text-center py-10 text-slate-500 text-sm glass-panel rounded-xl">ไม่พบข้อมูลในรายการ</div> : displayList.map(c => {
+                             if (tab === 'hai') {
+                                 return (
+                                     <div key={c.hai_id} onClick={() => onSelectHai(c)} className={`glass-panel p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/5 transition-all border-l-4 border-l-red-500`}>
+                                         <div><div className="flex items-center gap-2 mb-2"><span className="text-[10px] font-bold px-2 py-0.5 rounded shadow-sm bg-red-500/20 text-red-400 border border-red-500/50">{c.hai_type}</span><span className={`text-[10px] px-2 py-0.5 rounded border ${c.status==='แจ้ง ICN' ? 'bg-red-600 text-white border-red-600 animate-pulse' : 'bg-slate-700 text-slate-400 border-slate-600'}`}>{c.status}</span></div><div className="flex items-baseline gap-2"><div className="text-lg font-bold text-white">HN {c.hn}</div><div className="text-xs text-slate-400">| Bed {c.bed}</div></div><div className="text-xs text-indigo-300 mt-1 flex items-center gap-1"><LucideIcon name="Calendar" className="w-3 h-3"/> ติดเชื้อ: {safeDate(c.infection_date).toLocaleDateString('th-TH')}</div></div><div className="h-10 w-10 rounded-full bg-slate-800/50 flex items-center justify-center border border-white/5"><LucideIcon name="Edit" className="w-5 h-5 text-slate-400"/></div>
+                                     </div>
+                                 );
+                             } else {
+                                 const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI']; 
+                                 return (
+                                     <div key={c.tracking_id} onClick={() => onSelectCase(c)} className={`glass-panel p-4 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-white/5 transition-all active:scale-[0.98] ${conf.border}`}>
+                                         <div className="flex justify-between items-start mb-2">
+                                             <div className="flex items-center gap-2">
+                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm ${conf.bg} ${conf.color} border border-white/10`}>{c.bundle_type}</span>
+                                                 <div className="flex items-baseline gap-1">
+                                                     <span className="text-[10px] text-slate-400">HN</span>
+                                                     <span className="text-lg font-bold text-white leading-none">{c.hn}</span>
+                                                 </div>
+                                             </div>
+                                             <span className="text-[10px] text-slate-400 flex items-center gap-1"><LucideIcon name="Clock" className="w-3 h-3"/> {c.date_count} วัน</span>
+                                         </div>
+                                         <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
+                                             <div className="text-xs text-indigo-300 flex items-center gap-1 min-w-0">
+                                                 <LucideIcon name="MapPin" className="w-3 h-3 text-indigo-400 shrink-0"/> 
+                                                 <span className="truncate">{c.ward}</span>
+                                                 <span className="text-white font-bold ml-1 bg-slate-700 px-1.5 py-0.5 rounded border border-slate-600 shrink-0">{c.bed}</span>
+                                             </div>
+                                             
+                                             <div className="flex gap-2 shrink-0">
+                                                 <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded-lg bg-red-500/10 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap"><LucideIcon name="LogOut" className="w-3 h-3"/> จำหน่าย/ถอดอุปกรณ์</button>
+                                                 <button onClick={(e) => { e.stopPropagation(); onReportHai(c); }} className="px-2 py-1 rounded-lg bg-orange-500/10 text-orange-300 text-[9px] border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap"><LucideIcon name="AlertTriangle" className="w-3 h-3"/> รายงานติดเชื้อในรพ.</button>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 )
+                             }
+                         })
+                        }
+                    </div>
+                    <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30"><button onClick={() => onReportHai(null)} className="w-auto px-4 h-14 bg-red-600 rounded-full shadow-2xl flex items-center justify-center gap-2 text-white btn-press border border-white/20"><LucideIcon name="AlertTriangle" className="w-6 h-6"/><span className="font-bold text-sm">รายงานติดเชื้อในรพ.</span></button><button onClick={() => onNewCase()} className="w-auto px-4 h-14 bg-gradient-to-r from-indigo-600 to-pink-600 rounded-full shadow-2xl flex items-center justify-center gap-2 text-white btn-press border border-white/20"><LucideIcon name="Plus" className="w-6 h-6"/><span className="font-bold text-sm">เพิ่ม Bundle</span></button></div>
+                </div>
+            );
+        };
+
+        const NewCaseView = ({ onSubmit, onCancel, existingCases, userProfile, preWard, preBed }) => {
+            const [form, setForm] = useState({ hn: '', ward: preWard || 'Wardชาย', bed: preBed || '', bundle_type: 'CAUTI' });
+            const [loading, setLoading] = useState(false);
+            const [warning, setWarning] = useState('');
+            const [showScanner, setShowScanner] = useState(false);
+            const handleWardChange = (e) => { setForm({...form, ward: e.target.value, bed: ''}); };
+            const handleSubmit = async (e) => { e.preventDefault(); const dup = existingCases.find(c => c.hn === form.hn && c.bundle_type === form.bundle_type && c.status === 'Active'); if (dup) return alert(`ผู้ป่วย HN ${form.hn} มีการใส่ ${form.bundle_type} อยู่แล้ว`); setLoading(true); await onSubmit({ ...form, register: userProfile?.name || 'Guest' }); };
+            const currentBeds = BED_CONFIG[form.ward] || [];
+
+            return (
+                <div className="pb-10 px-2 min-h-screen flex flex-col">
+                    {showScanner && <ScannerModal onScan={(val) => { setShowScanner(false); setForm(prev => ({...prev, hn: val})); }} onClose={() => setShowScanner(false)} />}
+                    <div className="flex items-center gap-2 mb-4 text-slate-400 cursor-pointer" onClick={onCancel}><LucideIcon name="ArrowLeft" className="w-5 h-5"/> <span className="text-sm">Back</span></div>
+                    <h2 className="text-2xl font-bold text-white mb-6 px-2 neon-text">ลงทะเบียนเคสใหม่</h2>
+                    <form onSubmit={handleSubmit} className="space-y-5 flex-grow">
+                        <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-2">1. เลือกหอผู้ป่วย (Ward)</label><div className="grid grid-cols-2 gap-2">{Object.keys(BED_CONFIG).map(w => (<button type="button" key={w} onClick={() => setForm({...form, ward: w, bed: ''})} className={`p-2 rounded-lg text-sm border transition-all ${form.ward === w ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 text-slate-400'}`}>{w}</button>))}</div></div>
+                        <div className="glass-panel p-4 rounded-xl"><label className="text-xs text-indigo-300 font-bold uppercase block mb-3">2. ประเภทอุปกรณ์</label><div className="grid grid-cols-3 gap-3">{Object.keys(BUNDLE_CONFIG).map(type => (<button type="button" key={type} onClick={() => setForm({...form, bundle_type: type})} className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${form.bundle_type === type ? `${BUNDLE_CONFIG[type].bg} ${BUNDLE_CONFIG[type].color} ${BUNDLE_CONFIG[type].border} shadow-lg scale-105` : 'border-slate-700 text-slate-500 bg-slate-800/30'}`}><LucideIcon name={BUNDLE_CONFIG[type].icon} className="w-6 h-6"/><span className="text-xs font-bold">{type}</span></button>))}</div></div>
+                        <div className="glass-panel p-4 rounded-xl space-y-4"><div><label className="text-xs text-slate-400 mb-1 block">3. HN ผู้ป่วย</label><div className="flex gap-2"><input type="text" required value={form.hn} onChange={e => setForm({...form, hn: e.target.value})} className={`glass-input flex-1 p-3 rounded-xl text-lg tracking-widest text-center`} placeholder="HN" /><button type="button" onClick={() => setShowScanner(true)} className="w-auto px-4 bg-indigo-600 rounded-xl flex items-center justify-center gap-2 text-white border border-indigo-500 active:bg-indigo-700 shadow-lg"><LucideIcon name="QrCode" className="w-5 h-5"/><span className="text-xs font-bold">สแกน</span></button></div></div><div><label className="text-xs text-slate-400 mb-1 block">เตียง (เลือกจาก Ward)</label><select required value={form.bed} onChange={e => setForm({...form, bed: e.target.value})} className="glass-input w-full p-3 rounded-xl appearance-none text-center"><option value="" disabled>-- เลือกเตียง --</option>{currentBeds.map(b => <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>)}</select></div></div>
+                        <button disabled={loading} type="submit" className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 border border-white/10">{loading ? <LucideIcon name="Loader2" className="animate-spin w-5 h-5"/> : <LucideIcon name="Save" className="w-5 h-5"/>} <span>บันทึกและเริ่มประเมิน</span></button>
+                    </form>
+                </div>
+            );
+        };
+
+        const ChecklistView = ({ caseData, masterData, logs, mode, onSubmit, onDischarge, onCancel, userProfile, onReportHai }) => {
+            const items = useMemo(() => {
+                return masterData.filter(m => {
+                    if (m.bundle_type !== caseData.bundle_type) return false;
+                    const freq = normalizeFreq(m.frequency);
+                    
+                    if (mode === 'Insertion') {
+                        if (freq !== 'once') return false;
+                        const passed = logs.some(l => String(l.tracking_id) === String(caseData.tracking_id) && l.item_code === m.item_code && (l.result === 'ผ่าน' || l.result === 'Pass'));
+                        return !passed;
+                    } 
+                    
+                    if (freq === 'once') return false;
+                    
+                    if (freq === 'daily') {
+                        const todayStr = new Date().toDateString();
+                        const doneToday = logs.some(l => String(l.tracking_id) === String(caseData.tracking_id) && l.item_code === m.item_code && safeDate(l.timestamp).toDateString() === todayStr);
+                        return !doneToday;
+                    }
+                    
+                    if (freq === 'shift') {
+                        const now = new Date();
+                        const currentShift = getShift(now);
+                        const todayStr = now.toDateString();
+                        const doneShift = logs.some(l => {
+                            if (String(l.tracking_id) !== String(caseData.tracking_id) || l.item_code !== m.item_code) return false;
+                            const logDate = safeDate(l.timestamp);
+                            if (logDate.toDateString() !== todayStr) return false;
+                            return (l.shift || getShift(logDate)) === currentShift;
+                        });
+                        return !doneShift;
+                    }
+                    
+                    return true;
+                });
+            }, [masterData, caseData, mode, logs]);
+
+            const [results, setResults] = useState({});
+            const [loading, setLoading] = useState(false);
+            const [detailItem, setDetailItem] = useState(null);
+
+            const handleCheck = (code, status) => setResults(prev => ({ ...prev, [code]: { ...prev[code], status } }));
+            const allChecked = items.length > 0 && items.every(i => results[i.item_code]?.status);
+            const handleSubmit = async () => { 
+                setLoading(true); 
+                const newLogs = Object.keys(results).map(code => ({ tracking_id: caseData.tracking_id, item_code: code, result: results[code].status, remark: results[code].remark, user: userProfile?.name, timestamp: new Date().toISOString() }));
+                await onSubmit(newLogs); 
+            };
+
+            return (
+                <div className="pb-32 px-2">
+                    {detailItem && <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}
+                    <div className="flex items-center justify-between mb-4 pt-2">
+                        <button onClick={onCancel} className="text-slate-400 flex items-center gap-2"><LucideIcon name="ArrowLeft" className="w-5 h-5"/></button>
+                        <div className="flex gap-2">
+                            <button onClick={onCancel} className="text-xs text-slate-300 bg-slate-700/50 border border-slate-600 px-4 py-2 rounded-full flex items-center gap-2">ข้าม (Skip)</button>
+                            <button onClick={onReportHai} className="text-xs text-orange-200 bg-orange-500/20 border border-orange-500/50 px-4 py-2 rounded-full flex items-center gap-2">รายงานติดเชื้อในรพ.</button>
+                            <button onClick={onDischarge} className="text-xs text-red-200 bg-red-500/20 border border-red-500/50 px-4 py-2 rounded-full flex items-center gap-2"><LucideIcon name="LogOut" className="w-3 h-3"/> จำหน่าย/ถอดอุปกรณ์</button>
+                        </div>
+                    </div>
+                    <div className={`p-5 rounded-2xl mb-6 flex justify-between items-center ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border} relative overflow-hidden`}>
+                        <div className="z-10"><div className="text-3xl font-bold text-white neon-text mb-1">{caseData.bundle_type}</div><div className="text-sm text-slate-300 flex items-center gap-3"><span className="bg-black/20 px-2 py-0.5 rounded">HN {caseData.hn}</span><span className="bg-black/20 px-2 py-0.5 rounded">Bed {caseData.bed}</span><span className="bg-indigo-900/50 border border-indigo-500/30 px-2 py-0.5 rounded text-indigo-200">{caseData.ward}</span></div></div>
+                        <LucideIcon name={BUNDLE_CONFIG[caseData.bundle_type].icon} className={`w-16 h-16 opacity-50 ${BUNDLE_CONFIG[caseData.bundle_type].color}`}/>
+                    </div>
+                    <div className="space-y-4">
+                        {items.length === 0 ? <div className="text-center py-10 text-emerald-400 text-sm glass-panel rounded-xl border border-emerald-500/30 bg-emerald-900/10 flex flex-col items-center gap-2"><LucideIcon name="CheckCircle" className="w-8 h-8"/><span>เยี่ยมมาก! ครบถ้วนแล้ว</span></div> : items.map((item, idx) => {
+                            const isDue = (item.frequency.includes('ทุกวัน') || item.frequency.includes('ทุกเวร'));
+                            return (
+                                <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col md:flex-row relative">
+                                    {isDue && !results[item.item_code]?.status && <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg z-10">ถึงรอบประเมิน</div>}
+                                    <div className="p-4 flex-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setDetailItem(item)}><div className="flex gap-3"><div className="text-2xl font-bold text-slate-600 select-none">#{idx + 1}</div><div><div className="text-sm font-bold text-white mb-1">{item.item_desc_th}</div><div className="text-xs text-slate-400 font-light line-clamp-2 mb-2">{item.item_desc_th_long}</div><div className="flex gap-2"><span className="text-[9px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">{item.item_code}</span><span className="text-[9px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">{item.frequency}</span></div></div></div></div>
+                                    <div className="p-2 bg-slate-900/50 flex md:flex-col gap-2 border-t md:border-t-0 md:border-l border-white/5 items-center justify-center min-w-[120px]"><button onClick={() => handleCheck(item.item_code, 'ผ่าน')} className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ผ่าน' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ผ่าน</button><button onClick={() => handleCheck(item.item_code, 'ไม่ผ่าน')} className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ไม่ผ่าน' ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ไม่ผ่าน</button></div>
+                                    {results[item.item_code]?.status === 'ไม่ผ่าน' && <div className="p-2 w-full border-t border-white/5 bg-red-900/20"><input type="text" placeholder="ระบุเหตุผล..." className="w-full bg-slate-900/80 rounded p-2 text-xs text-white border border-red-500/30 outline-none" onChange={(e) => setResults(prev => ({...prev, [item.item_code]: {...prev[item.item_code], remark: e.target.value}}))} /></div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/90 backdrop-blur-xl border-t border-slate-700 z-40 pb-8">
+                        <button onClick={handleSubmit} disabled={!allChecked || loading || items.length === 0} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg btn-press disabled:opacity-50 disabled:grayscale">{loading ? 'กำลังบันทึก...' : 'บันทึกผลการประเมิน'}</button>
+                    </div>
+                </div>
+            );
+        };
 
         const App = () => {
             const [view, setView] = useState('dashboard');
-            const [data, setData] = useState({ master: [], activeCases: [], historyCases: [], metrics: {} });
+            const [data, setData] = useState({ master: [], activeCases: [], historyCases: [], haiCases: [], metrics: {}, logs: [] });
             const [loading, setLoading] = useState(true);
             const [userProfile, setUserProfile] = useState(null);
             const [selectedCase, setSelectedCase] = useState(null);
+            const [showHistory, setShowHistory] = useState(false);
             const [checklistMode, setChecklistMode] = useState('Maintenance');
             const [showDischarge, setShowDischarge] = useState(false);
+            const [showHaiModal, setShowHaiModal] = useState(false);
+            const [preFill, setPreFill] = useState({ ward: '', bed: '' });
+            const [editingHai, setEditingHai] = useState(null);
 
             useEffect(() => {
                 const initApp = async () => {
-                    // Force timeout to prevent infinite loading (e.g. if LIFF/Fetch hangs)
-                    const timeout = setTimeout(() => {
-                        if (loading) {
-                            console.warn("Loading timed out, showing app anyway");
-                            setLoading(false);
-                        }
-                    }, 8000); // 8 seconds timeout
-
+                    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 5000); 
                     try {
-                        // 1. Init LIFF
                         if (window.liff) {
                             try {
                                 await window.liff.init({ liffId: LIFF_ID });
-                                if (!window.liff.isLoggedIn()) {
-                                    window.liff.login({ redirectUri: window.location.href });
-                                    return; // Stop here, wait for redirect
-                                }
-                                const profile = await window.liff.getProfile();
-                                const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
-                                if (userDetails && userDetails.found) {
-                                    setUserProfile({ ...userDetails, userId: profile.userId });
+                                if (window.liff.isLoggedIn()) {
+                                    const profile = await window.liff.getProfile();
+                                    const userDetails = await fetchGAS('getUserProfile', { userId: profile.userId });
+                                    setUserProfile({ ...(userDetails.found ? userDetails : {}), name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId });
                                 } else {
-                                    setUserProfile({ name: profile.displayName, picture: profile.pictureUrl, userId: profile.userId });
+                                    // window.liff.login({ redirectUri: window.location.href });
+                                    setUserProfile({ name: 'Guest User', job: 'Visitor', dept: '', picture: '' });
                                 }
-                            } catch (liffErr) {
-                                console.error("LIFF Init Error:", liffErr);
-                                // Continue loading even if LIFF fails
-                            }
+                            } catch (e) { setUserProfile({ name: 'Guest Preview', job: 'Test', dept: '', picture: '' }); }
                         }
-
-                        // 2. Fetch Data
                         const res = await fetchGAS('getInitialData');
-                        if (res && !res.error) {
-                            setData(res);
-                        }
-                    } catch (e) { 
-                        console.error('App Init Error', e); 
-                    } finally {
-                        clearTimeout(timeout);
-                        setLoading(false);
-                    }
+                        if (res && !res.error) setData({ ...res, logs: res.logs || [] });
+                        else setData({ master: [], activeCases: [], historyCases: [], haiCases: [], metrics: { totalActive: 0, adherence: 0, successRate: 0 }, logs: [] });
+                    } catch (e) { console.error(e); } finally { clearTimeout(timeout); setLoading(false); }
                 };
                 initApp();
             }, []);
 
-            const handleNewCase = async (formData) => {
-                const res = await fetchGAS('createNewCase', { payload: formData });
-                if (res && res.success) {
-                    // Refresh data in background
-                    fetchGAS('getInitialData').then(res => { if(res && !res.error) setData(res); });
-                    
-                    const newCase = { ...formData, tracking_id: res.trackingId, start_date: new Date().toISOString(), status: 'Active', date_count: 1 };
-                    setSelectedCase(newCase);
-                    setChecklistMode('Insertion');
-                    setView('checklist');
-                } else {
-                    alert(res?.message || 'เกิดข้อผิดพลาด');
-                }
+            const refreshDataInBackground = () => {
+                fetchGAS('getInitialData').then(res => { if(res && !res.error) setData({...res, logs: res.logs || []}); });
             };
 
-            const handleChecklistSubmit = async (logs) => {
-                await fetchGAS('saveChecklistLog', { payload: logs });
+            const handleNewCase = async (formData) => {
+                const newCase = { ...formData, tracking_id: 'temp-'+Date.now(), start_date: new Date().toISOString(), status: 'Active', date_count: 1 };
+                setData(prev => ({ ...prev, activeCases: [...prev.activeCases, newCase] }));
+                const res = await fetchGAS('createNewCase', { payload: formData });
+                if (res && res.success) { refreshDataInBackground(); setSelectedCase(newCase); setChecklistMode('Insertion'); setView('checklist'); } else { alert(res?.message || 'Error'); }
+            };
+
+            const handleChecklistSubmit = async (newLogs) => {
+                setData(prev => ({ ...prev, logs: [...prev.logs, ...newLogs] }));
                 alert('บันทึกเรียบร้อย');
                 setView('dashboard');
                 setSelectedCase(null);
-                // Refresh data
-                fetchGAS('getInitialData').then(res => { if(res && !res.error) setData(res); });
+                await fetchGAS('saveChecklistLog', { payload: newLogs });
             };
 
             const handleDischargeSubmit = async (form) => {
                 await fetchGAS('closeCase', { payload: { tracking_id: selectedCase.tracking_id, ...form } });
-                setShowDischarge(false);
-                setView('dashboard');
-                setSelectedCase(null);
-                setLoading(true); // Short loading to reflect changes
-                const res = await fetchGAS('getInitialData');
-                if (res && !res.error) setData(res);
-                setLoading(false);
+                if (form.outcome.includes("ติดเชื้อ") || form.outcome.includes("HAI")) {
+                    setEditingHai({ hn: selectedCase.hn, ward: selectedCase.ward, bed: selectedCase.bed, related_bundle_id: selectedCase.tracking_id, admit_date: '', status: 'ยืนยันติดเชื้อ' });
+                    setShowDischarge(false); setShowHaiModal(true);
+                } else {
+                    setShowDischarge(false); setView('dashboard'); setSelectedCase(null); setLoading(true); 
+                    const res = await fetchGAS('getInitialData');
+                    if (res && !res.error) setData({...res, logs: res.logs || []});
+                    setLoading(false);
+                }
             };
 
-            if (loading && data.activeCases.length === 0 && data.historyCases.length === 0) return <LoadingSpinner />;
+            const handleCardClick = async (c) => {
+                if (c.status !== 'Active') { alert('เคสนี้ถูกจำหน่ายแล้ว'); return; }
+                if (c.discharge) { setSelectedCase(c); setShowDischarge(true); return; }
+                setSelectedCase(c); setShowHistory(true);
+                const res = await fetchGAS('getInitialData');
+                if (res && !res.error) setData({...res, logs: res.logs || []});
+            };
+            
+            const handleHaiUpdate = (updatedHai) => {
+                 setData(prev => {
+                     const existingIndex = prev.haiCases.findIndex(h => h.hai_id === updatedHai.hai_id);
+                     if (existingIndex >= 0) {
+                         const newHaiCases = [...prev.haiCases];
+                         newHaiCases[existingIndex] = { ...newHaiCases[existingIndex], ...updatedHai };
+                         return { ...prev, haiCases: newHaiCases };
+                     } else { return { ...prev, haiCases: [...prev.haiCases, updatedHai] }; }
+                 });
+                 refreshDataInBackground();
+            };
+
+            if (loading && !data.activeCases) return <LoadingSpinner />;
 
             return (
                 <div className="max-w-md mx-auto min-h-screen relative pb-10">
                     {view === 'dashboard' && <Header userProfile={userProfile} />}
-                    
                     <main>
                         {view === 'dashboard' && (
                             <DashboardView 
                                 activeCases={data.activeCases} 
                                 historyCases={data.historyCases} 
+                                haiCases={data.haiCases} 
                                 metrics={data.metrics} 
-                                onSelectCase={(c) => {
-                                    if(c.status === 'Active') {
-                                        setSelectedCase(c);
-                                        setChecklistMode('Maintenance');
-                                        setView('checklist');
+                                logs={data.logs} 
+                                onSelectCase={handleCardClick} 
+                                onSelectHai={(c) => { setEditingHai(c); setShowHaiModal(true); }}
+                                onReportHai={(c) => { 
+                                    if(c) {
+                                        setEditingHai({ 
+                                            hn: c.hn, 
+                                            ward: c.ward, 
+                                            bed: c.bed, 
+                                            related_bundle_id: c.tracking_id 
+                                        });
                                     } else {
-                                        alert('เคสนี้ถูกจำหน่ายแล้ว');
+                                        setEditingHai(null);
                                     }
+                                    setShowHaiModal(true); 
                                 }}
-                                onNewCase={() => setView('new_case')}
+                                onNewCase={(ward = '', bed = '') => { setPreFill({ ward, bed }); setView('new_case'); }}
                             />
                         )}
 
                         {view === 'new_case' && (
-                            <NewCaseView 
-                                masterData={data.master} 
-                                existingCases={data.activeCases} 
-                                userProfile={userProfile}
-                                onSubmit={handleNewCase} 
-                                onCancel={() => setView('dashboard')} 
-                            />
+                            <NewCaseView masterData={data.master} existingCases={data.activeCases} userProfile={userProfile} preWard={preFill.ward} preBed={preFill.bed} onSubmit={handleNewCase} onCancel={() => setView('dashboard')} />
                         )}
 
                         {view === 'checklist' && selectedCase && (
                             <ChecklistView 
                                 caseData={selectedCase} 
                                 masterData={data.master} 
-                                mode={checklistMode}
-                                userProfile={userProfile}
-                                onSubmit={handleChecklistSubmit}
-                                onDischarge={() => setShowDischarge(true)}
-                                onCancel={() => { setView('dashboard'); setSelectedCase(null); }}
+                                logs={data.logs} 
+                                mode={checklistMode} 
+                                userProfile={userProfile} 
+                                onSubmit={handleChecklistSubmit} 
+                                onReportHai={() => { 
+                                    setEditingHai({ 
+                                        hn: selectedCase.hn, 
+                                        ward: selectedCase.ward, 
+                                        bed: selectedCase.bed, 
+                                        related_bundle_id: selectedCase.tracking_id 
+                                    }); 
+                                    setShowHaiModal(true); 
+                                }} 
+                                onDischarge={() => setShowDischarge(true)} 
+                                onCancel={() => { setView('dashboard'); setSelectedCase(null); }} 
                             />
                         )}
                     </main>
 
-                    {showDischarge && (
-                        <DischargeModal 
-                            onSubmit={handleDischargeSubmit} 
-                            onCancel={() => setShowDischarge(false)} 
+                    {showHistory && selectedCase && (
+                        <PatientHistoryModal 
+                            caseData={selectedCase} 
+                            logs={data.logs || []} 
+                            onDismiss={() => { setShowHistory(false); setSelectedCase(null); }}
+                            onAssess={() => { setShowHistory(false); setChecklistMode('Maintenance'); setView('checklist'); }}
                         />
                     )}
+
+                    {showHaiModal && (
+                        <HaiReportModal 
+                            activeCases={data.activeCases}
+                            preSelectedCase={editingHai}
+                            onClose={() => { setShowHaiModal(false); setEditingHai(null); }}
+                            userProfile={userProfile}
+                            onUpdate={handleHaiUpdate}
+                        />
+                    )}
+
+                    {showDischarge && <DischargeModal onSubmit={handleDischargeSubmit} onCancel={() => setShowDischarge(false)} />}
                 </div>
             );
         };
