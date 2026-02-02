@@ -13,8 +13,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    <!-- Use a stable version of Recharts for UMD -->
-    <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
@@ -30,102 +29,44 @@
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            font-family: 'Google Sans', 'Sarabun', sans-serif; 
-            background: #0f172a; 
-            color: #f8fafc; 
-            -webkit-tap-highlight-color: transparent; 
-            overflow-x: hidden;
-            font-size: 16px;
-        }
-        
-        .glass-panel { 
-            background: rgba(30, 41, 59, 0.85); 
-            backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .glass-input { 
-            background: rgba(15, 23, 42, 0.6); 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            color: white; 
-        }
+        body { font-family: 'Google Sans', 'Sarabun', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; font-size: 16px; }
+        .bg-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-image: url('https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png'); background-repeat: no-repeat; background-position: center; background-size: 150%; opacity: 0.04; pointer-events: none; z-index: -1; mix-blend-mode: luminosity; }
+        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); }
+        .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.15); color: white; }
         .glass-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
-        
         .btn-press:active { transform: scale(0.97); }
         .neon-text { text-shadow: 0 0 10px currentColor; }
-        
-        /* Bundle Colors */
         .bundle-cauti { border-left: 4px solid #fbbf24; } 
         .bundle-vap { border-left: 4px solid #3b82f6; } 
         .bundle-pvc { border-left: 4px solid #ef4444; } 
         .bundle-ssi { border-left: 4px solid #10b981; } 
         .bundle-mdr { border-left: 4px solid #a855f7; } 
-
-        /* Bed Grid Styles */
-        .bed-grid-container {
-            display: grid;
-            grid-template-columns: repeat(15, minmax(0, 1fr)); 
-            gap: 2px;
-        }
-        .bed-box {
-            font-size: 8px; 
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 2px;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid rgba(71, 85, 105, 0.5); 
-            background: rgba(30, 41, 59, 0.8);
-            color: #64748b;
-            height: 20px; 
-            white-space: nowrap;
-            overflow: hidden;
-            letter-spacing: -0.5px;
-        }
+        .bed-grid-container { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; }
+        .bed-box { font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; border-radius: 2px; cursor: pointer; border: 1px solid rgba(71, 85, 105, 0.5); background: rgba(30, 41, 59, 0.8); color: #64748b; height: 18px; white-space: nowrap; overflow: hidden; letter-spacing: -0.5px; }
         .bed-box:hover { background: rgba(59, 130, 246, 0.3); border-color: rgba(59, 130, 246, 1); color: white; }
-        
         .bed-active { color: white; border: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.5); text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
         .bed-CAUTI { background: #fbbf24; color: #451a03; }
         .bed-VAP { background: #3b82f6; }
         .bed-PVC { background: #ef4444; }
         .bed-SSI { background: #10b981; }
         .bed-MDR { background: #a855f7; }
-
-        /* HAI Alert Style */
-        .bed-hai-alert { 
-            box-shadow: 0 0 0 2px #ef4444, 0 0 8px #ef4444 !important;
-            animation: pulse-red 1.5s infinite; 
-            z-index: 20;
-        }
+        .bed-hai-alert { box-shadow: 0 0 0 2px #ef4444, 0 0 8px #ef4444 !important; animation: pulse-red 1.5s infinite; z-index: 20; }
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        
-        /* Waiting List Blink */
-        @keyframes slow-blink {
-            0%, 100% { opacity: 1; border-color: white; }
-            50% { opacity: 0.6; border-color: transparent; }
-        }
-        .bed-waiting {
-            animation: slow-blink 3s infinite ease-in-out;
-            border: 1px solid white !important;
-        }
-
+        @keyframes slow-blink { 0%, 100% { opacity: 1; border-color: white; } 50% { opacity: 0.6; border-color: transparent; } }
+        .bed-waiting { animation: slow-blink 2s infinite ease-in-out; border: 1px solid white !important; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
 <body>
+    <div class="bg-overlay"></div>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
         const { PieChart, Pie, Cell, ResponsiveContainer } = window.Recharts || { PieChart:()=>null, Pie:()=>null, Cell:()=>null, ResponsiveContainer:({children})=>children };
 
-        // --- CONFIGURATION ---
         const GAS_URL = "https://script.google.com/macros/s/AKfycbypLTYWgle-SsRfHxwgfHpIT6Lyhh_iwEKK6lVxcuQyM-TQBCk6mIRWJ0pKd7sFxEY/exec";
         const LIFF_ID = "2008690634-O4vlZdND";
 
@@ -136,7 +77,6 @@
             'SSI': { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', icon: 'scissors', label: 'SSI' },
             'MDR': { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/50', icon: 'bug', label: 'MDR' },
         };
-        
         const BED_CONFIG = {
             'Wardชาย': [...Array.from({length: 25}, (_, i) => `M${i+1}`), ...Array.from({length: 6}, (_, i) => `P${i+7}`), ...Array.from({length: 10}, (_, i) => `SM${i+1}`)],
             'Wardหญิง': [...Array.from({length: 25}, (_, i) => `F${i+1}`), ...Array.from({length: 6}, (_, i) => `P${i+1}`), ...Array.from({length: 10}, (_, i) => `SF${i+1}`)],
@@ -145,9 +85,14 @@
         };
         const WARD_OPTIONS = ['ทั้งหมด', ...Object.keys(BED_CONFIG)];
         const FREQUENCY_MAP = { 'Once': 'ครั้งแรก', 'ครั้งแรก': 'ครั้งแรก', 'Daily': 'ทุกวัน', 'ทุกวัน': 'ทุกวัน', 'Shift': 'ทุกเวร', 'ทุกเวร': 'ทุกเวร', 'Event': 'ทุกครั้ง', 'ทุกครั้ง': 'ทุกครั้ง' };
-        const MOCK_HAI_MASTER = [];
+        
+        const MOCK_HAI_MASTER = [
+            { id: 1, hai_group: 'VAP', criteria_text: 'ใส่ท่อช่วยหายใจเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
+            { id: 2, hai_group: 'VAP', criteria_text: 'มีไข้ > 38.0°C หรือ อุณหภูมิต่ำ < 36.0°C', type: 'Clinical', weight: 'Major' },
+            { id: 5, hai_group: 'CAUTI', criteria_text: 'ใส่สายสวนปัสสาวะเกิน 48 ชม.', type: 'Risk', weight: 'Trigger' },
+            { id: 6, hai_group: 'CAUTI', criteria_text: 'ปัสสาวะขุ่น / มีตะกอน / มีหนอง', type: 'Clinical', weight: 'Major' }
+        ];
 
-        // --- UTILS ---
         const safeDate = (dateStr) => { if (!dateStr) return new Date(); const d = new Date(dateStr); return isNaN(d.getTime()) ? new Date() : d; };
         const normalizeFreq = (f) => {
             if (!f) return '';
@@ -234,14 +179,14 @@
             }
         });
 
-        // --- COMPONENTS ---
-
         const LoadingSpinner = ({ text }) => (
             <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]">
                 <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div>
                 <p className="mt-4 text-slate-400 text-sm animate-pulse">{text || 'Loading System...'}</p>
             </div>
         );
+
+        // --- GLOBAL COMPONENTS ---
 
         const Header = ({ userProfile }) => (
             <header className="glass-panel sticky top-0 z-40 px-4 py-3 flex justify-between items-center mb-4 rounded-b-2xl mx-1 mt-1 shadow-lg">
@@ -250,8 +195,8 @@
                     <div><div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-pink-300 leading-tight">SW-1 Bundle</div><div className="text-[10px] text-slate-400 uppercase tracking-widest">Infection Control</div></div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-right hidden md:block"><div className="text-sm font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div><div className="text-[10px] text-slate-400 mt-0.5 flex gap-1 justify-end"><span>{userProfile?.job || 'Staff'}</span>{userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}</div></div>
-                    <div className="relative w-10 h-10 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">{userProfile?.picture ? <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-5 h-5"/></div>}</div>
+                    <div className="text-right hidden md:block"><div className="text-xs font-bold text-white leading-none">{userProfile?.name || 'Guest User'}</div><div className="text-[9px] text-slate-400 mt-0.5 flex gap-1 justify-end"><span>{userProfile?.job || 'Staff'}</span>{userProfile?.dept && <span className="text-indigo-400">• {userProfile.dept}</span>}</div></div>
+                    <div className="relative w-8 h-8 rounded-full border border-indigo-500/30 overflow-hidden bg-slate-800 shadow-inner">{userProfile?.picture ? <img src={userProfile.picture} alt="User" className="w-full h-full object-cover" onError={(e) => e.target.src='https://ui-avatars.com/api/?name='+userProfile.name} /> : <div className="w-full h-full flex items-center justify-center text-xs text-slate-500"><LucideIcon name="User" className="w-4 h-4"/></div>}</div>
                 </div>
             </header>
         );
@@ -334,10 +279,9 @@
 
             const handleSubmit = async () => {
                 setLoading(true);
-                const dayCount = calculateDays();
                 const payload = {
                     ...form,
-                    admit_day_to_infect: dayCount,
+                    admit_day_to_infect: form.admit_date ? Math.ceil((new Date(form.infection_date) - new Date(form.admit_date)) / (1000 * 60 * 60 * 24)) : 0,
                     criteria: selectedCriteria.join(', '),
                     register: userProfile?.name
                 };
@@ -423,6 +367,7 @@
             const caseLogs = logs.filter(l => String(l.tracking_id) === String(caseData.tracking_id));
             const passCount = caseLogs.filter(l => l.result === 'ผ่าน' || l.result === 'Pass').length;
             const failCount = caseLogs.filter(l => l.result === 'ไม่ผ่าน' || l.result === 'Fail').length;
+            const scoreText = `${passCount}/${caseLogs.length}`;
 
             return (
                 <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={onDismiss}>
@@ -432,7 +377,7 @@
                             <button onClick={onDismiss} className="p-2 bg-slate-800 rounded-full"><LucideIcon name="X" className="w-5 h-5 text-white"/></button>
                         </div>
                         <div className={`p-4 rounded-xl mb-4 ${BUNDLE_CONFIG[caseData.bundle_type].bg} border ${BUNDLE_CONFIG[caseData.bundle_type].border}`}>
-                            <div className="flex justify-between items-center"><span className={`text-2xl font-bold ${BUNDLE_CONFIG[caseData.bundle_type].color}`}>{caseData.bundle_type}</span><div className="text-right"><div className="text-xs text-slate-300">ประเมินแล้ว</div><div className="text-xl font-bold text-white">{caseLogs.length} <span className="text-sm font-normal">ครั้ง</span></div></div></div>
+                            <div className="flex justify-between items-center"><span className={`text-2xl font-bold ${BUNDLE_CONFIG[caseData.bundle_type].color}`}>{caseData.bundle_type}</span><div className="text-right"><div className="text-xs text-slate-300">คะแนน</div><div className="text-xl font-bold text-white">{scoreText}</div></div></div>
                             <div className="mt-2 flex gap-2 text-xs"><span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">ผ่าน {passCount}</span><span className="bg-red-500/20 text-red-300 px-2 py-0.5 rounded border border-red-500/30">ไม่ผ่าน {failCount}</span></div>
                         </div>
                         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
@@ -444,7 +389,8 @@
                                 </div>
                             ))}
                         </div>
-                        <button onClick={onAssess} className="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2"><LucideIcon name="ClipboardCheck" className="w-5 h-5"/> ประเมิน Checklist</button>
+                        {/* Hide Assess button for History tab items (conceptually passed caseData should indicate status) */}
+                        {caseData.status === 'Active' && <button onClick={onAssess} className="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg btn-press flex items-center justify-center gap-2"><LucideIcon name="ClipboardCheck" className="w-5 h-5"/> ประเมิน Checklist</button>}
                     </div>
                 </div>
             );
@@ -453,34 +399,27 @@
         const DashboardView = ({ activeCases, historyCases, haiCases, metrics, logs, onSelectCase, onSelectHai, onNewCase, onReportHai, initialWard }) => {
             const [filterWard, setFilterWard] = useState(initialWard || 'ทั้งหมด');
             const [tab, setTab] = useState('active');
-
-            const safeActiveCases = activeCases || [];
-            const safeHistoryCases = historyCases || [];
-            const safeHaiCases = haiCases || [];
-
             const getFilteredData = () => {
                 const baseFilter = (list) => list.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard);
-                if (tab === 'active') return baseFilter(safeActiveCases);
-                if (tab === 'history') return baseFilter(safeHistoryCases);
-                if (tab === 'hai') return baseFilter(safeHaiCases);
+                if (tab === 'active') return baseFilter(activeCases);
+                if (tab === 'history') return baseFilter(historyCases);
+                if (tab === 'hai') return baseFilter(haiCases);
                 return [];
             };
             const displayList = getFilteredData();
-
             const activeBeds = useMemo(() => {
                 const map = {};
-                safeActiveCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
+                activeCases.filter(c => filterWard === 'ทั้งหมด' || c.ward === filterWard).forEach(c => {
                     const todayStr = new Date().toDateString();
                     const assessedToday = logs.some(l => String(l.tracking_id) === String(c.tracking_id) && safeDate(l.timestamp).toDateString() === todayStr);
                     map[`${c.ward}-${c.bed}`] = { ...c, type: 'bundle', needsAction: !assessedToday };
                 });
-                safeHaiCases.filter(c => (filterWard === 'ทั้งหมด' || c.ward === filterWard) && c.status === 'แจ้ง ICN').forEach(c => {
+                haiCases.filter(c => (filterWard === 'ทั้งหมด' || c.ward === filterWard) && c.status === 'แจ้ง ICN').forEach(c => {
                     const key = `${c.ward}-${c.bed}`;
-                    if (map[key]) { map[key].isHaiAlert = true; } 
-                    else { map[key] = { ...c, type: 'hai', isHaiAlert: true }; } 
+                    if (map[key]) { map[key].isHaiAlert = true; } else { map[key] = { ...c, type: 'hai', isHaiAlert: true }; } 
                 });
                 return map;
-            }, [safeActiveCases, safeHaiCases, filterWard, logs]);
+            }, [activeCases, haiCases, filterWard, logs]);
 
             const renderBedGrid = (wardName) => (
                 <div key={wardName} className="min-w-[300px] glass-panel p-3 rounded-xl border border-white/5 snap-center">
@@ -509,9 +448,9 @@
                     <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">{filterWard === 'ทั้งหมด' ? Object.keys(BED_CONFIG).map(w => renderBedGrid(w)) : renderBedGrid(filterWard)}</div>
                     
                     <div className="flex bg-slate-800/50 p-1 rounded-xl mt-2 relative">
-                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active <span className="ml-1 text-[10px] bg-indigo-500 text-white px-1.5 rounded-full">{safeActiveCases.length}</span></button>
-                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History <span className="ml-1 text-[10px] bg-slate-600 text-slate-300 px-1.5 rounded-full">{safeHistoryCases.length}</span></button>
-                        <button onClick={() => setTab('hai')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'hai' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>HAI <span className="ml-1 text-[10px] bg-red-600 text-white px-1.5 rounded-full">{safeHaiCases.length}</span></button>
+                        <button onClick={() => setTab('active')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'active' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>Active <span className="ml-1 text-[10px] bg-indigo-500 text-white px-1.5 rounded-full">{activeCases.length}</span></button>
+                        <button onClick={() => setTab('history')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'history' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>History <span className="ml-1 text-[10px] bg-slate-600 text-slate-300 px-1.5 rounded-full">{historyCases.length}</span></button>
+                        <button onClick={() => setTab('hai')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all relative ${tab === 'hai' ? 'bg-slate-700 text-white shadow' : 'text-slate-500'}`}>HAI <span className="ml-1 text-[10px] bg-red-600 text-white px-1.5 rounded-full">{haiCases.length}</span></button>
                     </div>
 
                     <div className="space-y-3">
@@ -526,21 +465,23 @@
                                  const conf = BUNDLE_CONFIG[c.bundle_type] || BUNDLE_CONFIG['CAUTI']; 
                                  return (
                                      <div key={c.tracking_id} onClick={() => onSelectCase(c)} className={`glass-panel p-4 rounded-xl flex flex-col justify-between cursor-pointer hover:bg-white/5 transition-all active:scale-[0.98] ${conf.border}`}>
-                                         <div className="flex justify-between items-start mb-1">
+                                         <div className="flex justify-between items-start mb-2">
                                              <div className="flex items-center gap-2">
                                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded shadow-sm ${conf.bg} ${conf.color} border border-white/10`}>{c.bundle_type}</span>
                                                  <div className="flex items-baseline gap-1"><span className="text-[10px] text-slate-400">HN</span><span className="text-lg font-bold text-white leading-none">{c.hn}</span></div>
                                              </div>
                                              <span className="text-[10px] text-slate-400 flex items-center gap-1"><LucideIcon name="Clock" className="w-3 h-3"/> {c.date_count} วัน</span>
                                          </div>
-                                         <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-1">
+                                         <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
                                              <div className="text-xs text-indigo-300 flex items-center gap-1 min-w-0">
+                                                 <LucideIcon name="MapPin" className="w-3 h-3 text-indigo-400 shrink-0"/> 
                                                  <span className="truncate">{c.ward}</span>
                                                  <span className="text-white font-bold ml-1 bg-slate-700 px-1.5 py-0.5 rounded border border-slate-600 shrink-0">{c.bed}</span>
                                              </div>
+                                             {/* Horizontal Buttons */}
                                              <div className="flex gap-2 shrink-0">
-                                                 <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded bg-red-500/20 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap">จำหน่าย/ถอดอุปกรณ์</button>
-                                                 <button onClick={(e) => { e.stopPropagation(); onReportHai(c); }} className="px-2 py-1 rounded bg-orange-500/20 text-orange-300 text-[9px] border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap">รายงานติดเชื้อในรพ.</button>
+                                                 <button onClick={(e) => { e.stopPropagation(); onSelectCase({...c, discharge: true}); }} className="px-2 py-1 rounded-lg bg-red-500/20 text-red-300 text-[9px] border border-red-500/30 flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all whitespace-nowrap">จำหน่าย/ถอดอุปกรณ์</button>
+                                                 <button onClick={(e) => { e.stopPropagation(); onReportHai(c); }} className="px-2 py-1 rounded-lg bg-orange-500/20 text-orange-300 text-[9px] border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500 hover:text-white transition-all whitespace-nowrap">รายงานติดเชื้อในรพ.</button>
                                              </div>
                                          </div>
                                      </div>
@@ -644,12 +585,15 @@
                     </div>
                     <div className="space-y-4">
                         {items.length === 0 ? <div className="text-center py-10 text-emerald-400 text-sm glass-panel rounded-xl border border-emerald-500/30 bg-emerald-900/10 flex flex-col items-center gap-2"><LucideIcon name="CheckCircle" className="w-8 h-8"/><span>เยี่ยมมาก! ครบถ้วนแล้ว</span></div> : items.map((item, idx) => {
-                            const isDue = (item.frequency.includes('ทุกวัน') || item.frequency.includes('ทุกเวร'));
                             return (
-                                <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col md:flex-row relative">
-                                    {isDue && !results[item.item_code]?.status && <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-bold rounded-full animate-pulse shadow-lg z-10">ถึงรอบประเมิน</div>}
+                                <div key={item.item_code} className="glass-panel p-0 rounded-xl overflow-hidden flex flex-col relative">
                                     <div className="p-4 flex-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setDetailItem(item)}><div className="flex gap-3"><div className="text-2xl font-bold text-slate-600 select-none">#{idx + 1}</div><div><div className="text-sm font-bold text-white mb-1">{item.item_desc_th}</div><div className="text-xs text-slate-400 font-light line-clamp-2 mb-2">{item.item_desc_th_long}</div><div className="flex gap-2"><span className="text-[9px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">{item.item_code}</span><span className="text-[9px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">{item.frequency}</span></div></div></div></div>
-                                    <div className="p-2 bg-slate-900/50 flex md:flex-col gap-2 border-t md:border-t-0 md:border-l border-white/5 items-center justify-center min-w-[120px]"><button onClick={() => handleCheck(item.item_code, 'ผ่าน')} className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ผ่าน' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ผ่าน</button><button onClick={() => handleCheck(item.item_code, 'ไม่ผ่าน')} className={`flex-1 w-full py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ไม่ผ่าน' ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ไม่ผ่าน</button></div>
+                                    <div className="p-2 bg-slate-900/50 flex flex-col gap-2 border-t border-white/5 items-center justify-center w-full">
+                                        <div className="flex w-full gap-2">
+                                            <button onClick={() => handleCheck(item.item_code, 'ผ่าน')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ผ่าน' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ผ่าน</button>
+                                            <button onClick={() => handleCheck(item.item_code, 'ไม่ผ่าน')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${results[item.item_code]?.status === 'ไม่ผ่าน' ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>ไม่ผ่าน</button>
+                                        </div>
+                                    </div>
                                     {results[item.item_code]?.status === 'ไม่ผ่าน' && <div className="p-2 w-full border-t border-white/5 bg-red-900/20"><input type="text" placeholder="ระบุเหตุผล..." className="w-full bg-slate-900/80 rounded p-2 text-xs text-white border border-red-500/30 outline-none" onChange={(e) => setResults(prev => ({...prev, [item.item_code]: {...prev[item.item_code], remark: e.target.value}}))} /></div>}
                                 </div>
                             );
@@ -780,6 +724,53 @@
                  });
                  refreshDataInBackground();
             };
+            
+            const shareToLine = (flexMessage) => {
+                if (window.liff && window.liff.isApiAvailable('shareTargetPicker')) {
+                    if (!window.liff.isInClient()) {
+                        alert("การแชร์ลงกลุ่มต้องเปิดใน LINE App เท่านั้น");
+                        return;
+                    }
+                    window.liff.shareTargetPicker([flexMessage])
+                        .then(() => console.log("Share success"))
+                        .catch((err) => {
+                            console.error("Share failed", err);
+                            alert("เกิดข้อผิดพลาดในการแชร์: " + err.message);
+                        });
+                } else {
+                    alert("อุปกรณ์นี้ไม่รองรับการแชร์ลงกลุ่ม หรือยังไม่เปิดฟีเจอร์");
+                }
+            };
+            
+            const createBundleFlex = (data) => ({
+                type: "flex", altText: "New Bundle Registered",
+                contents: {
+                    type: "bubble",
+                    styles: { header: { backgroundColor: "#1e1b4b" }, body: { backgroundColor: "#312e81" } },
+                    header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "NEW BUNDLE", color: "#4ade80", weight: "bold", size: "sm" }, { type: "text", text: data.bundle_type, color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
+                    body: { type: "box", layout: "vertical", contents: [
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.hn, color: "#ffffff", size: "sm", flex: 4 }] },
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Ward", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: `${data.ward} (${data.bed})`, color: "#ffffff", size: "sm", flex: 4 }] },
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "By", color: "#94a3b8", size: "xs", flex: 2 }, { type: "text", text: data.register, color: "#ffffff", size: "sm", flex: 4 }] }
+                    ]},
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ประเมิน Checklist", uri: `https://liff.line.me/${LIFF_ID}?tracking_id=${data.tracking_id}` }, style: "primary", color: "#6366f1" }] }
+                }
+            });
+            
+            const createHaiFlex = (data) => ({
+                type: "flex", altText: "HAI Report Alert",
+                contents: {
+                    type: "bubble",
+                    styles: { header: { backgroundColor: "#450a0a" }, body: { backgroundColor: "#7f1d1d" } },
+                    header: { type: "box", layout: "vertical", contents: [{ type: "text", text: "HAI ALERT", color: "#fca5a5", weight: "bold", size: "sm" }, { type: "text", text: data.hai_type, color: "#ffffff", weight: "bold", size: "xl", margin: "sm" }] },
+                    body: { type: "box", layout: "vertical", contents: [
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "HN", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: data.hn, color: "#ffffff", size: "sm", flex: 4 }] },
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Loc", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: `${data.ward} (${data.bed})`, color: "#ffffff", size: "sm", flex: 4 }] },
+                        { type: "box", layout: "baseline", contents: [{ type: "text", text: "Criteria", color: "#fecaca", size: "xs", flex: 2 }, { type: "text", text: data.criteria, color: "#ffffff", size: "xxs", flex: 4, wrap: true }] }
+                    ]},
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", action: { type: "uri", label: "ตรวจสอบ", uri: `https://liff.line.me/${LIFF_ID}` }, style: "primary", color: "#ef4444" }] }
+                }
+            });
 
             if (accessDenied) return <div className="min-h-screen flex items-center justify-center text-white bg-[#0f172a] p-4 text-center"><div><LucideIcon name="Lock" className="w-16 h-16 mx-auto mb-4 text-red-500"/><h2 className="text-xl font-bold">ขออภัย</h2><p className="text-slate-400 mt-2">ท่านไม่มีสิทธิ์เข้าใช้งานระบบนี้<br/>โปรดติดต่อ Admin เพื่อขอสิทธิ์ Bundle: Y</p></div></div>;
             if (loading && !data.activeCases) return <LoadingSpinner />;
