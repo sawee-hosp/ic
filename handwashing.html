@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SW-Hand Hygiene</title>
     
+    <!-- Favicon (Green Hand) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234ade80%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0%22/><path d=%22M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2%22/><path d=%22M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8%22/><path d=%22M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15%22/></svg>">
+
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -27,12 +30,19 @@
             overflow-x: hidden;
             touch-action: manipulation;
             font-size: 14px;
+            margin: 0;
+            padding: 0;
         }
         .glass-panel { 
             background: rgba(30, 41, 59, 0.7); 
             backdrop-filter: blur(12px); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .item-btn { transition: all 0.1s; }
         .item-btn:active { transform: scale(0.95); }
@@ -110,10 +120,8 @@
             const [method, setMethod] = useState('');
             const [steps, setSteps] = useState({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-            // Fetch Helper (Fixed CORS)
+            // Fetch Helper
             const fetchAPI = async (action, payload = {}) => {
-                // Use 'no-cors' mode is NOT possible if we need response JSON. 
-                // Instead, use 'text/plain' content type to avoid preflight CORS
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action, ...payload })
@@ -134,7 +142,6 @@
                         try {
                             await window.liff.init({ liffId: LIFF_ID });
                             
-                            // Force Login
                             if (!window.liff.isLoggedIn()) {
                                 window.liff.login({ redirectUri: window.location.href });
                                 return;
@@ -142,32 +149,44 @@
                             
                             const profile = await window.liff.getProfile();
                             
-                            // Check User
+                            // 1. Set LIFF Profile Immediately
+                            const initialUser = {
+                                userId: profile.userId,
+                                name: profile.displayName,
+                                picture: profile.pictureUrl
+                            };
+                            setUser(initialUser);
+
+                            // 2. Fetch User from DB (Async)
                             try {
-                                // Using fetch directly for clarity
                                 const res = await fetch(GAS_URL, {
                                     method: 'POST',
                                     body: JSON.stringify({ action: 'getUserProfile', userId: profile.userId })
                                 }).then(r => r.json());
 
                                 if (res.found) {
-                                    const userData = { ...res, picture: profile.pictureUrl };
+                                    // Merge DB data with LIFF picture (prefer DB name if exists, else LIFF name)
+                                    const userData = { 
+                                        ...res, 
+                                        name: res.name || profile.displayName,
+                                        picture: profile.pictureUrl // Always use LIFF picture for freshness
+                                    };
                                     setUser(userData);
                                     localStorage.setItem('hh_user_' + profile.userId, JSON.stringify(userData));
                                 } else {
+                                    // Not found in DB -> Redirect
                                     alert("ไม่พบข้อมูลผู้ใช้งาน กรุณาลงทะเบียนก่อน");
                                     window.location.href = REG_URL;
                                     return;
                                 }
                             } catch (err) {
                                 console.error("Fetch User Error:", err);
-                                // Fallback cache
+                                // Fallback to cache if network fails
                                 const cached = localStorage.getItem('hh_user_' + profile.userId);
                                 if(cached) setUser(JSON.parse(cached));
-                                else setErrorMsg("เชื่อมต่อ Server ไม่ได้: " + err.message);
                             }
 
-                            // Fetch Meta Data
+                            // 3. Fetch Meta Data
                             fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getMetaData' }) })
                                 .then(r => r.json())
                                 .then(data => {
@@ -237,70 +256,61 @@
             );
 
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-4 p-2 flex flex-col text-sm">
-                    {/* Header */}
-                    <div className="glass-panel px-3 py-2 rounded-xl mb-1 flex items-center justify-between border-l-4 border-l-emerald-500">
+                <div className="min-h-screen flex flex-col">
+                    {/* Header: Fixed Top, No Side Borders */}
+                    <div className="glass-nav px-4 py-3 flex items-center justify-between sticky top-0 z-50">
                         <div className="flex items-center gap-2">
                             <HandIcon />
                             <div>
-                                <div className="text-lg font-bold text-white leading-none">SW-Hand</div>
-                                <div className="text-[10px] text-slate-400">Hygiene App</div>
+                                <div className="text-xl font-bold text-white leading-none">SW-Hand</div>
+                                <div className="text-[11px] text-slate-400">Hygiene App</div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 text-right">
-                             <button onClick={handleHardRefresh} className="p-1.5 rounded-full bg-slate-700/50 text-slate-300 hover:text-white"><LucideIcon name="refresh-cw" className="w-3.5 h-3.5"/></button>
-                             <div>
-                                <div className="text-xs font-bold text-white truncate max-w-[80px]">{user?.name || 'Guest'}</div>
-                                <div className="text-[9px] text-slate-400 truncate max-w-[80px]">{user?.dept || ''}</div>
+                        <div className="flex items-center gap-3 text-right">
+                             <button onClick={handleHardRefresh} className="p-2 rounded-full bg-slate-800 text-slate-300 hover:text-white"><LucideIcon name="refresh-cw" className="w-4 h-4"/></button>
+                             <div className="flex flex-col items-end">
+                                <div className="text-sm font-bold text-white truncate max-w-[100px]">{user?.name || 'Loading...'}</div>
+                                <div className="text-[10px] text-slate-400 truncate max-w-[100px]">{user?.dept || ''}</div>
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
-                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-4 h-4"/></div>}
+                            <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
+                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-5 h-5"/></div>}
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Progress */}
-                    <div className="glass-panel px-3 py-1.5 rounded-xl mb-2 flex justify-between items-center">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
-                        <div className="flex items-center gap-2">
-                             <div className="w-24 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                                <div className="bg-emerald-500 h-1.5 rounded-full shadow-[0_0_5px_rgba(52,211,153,0.5)]" style={{ width: `${Math.min(((meta.totalCount||0)/100)*100, 100)}%` }}></div>
-                            </div>
-                            <span className="text-xs font-bold text-emerald-400">{meta.totalCount || 0}<span className="text-slate-500 text-[9px]">/100</span></span>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-                        {/* 1. Location (Auto Width) */}
-                        <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">สถานที่</div>
-                            <div className="flex flex-wrap gap-1.5 h-auto overflow-y-hidden"> 
-                                {/* Using Flex Wrap with container adjustments for scrolling if needed, but '2 rows' logic is better handled by grid with auto-flow column if we want horizontal scroll.
-                                    But to satisfy "Auto Width" + "2 Rows" + "Horizontal Scroll" is tricky.
-                                    Best approach for auto-width horizontal scroll: Flex container. 
-                                    If we strictly want 2 rows: We can map and split, OR use grid-rows-2 with grid-flow-col. 
-                                    But grid cells stretch to widest content in column.
-                                    Let's stick to flex row (horizontal scroll) for simplicity and true auto-width, OR grid with auto-cols-max.
-                                */}
-                                <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max w-full">
-                                    {meta.locations.map(l => (
-                                        <button key={l.code} onClick={() => setLocation(l.code)}
-                                            className={`item-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                                            {l.label}
-                                            {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-indigo-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{l.count}</span>}
-                                        </button>
-                                    ))}
+                    <div className="max-w-md mx-auto w-full p-4 flex-1 flex flex-col gap-3">
+                        {/* Progress */}
+                        <div className="glass-panel px-4 py-2 rounded-xl flex justify-between items-center">
+                            <span className="text-[11px] text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
+                            <div className="flex items-center gap-2">
+                                 <div className="w-24 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                    <div className="bg-emerald-500 h-1.5 rounded-full shadow-[0_0_5px_rgba(52,211,153,0.5)]" style={{ width: `${Math.min(((meta.totalCount||0)/100)*100, 100)}%` }}></div>
                                 </div>
+                                <span className="text-sm font-bold text-emerald-400">{meta.totalCount || 0}<span className="text-slate-500 text-[10px]">/100</span></span>
                             </div>
                         </div>
 
-                        {/* 2. HCW (Auto Width) */}
+                        {/* 1. Location (Auto Width + Horizontal Scroll + 2 Rows) */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">ผู้ถูกสังเกต</div>
-                            <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
+                            <div className="text-[11px] text-slate-500 mb-1 ml-1 font-bold">สถานที่</div>
+                            <div className="flex flex-col flex-wrap h-[76px] overflow-x-auto no-scrollbar content-start gap-1.5 pb-1"> 
+                                {meta.locations.map(l => (
+                                    <button key={l.code} onClick={() => setLocation(l.code)}
+                                        className={`item-btn px-2 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap w-auto relative leading-none shrink-0 ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        {l.label}
+                                        {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-indigo-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{l.count}</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 2. HCW (Auto Width + Horizontal Scroll + 2 Rows) */}
+                        <div>
+                            <div className="text-[11px] text-slate-500 mb-1 ml-1 font-bold">ผู้ถูกสังเกต</div>
+                            <div className="flex flex-col flex-wrap h-[76px] overflow-x-auto no-scrollbar content-start gap-1.5 pb-1">
                                 {meta.hcws.map(h => (
                                     <button key={h.code} onClick={() => setHcw(h.code)}
-                                        className={`item-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap w-auto relative leading-none ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                        className={`item-btn px-2 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap w-auto relative leading-none shrink-0 ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {h.label}
                                         {h.count > 0 && <span className="absolute -top-1 -right-1 min-w-[12px] h-[12px] px-0.5 bg-pink-500 rounded-full flex items-center justify-center text-[7px] text-white ring-1 ring-[#0f172a]">{h.count}</span>}
                                     </button>
@@ -308,10 +318,10 @@
                             </div>
                         </div>
 
-                        {/* 3. Moments (1 Row, 5 Buttons) */}
+                        {/* 3. Moments (1 Row, 5 Buttons, Bigger Numbers) */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">Moments</div>
-                            <div className="grid grid-cols-5 gap-1">
+                            <div className="text-[11px] text-slate-500 mb-1 ml-1 font-bold">Moments</div>
+                            <div className="grid grid-cols-5 gap-1.5">
                                 {[
                                     { id: 1, label: 'ก่อนสัมผัสผู้ป่วย' },
                                     { id: 2, label: 'ก่อนทำหัตถการ' },
@@ -320,26 +330,26 @@
                                     { id: 5, label: 'หลังสัมผัสสิ่งแวดล้อม' }
                                 ].map(m => (
                                     <button key={m.id} onClick={() => setMoment(m.id)} 
-                                        className={`item-btn h-12 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                        <span className="text-base font-black leading-none">{m.id}</span>
-                                        <span className="text-[6px] leading-tight text-center line-clamp-2 w-full px-0.5">{m.label}</span>
+                                        className={`item-btn h-16 rounded-xl border flex flex-col items-center justify-center p-0.5 transition-all ${moment === m.id ? 'bg-blue-600 border-blue-500 text-white shadow' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                        <span className="text-3xl font-black leading-none mb-1">{m.id}</span>
+                                        <span className="text-[10px] leading-none text-center line-clamp-2 w-full px-0.5">{m.label}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 4. Method */}
+                        {/* 4. Method (Bigger) */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">วิธีการ</div>
-                            <div className="flex gap-1">
-                                <button onClick={() => setMethod(1)} className={`item-btn flex-1 py-1.5 rounded-lg border flex items-center justify-center gap-1 ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="droplets" className="w-3 h-3"/> <span className="text-[10px]">สบู่</span>
+                            <div className="text-[11px] text-slate-500 mb-1 ml-1 font-bold">วิธีการ</div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setMethod(1)} className={`item-btn flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="droplets" className="w-5 h-5"/> <span className="text-sm font-bold">สบู่</span>
                                 </button>
-                                <button onClick={() => setMethod(2)} className={`item-btn flex-1 py-1.5 rounded-lg border flex items-center justify-center gap-1 ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="spray-can" className="w-3 h-3"/> <span className="text-[10px]">Alcohol</span>
+                                <button onClick={() => setMethod(2)} className={`item-btn flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="spray-can" className="w-5 h-5"/> <span className="text-sm font-bold">Alcohol</span>
                                 </button>
-                                <button onClick={() => { setMethod(0); setSteps({}); }} className={`item-btn flex-1 py-1.5 rounded-lg border flex items-center justify-center gap-1 ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="x-circle" className="w-3 h-3"/> <span className="text-[10px]">ไม่ล้าง</span>
+                                <button onClick={() => { setMethod(0); setSteps({}); }} className={`item-btn flex-1 py-3 rounded-xl border flex items-center justify-center gap-2 ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="x-circle" className="w-5 h-5"/> <span className="text-sm font-bold">ไม่ล้าง</span>
                                 </button>
                             </div>
                         </div>
@@ -347,10 +357,10 @@
                         {/* 5. Steps (Grid 4 + 3) */}
                         {method !== 0 && method !== '' && (
                             <div className="animate-fade-in pb-4">
-                                <div className="text-[10px] text-slate-500 mb-0.5 ml-1 flex justify-between font-bold">
+                                <div className="text-[11px] text-slate-500 mb-1 ml-1 flex justify-between font-bold">
                                     <span>7 ขั้นตอน (แตะอันที่ไม่ได้ทำออก)</span>
                                 </div>
-                                <div className="grid grid-cols-4 gap-1">
+                                <div className="grid grid-cols-4 gap-1.5">
                                     {[
                                         'ฝ่ามือถูฝ่ามือ',
                                         'ถูหลังมือ',
@@ -363,9 +373,9 @@
                                         const id = i + 1;
                                         return (
                                             <button key={id} onClick={() => toggleStep(id)} 
-                                                className={`item-btn px-0.5 py-1 rounded-lg text-[8px] font-bold border flex flex-col items-center justify-center leading-none min-h-[40px] ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
+                                                className={`item-btn px-0.5 py-1 rounded-lg text-[9px] font-bold border flex flex-col items-center justify-center leading-none min-h-[45px] ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
                                                 <style>{`.grid-cols-4 > button:nth-child(n+5) { grid-column: span 1.33; }`}</style>
-                                                {steps[id] ? <LucideIcon name="check" className="w-3 h-3 text-emerald-500 mb-0.5"/> : <LucideIcon name="x" className="w-3 h-3 text-red-500 mb-0.5"/>}
+                                                {steps[id] ? <LucideIcon name="check" className="w-4 h-4 text-emerald-500 mb-1"/> : <LucideIcon name="x" className="w-4 h-4 text-red-500 mb-1"/>}
                                                 {t}
                                             </button>
                                         )
@@ -373,13 +383,13 @@
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    <div className="mt-2 pb-2">
-                        <button onClick={handleSubmit} disabled={!location || !hcw || !moment || method===''} 
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-900/50 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 text-sm">
-                            <LucideIcon name="save" className="w-4 h-4"/> บันทึกข้อมูล
-                        </button>
+                        <div className="mt-2 pb-6">
+                            <button onClick={handleSubmit} disabled={!location || !hcw || !moment || method===''} 
+                                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-base shadow-lg shadow-emerald-900/50 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2">
+                                <LucideIcon name="save" className="w-5 h-5"/> บันทึกข้อมูล
+                            </button>
+                        </div>
                     </div>
 
                     {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
