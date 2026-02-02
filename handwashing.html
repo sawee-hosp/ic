@@ -38,10 +38,9 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Glowing Hand Animation */
         @keyframes glow {
-            0%, 100% { filter: drop-shadow(0 0 2px #4ade80); }
-            50% { filter: drop-shadow(0 0 10px #22c55e); }
+            0%, 100% { filter: drop-shadow(0 0 5px #4ade80); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px #22c55e); transform: scale(1.1); }
         }
         .animate-glow { animation: glow 2s infinite ease-in-out; }
     </style>
@@ -55,7 +54,7 @@
         const LIFF_ID = "2008690634-UG4TJcVB";
         const REGISTER_URL = "https://sawee-hosp.github.io/ic/index.html";
 
-        // Simple SVG Icons
+        // SVG Icons
         const HandIcon = () => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-emerald-400 animate-glow">
                 <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
@@ -65,18 +64,27 @@
             </svg>
         );
 
+        // Fixed LucideIcon Component (เหมือน bundle.html)
         const LucideIcon = ({ name, className }) => {
-            const ref = useRef(null);
+            const containerRef = useRef(null);
+
             useEffect(() => {
-                if (window.lucide && ref.current) {
+                if (window.lucide && window.lucide.createIcons && containerRef.current) {
+                    const kebabName = name.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase().replace(/^-/, '');
+                    
+                    containerRef.current.innerHTML = `<i data-lucide="${kebabName}" class="${className}"></i>`;
+                    
                     window.lucide.createIcons({
-                        root: ref.current.parentNode,
+                        root: containerRef.current,
                         nameAttr: 'data-lucide',
-                        attrs: { class: className }
+                        attrs: {
+                            class: className
+                        }
                     });
                 }
-            }, [name]);
-            return <i data-lucide={name} ref={ref} className={className}></i>;
+            }, [name, className]);
+
+            return <span ref={containerRef} className="inline-flex items-center justify-center"></span>;
         };
 
         const SuccessModal = ({ onClose }) => (
@@ -90,8 +98,8 @@
                             <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">บันทึกล้างมือสำเร็จ!</h2>
-                    <p className="text-slate-400 text-sm">แตะที่หน้าจอเพื่อเริ่มใหม่</p>
+                    <h2 className="text-3xl font-bold text-white mb-2">บันทึกสำเร็จ!</h2>
+                    <p className="text-slate-400 text-lg">แตะที่หน้าจอเพื่อเริ่มใหม่</p>
                 </div>
             </div>
         );
@@ -103,7 +111,7 @@
             const [showSuccess, setShowSuccess] = useState(false);
             const [errorMsg, setErrorMsg] = useState('');
 
-            // Form State
+            // Form
             const [location, setLocation] = useState('');
             const [hcw, setHcw] = useState('');
             const [moment, setMoment] = useState('');
@@ -112,7 +120,6 @@
 
             useEffect(() => {
                 const init = async () => {
-                    // Load cached data
                     const cachedMeta = localStorage.getItem('hh_meta');
                     const lastLoc = localStorage.getItem('hh_last_loc');
                     
@@ -123,7 +130,6 @@
                         try {
                             await window.liff.init({ liffId: LIFF_ID });
                             
-                            // Force Login
                             if (!window.liff.isLoggedIn()) {
                                 window.liff.login({ redirectUri: window.location.href });
                                 return;
@@ -141,15 +147,20 @@
                                     setUser(userData);
                                     localStorage.setItem('hh_user_' + profile.userId, JSON.stringify(userData));
                                 } else {
-                                    // Not found in Users sheet -> Redirect to Register
+                                    // Not Found -> Redirect to Register
+                                    alert("ไม่พบข้อมูลผู้ใช้งาน กรุณาลงทะเบียนก่อน");
                                     window.location.href = REGISTER_URL;
+                                    return;
                                 }
                             }).catch(e => {
                                 console.error("Fetch User Error:", e);
-                                setErrorMsg("เชื่อมต่อ Server ไม่ได้ กรุณาลองใหม่");
+                                // Offline fallback
+                                const cached = localStorage.getItem('hh_user_' + profile.userId);
+                                if(cached) setUser(JSON.parse(cached));
+                                else setErrorMsg("ไม่สามารถเชื่อมต่อ Server ได้");
                             });
 
-                            // Fetch Meta Data (Background)
+                            // Fetch Meta Data
                             fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getMetaData' }) })
                                 .then(r => r.json())
                                 .then(data => {
@@ -158,15 +169,20 @@
                                         localStorage.setItem('hh_meta', JSON.stringify(data));
                                     }
                                     setLoading(false);
-                                }).catch(() => setLoading(false));
+                                }).catch(e => {
+                                    console.error("Meta Fetch Error:", e);
+                                    setLoading(false);
+                                });
 
                         } catch (e) { 
-                            console.error("LIFF Init Error:", e);
-                            setErrorMsg("LIFF Error: " + e.message);
+                            console.error("LIFF Error:", e);
+                            setErrorMsg("LIFF Init Failed: " + e.message);
                             setLoading(false); 
                         }
                     } else {
-                        setLoading(false); // Fallback
+                         // Dev Mode (No LIFF)
+                         setLoading(false);
+                         console.warn("LIFF not found, running in Dev Mode");
                     }
                 };
                 init();
@@ -174,6 +190,13 @@
 
             const toggleStep = (num) => {
                 setSteps(prev => ({ ...prev, [num]: !prev[num] }));
+            };
+            
+            const handleHardRefresh = () => {
+                if(confirm("ต้องการโหลดข้อมูลใหม่ทั้งหมดใช่หรือไม่?")) {
+                    localStorage.removeItem('hh_meta');
+                    window.location.reload();
+                }
             };
 
             const handleSubmit = async () => {
@@ -193,27 +216,25 @@
                 setShowSuccess(true);
                 setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
 
-                // Reset Form immediately
                 setMoment('');
                 setMethod('');
                 setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
 
-                // Send to Server
-                await fetch(GAS_URL, {
+                fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'saveRecord', payload })
                 }).catch(e => console.error("Save Error", e));
             };
 
             if (loading && meta.locations.length === 0) return (
-                <div className="flex h-screen items-center justify-center text-slate-400 bg-[#0f172a] flex-col">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mb-2"></div>
-                    {errorMsg || "Loading..."}
+                <div className="flex h-screen items-center justify-center text-slate-400 bg-[#0f172a] flex-col gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+                    <div>{errorMsg || "Loading..."}</div>
                 </div>
             );
 
             return (
-                <div className="max-w-md mx-auto min-h-screen pb-4 p-2 flex flex-col text-sm">
+                <div className="max-w-md mx-auto min-h-screen pb-20 p-2 flex flex-col text-sm">
                     {/* Header */}
                     <div className="glass-panel px-3 py-2 rounded-xl mb-1 flex items-center justify-between border-l-4 border-l-emerald-500">
                         <div className="flex items-center gap-2">
@@ -224,12 +245,13 @@
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-right">
+                             <button onClick={handleHardRefresh} className="p-1.5 rounded-full bg-slate-700/50 text-slate-300 hover:text-white"><LucideIcon name="refresh-cw" className="w-3.5 h-3.5"/></button>
                              <div>
-                                <div className="text-xs font-bold text-white truncate max-w-[80px]">{user?.name || 'Loading...'}</div>
-                                <div className="text-[9px] text-slate-400">{user?.dept || ''}</div>
+                                <div className="text-xs font-bold text-white truncate max-w-[80px]">{user?.name || 'Guest'}</div>
+                                <div className="text-[9px] text-slate-400 truncate max-w-[80px]">{user?.dept || ''}</div>
                             </div>
-                            <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
-                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-5 h-5"/></div>}
+                            <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden border-2 border-slate-600 shadow-sm flex-shrink-0">
+                                {user?.picture ? <img src={user.picture} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><LucideIcon name="user" className="w-4 h-4"/></div>}
                             </div>
                         </div>
                     </div>
@@ -246,37 +268,39 @@
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-                        {/* 1. Location (Scrollable 2 Rows, Button auto width) */}
+                        {/* 1. Location */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold uppercase">1. สถานที่ (Location)</div>
+                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">1. สถานที่</div>
                             <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
                                 {meta.locations.map(l => (
-                                    <button key={l.code} onClick={() => setLocation(l.code)}
-                                        className={`item-btn px-3 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap relative ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                    <button key={l.code} 
+                                        onClick={() => setLocation(l.code)}
+                                        className={`item-btn whitespace-nowrap px-3 py-2.5 rounded-lg text-[11px] font-bold border relative min-w-[100px] text-left transition-all ${location === l.code ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg scale-105' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {l.label}
-                                        {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-indigo-500 rounded-full flex items-center justify-center text-[8px] text-white ring-2 ring-[#0f172a] shadow-sm">{l.count}</span>}
+                                        {l.count > 0 && <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-indigo-500 rounded-full flex items-center justify-center text-[9px] text-white ring-2 ring-[#0f172a] shadow-sm">{l.count}</span>}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 2. HCW (Scrollable 2 Rows, Button auto width) */}
+                        {/* 2. HCW */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold uppercase">2. ผู้ถูกสังเกต (HCW)</div>
+                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">2. ผู้ถูกสังเกต</div>
                             <div className="grid grid-rows-2 grid-flow-col gap-1.5 overflow-x-auto no-scrollbar pb-1 auto-cols-max">
                                 {meta.hcws.map(h => (
-                                    <button key={h.code} onClick={() => setHcw(h.code)}
-                                        className={`item-btn px-3 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap relative ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-md' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                    <button key={h.code} 
+                                        onClick={() => setHcw(h.code)}
+                                        className={`item-btn whitespace-nowrap px-3 py-2.5 rounded-lg text-[11px] font-bold border relative min-w-[100px] text-left transition-all ${hcw === h.code ? 'bg-pink-600 text-white border-pink-500 shadow-lg scale-105' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                         {h.label}
-                                        {h.count > 0 && <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-pink-500 rounded-full flex items-center justify-center text-[8px] text-white ring-2 ring-[#0f172a] shadow-sm">{h.count}</span>}
+                                        {h.count > 0 && <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-pink-500 rounded-full flex items-center justify-center text-[9px] text-white ring-2 ring-[#0f172a] shadow-sm">{h.count}</span>}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 3. Moments (1 Row, 5 Buttons) */}
+                        {/* 3. Moments */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold uppercase">3. ข้อบ่งชี้ (5 Moments)</div>
+                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">3. Moments</div>
                             <div className="grid grid-cols-5 gap-1.5">
                                 {[
                                     { id: 1, label: 'ก่อนสัมผัสผู้ป่วย' },
@@ -296,27 +320,27 @@
 
                         {/* 4. Method */}
                         <div>
-                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold uppercase">4. วิธีการ (Method)</div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setMethod(1)} className={`item-btn flex-1 py-2 rounded-xl border flex items-center justify-center gap-1.5 ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="droplets" className="w-4 h-4"/>
+                            <div className="text-[10px] text-slate-500 mb-0.5 ml-1 font-bold">4. วิธีการ</div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button onClick={() => setMethod(1)} className={`item-btn flex flex-col items-center justify-center py-3 rounded-xl border gap-1 transition-all ${method === 1 ? 'bg-emerald-600 border-emerald-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="droplets" className="w-6 h-6"/>
                                     <span className="text-xs font-bold">สบู่</span>
                                 </button>
-                                <button onClick={() => setMethod(2)} className={`item-btn flex-1 py-2 rounded-xl border flex items-center justify-center gap-1.5 ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="spray-can" className="w-4 h-4"/>
+                                <button onClick={() => setMethod(2)} className={`item-btn flex flex-col items-center justify-center py-3 rounded-xl border gap-1 transition-all ${method === 2 ? 'bg-cyan-600 border-cyan-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="spray-can" className="w-6 h-6"/>
                                     <span className="text-xs font-bold">Alcohol</span>
                                 </button>
-                                <button onClick={() => { setMethod(0); setSteps({}); }} className={`item-btn flex-1 py-2 rounded-xl border flex items-center justify-center gap-1.5 ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                                    <LucideIcon name="x-circle" className="w-4 h-4"/>
+                                <button onClick={() => { setMethod(0); setSteps({}); }} className={`item-btn flex flex-col items-center justify-center py-3 rounded-xl border gap-1 transition-all ${method === 0 ? 'bg-red-600 border-red-500 text-white shadow-md' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                                    <LucideIcon name="x-circle" className="w-6 h-6"/>
                                     <span className="text-xs font-bold">ไม่ล้าง</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* 5. Steps (Grid 4/3 cols) */}
+                        {/* 5. Steps */}
                         {method !== 0 && method !== '' && (
-                            <div className="animate-fade-in">
-                                <div className="text-[10px] text-slate-500 mb-0.5 ml-1 flex justify-between font-bold uppercase">
+                            <div className="animate-fade-in pb-4">
+                                <div className="text-[10px] text-slate-500 mb-0.5 ml-1 flex justify-between font-bold">
                                     <span>5. 7 Steps</span>
                                     <span className="opacity-70 font-normal">*คลิกข้อที่ไม่ได้ทำออก</span>
                                 </div>
@@ -331,9 +355,11 @@
                                         {id:7, t:'ถูรอบข้อมือ'}
                                     ].map((s, i) => (
                                         <button key={s.id} onClick={() => toggleStep(s.id)} 
-                                            className={`item-btn px-1 py-2 rounded-xl text-[10px] font-bold border flex flex-col items-center justify-center gap-1 min-h-[50px] text-center leading-tight transition-all ${steps[s.id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/20 border-red-500/50 text-red-400 opacity-80'} ${s.id === 7 ? 'col-start-2 col-span-2' : ''}`}>
-                                            {steps[s.id] ? <LucideIcon name="check" className="w-4 h-4 text-emerald-500 mb-0.5"/> : <LucideIcon name="x" className="w-4 h-4 text-red-500 mb-0.5"/>}
-                                            {s.t}
+                                            className={`item-btn px-1 py-3 rounded-xl text-[10px] font-bold border flex flex-col items-center justify-center gap-1 min-h-[70px] text-center leading-tight transition-all ${steps[s.id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${s.id === 7 ? 'col-start-2 col-span-2' : ''}`}>
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-0.5 ${steps[s.id] ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                                                {steps[s.id] ? <LucideIcon name="check" className="w-4 h-4 text-emerald-500"/> : <LucideIcon name="x" className="w-4 h-4 text-red-500"/>}
+                                            </div>
+                                            <span>{s.t}</span>
                                         </button>
                                     ))}
                                 </div>
