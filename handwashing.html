@@ -66,6 +66,13 @@
             100% { transform: translate(40vw, -45vh) scale(0.5); opacity: 0; }
         }
         .animate-float-score { animation: float-score 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .animate-pulse-ring { animation: pulse-ring 2s infinite; }
     </style>
 </head>
 <body>
@@ -123,12 +130,40 @@
             </div>
         );
 
+        // Voice Recording Modal
+        const VoiceModal = ({ isListening, transcript, onClose }) => (
+            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm pb-10 animate-fade-in">
+                <div className="bg-slate-900 border border-slate-700 w-[90%] max-w-md rounded-2xl p-6 flex flex-col items-center relative shadow-2xl">
+                    <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white">
+                        <LucideIcon name="x" className="w-5 h-5" />
+                    </button>
+                    
+                    <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4 relative">
+                         {isListening && <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse-ring"></div>}
+                         <LucideIcon name="mic" className={`w-8 h-8 ${isListening ? 'text-red-500' : 'text-slate-400'}`} />
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-white mb-2">{isListening ? 'กำลังฟัง...' : 'ประมวลผลเสร็จสิ้น'}</h3>
+                    <p className="text-sm text-slate-300 text-center min-h-[60px] w-full bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 italic">
+                        "{transcript || 'พูดประโยค เช่น "พยาบาล ที่ไอซียู ล้างด้วยแอลกอฮอล์ ก่อนสัมผัสผู้ป่วย" ...'}"
+                    </p>
+                    
+                    {isListening && <button onClick={onClose} className="mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white text-sm font-bold">หยุด</button>}
+                </div>
+            </div>
+        );
+
         const App = () => {
             const [meta, setMeta] = useState({ locations: [], hcws: [], totalCount: 0 });
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
             const [showSuccess, setShowSuccess] = useState(false);
             const [errorMsg, setErrorMsg] = useState('');
+
+            // Voice State
+            const [isListening, setIsListening] = useState(false);
+            const [transcript, setTranscript] = useState('');
+            const [showVoiceModal, setShowVoiceModal] = useState(false);
 
             // Form
             const [location, setLocation] = useState('');
@@ -226,6 +261,128 @@
                 }
             };
 
+            // Voice Recognition Logic
+            const startListening = () => {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    alert("เบราว์เซอร์ของคุณไม่รองรับการสั่งงานด้วยเสียง (แนะนำ Chrome หรือ Safari)");
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.lang = 'th-TH';
+                recognition.continuous = false;
+                recognition.interimResults = true;
+
+                setIsListening(true);
+                setShowVoiceModal(true);
+                setTranscript('');
+
+                recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript;
+                        } else {
+                            // Interim
+                            setTranscript(event.results[i][0].transcript);
+                        }
+                    }
+                    if (finalTranscript) {
+                        setTranscript(finalTranscript);
+                        processVoiceCommand(finalTranscript);
+                    }
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                    setTimeout(() => setShowVoiceModal(false), 2000);
+                };
+                
+                recognition.onerror = (event) => {
+                    console.error(event.error);
+                    setIsListening(false);
+                    setShowVoiceModal(false);
+                };
+
+                recognition.start();
+            };
+
+            const processVoiceCommand = (text) => {
+                // 1. Analyze Location
+                let bestLoc = '';
+                let maxLenLoc = 0;
+                meta.locations.forEach(l => {
+                    if (text.includes(l.label) && l.label.length > maxLenLoc) {
+                        bestLoc = l.code;
+                        maxLenLoc = l.label.length;
+                    }
+                });
+                if (bestLoc) setLocation(bestLoc);
+
+                // 2. Analyze HCW
+                let bestHcw = '';
+                let maxLenHcw = 0;
+                meta.hcws.forEach(h => {
+                    if (text.includes(h.label) && h.label.length > maxLenHcw) {
+                        bestHcw = h.code;
+                        maxLenHcw = h.label.length;
+                    }
+                });
+                if (bestHcw) setHcw(bestHcw);
+
+                // 3. Analyze Moment
+                // Match keywords to Moment ID
+                if (text.match(/ก่อนสัมผัสผู้ป่วย|ข้อ 1|moment 1|โมเมนต์ 1/i)) setMoment(1);
+                else if (text.match(/ก่อนทำหัตถการ|ข้อ 2|moment 2|โมเมนต์ 2/i)) setMoment(2);
+                else if (text.match(/หลังสัมผัสสารคัดหลั่ง|ข้อ 3|moment 3|โมเมนต์ 3/i)) setMoment(3);
+                else if (text.match(/หลังสัมผัสผู้ป่วย|ข้อ 4|moment 4|โมเมนต์ 4/i)) setMoment(4);
+                else if (text.match(/หลังสัมผัสสิ่งแวดล้อม|ข้อ 5|moment 5|โมเมนต์ 5/i)) setMoment(5);
+
+                // 4. Analyze Method
+                if (text.match(/ไม่ล้าง|ไม่ได้ล้าง/i)) {
+                    setMethod(0);
+                    setSteps({}); // Reset steps
+                } else if (text.match(/แอลกอฮอล์|เจล/i)) {
+                    setMethod(2);
+                } else if (text.match(/สบู่/i)) {
+                    setMethod(1);
+                } else {
+                    // Default logic: If method not mentioned but also not "no wash", assume Soap (1) or keep current?
+                    // User requirement: "ถ้าแยกไม่ออกให้ถือว่าล้างสบู่"
+                    if (method === '' || method === 0) setMethod(1);
+                }
+
+                // 5. Analyze Steps (Only if method is not 'No Wash')
+                if (!text.match(/ไม่ล้าง|ไม่ได้ล้าง/i)) {
+                    const newSteps = { ...steps }; // Default all true from initial state or keep current
+                    
+                    // Reset all to true first if it's a new command? 
+                    // Better to assume "Perfect" then subtract based on user speech.
+                    // User said: "ถ้าไม่บอกก็ถือว่าล้างครบ ถ้ามีบอก ก็ให้ดูว่าผิดขั้นตอนไหน"
+                    [1, 2, 3, 4, 5, 6, 7].forEach(s => newSteps[s] = true);
+
+                    // Logic: Search for negative context + step keywords
+                    // Step 1: ฝ่ามือ
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ฝ่ามือ/i)) newSteps[1] = false;
+                    // Step 2: หลังมือ
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังมือ/i)) newSteps[2] = false;
+                    // Step 3: ซอกนิ้ว
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ซอกนิ้ว/i)) newSteps[3] = false;
+                    // Step 4: หลังนิ้ว
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังนิ้ว/i)) newSteps[4] = false;
+                    // Step 5: หัวแม่มือ
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หัวแม่มือ/i)) newSteps[5] = false;
+                    // Step 6: ปลายนิ้ว
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ปลายนิ้ว/i)) newSteps[6] = false;
+                    // Step 7: รอบข้อมือ
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ข้อมือ/i)) newSteps[7] = false;
+
+                    setSteps(newSteps);
+                }
+            };
+
             const handleSubmit = async () => {
                 if (!location || !hcw || !moment || method==='') {
                     alert("กรุณาเลือกข้อมูลให้ครบ");
@@ -261,7 +418,7 @@
             );
 
             return (
-                <div className="min-h-screen flex flex-col">
+                <div className="min-h-screen flex flex-col relative">
                     {/* Header: Compact */}
                     <div className="glass-nav px-3 py-1.5 flex items-center justify-between sticky top-0 z-50 shadow-md">
                         <div className="flex items-center gap-2">
@@ -283,7 +440,7 @@
                         </div>
                     </div>
 
-                    <div className="max-w-md mx-auto w-full p-1.5 flex-1 flex flex-col gap-1">
+                    <div className="max-w-md mx-auto w-full p-1.5 flex-1 flex flex-col gap-1 pb-20">
                         {/* Progress: Compact */}
                         <div className="glass-panel px-3 py-1 rounded-lg flex justify-between items-center">
                             <span className="text-[10px] text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
@@ -397,6 +554,12 @@
                         </div>
                     </div>
 
+                    {/* Voice FAB */}
+                    <button onClick={startListening} className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center z-40 transition-transform active:scale-90 animate-bounce-in">
+                        <LucideIcon name="mic" className="w-8 h-8" />
+                    </button>
+
+                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} onClose={() => setShowVoiceModal(false)} />}
                     {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
                 </div>
             );
