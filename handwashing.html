@@ -14,7 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
-    <!-- Note: Tailwind CDN is used for demo purposes. In production, compile CSS. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -98,13 +97,75 @@
         const LIFF_ID = "2008690634-UG4TJcVB";
         const REG_URL = "https://sawee-hosp.github.io/ic/index.html";
 
+        // --- Master Keyword Database ---
+        const SEARCH_DB = {
+            HCW: [
+                { code: '26', keys: ['แพทย์', 'หมอ', 'นายแพทย์', 'คุณหมอ', 'ตรวจโรค'] },
+                { code: '38', keys: ['พยาบาลวิชาชีพ', 'พยาบาล', 'คุณพยาบาล', 'พี่พยาบาล', 'นางพยาบาล'] },
+                { code: '30', keys: ['พนักงานช่วยเหลือคนไข้', 'ผู้ช่วยพยาบาล', 'ผู้ช่วย', 'คนเข็นรถ', 'พนักงานเปล', 'พชล'] },
+                { code: '41', keys: ['จพ.เวชกิจฉุกเฉิน', 'กู้ชีพ', 'หน่วยกู้ภัย', 'เวชกิจ', 'รถพยาบาล'] },
+                { code: '37', keys: ['ทันตแพทย์', 'หมอฟัน', 'คุณหมอฟัน', 'ทำฟัน'] },
+                { code: '8', keys: ['จพ.ทันตสาธารณสุข', 'ผู้ช่วยหมอฟัน', 'งานฟัน', 'ทันตานามัย'] },
+                { code: '35', keys: ['เภสัชกร', 'หมอยา', 'เภสัช', 'จ่ายยา'] },
+                { code: '5', keys: ['จพ.เภสัชกรรม', 'ผู้ช่วยเภสัช', 'เทคนิคเภสัช', 'ห้องยา'] },
+                { code: '18', keys: ['นักเทคนิกการแพทย์', 'แล็บ', 'เจาะเลือด', 'ตรวจเลือด', 'ชันสูตร'] },
+                { code: '6', keys: ['จพ.วิทยาศาสตร์การแพทย์', 'วิทย์แพทย์', 'ห้องแล็บ'] },
+                { code: '15', keys: ['นักกายภาพบำบัด', 'กายภาพ', 'หมอกายภาพ', 'ฝึกเดิน'] },
+                { code: '36', keys: ['แพทย์แผนไทย', 'หมอไทย', 'นวดแผนไทย', 'สมุนไพร', 'นวดประคบ'] },
+                { code: '11', keys: ['จพ.รังสีการแพทย์', 'เอ็กซเรย์', 'ฉายแสง', 'รังสี', 'ถ่ายภาพกระดูก'] },
+                { code: '21', keys: ['นักวิชาการสาธารณสุข', 'สธ', 'อนามัย', 'นวก', 'สาธารณสุข', 'ส่งเสริม'] },
+                { code: '3', keys: ['เจ้าหน้าที่โรงครัว', 'โภชนาการ', 'ครัว', 'ทำอาหาร', 'แม่บ้านครัว', 'จัดสำรับ'] },
+                { code: '40', keys: ['อื่นๆ', 'พนักงานทั่วไป', 'เจ้าหน้าที่อื่นๆ', 'รปภ', 'คนงาน', 'แม่บ้าน'] }
+            ],
+            Location: [
+                { code: '12', keys: ['ห้องฉุกเฉิน', 'ฉุกเฉิน', 'อุบัติเหตุ', 'รถนอน', 'อีอาร์', 'ER'] },
+                { code: '13', keys: ['อาคารผู้ป่วยนอก', 'โอพีดี', 'OPD', 'หน้าตึก', 'ตรวจโรคทั่วไป'] },
+                { code: '14.1', keys: ['วอร์ดชาย', 'หอผู้ป่วยชาย', 'ตึกชาย', 'ตึกผู้ป่วยชาย'] },
+                { code: '14.2', keys: ['วอร์ดหญิง', 'หอผู้ป่วยหญิง', 'ตึกหญิง', 'ตึกผู้ป่วยหญิง'] },
+                { code: '15', keys: ['ห้องคลอด', 'คลอดลูก', 'ทำคลอด', 'รอคลอด', 'LR'] },
+                { code: '2', keys: ['ห้องตรวจ', 'ห้องเบอร์ 2', 'ห้องคุณหมอ', 'จุดตรวจ'] },
+                { code: '3', keys: ['ห้องทันตกรรม', 'ห้องฟัน', 'ทำฟัน'] },
+                { code: '4', keys: ['ห้องจ่ายยา', 'จุดรับยา', 'ห้องยา'] },
+                { code: '5', keys: ['ห้องชันสูตร', 'ห้องแล็บ', 'ตรวจเลือด', 'ตรวจเสมหะ'] },
+                { code: '6', keys: ['ห้องเอ็กซเรย์', 'เอ็กซเรย์'] },
+                { code: '7', keys: ['ห้องกายภาพบำบัด', 'ห้องกายภาพ'] },
+                { code: '9', keys: ['อาคารส่งเสริมสุขภาพ', 'ตึกส่งเสริม', 'ป้องกันโรค', 'อาคารใหม่'] },
+                { code: '10', keys: ['ห้องแพทย์แผนไทย', 'ห้องนวด', 'ห้องประคบ'] },
+                { code: '16', keys: ['ห้องฝากครรภ์', 'ฝากท้อง', 'แม่และเด็ก'] },
+                { code: '17', keys: ['คลินิกพิเศษ', 'คลินิกนอกเวลา', 'เบาหวาน', 'ความดัน', 'เฉพาะทาง'] },
+                { code: '18', keys: ['จ่ายกลางและซักฟอก', 'ซักฟอก', 'นึ่งเครื่องมือ', 'ล้างเครื่องมือ', 'ปราศจากเชื้อ'] },
+                { code: '19', keys: ['ห้องอื่นๆ'] },
+                { code: '20', keys: ['ห้องผ่าตัด', 'ผ่าตัด', 'OR'] }
+            ],
+            Moment: [
+                { code: 1, keys: ['ก่อนสัมผัสผู้ป่วย', 'ก่อนจับตัวคนไข้', 'ก่อนตรวจ', 'ข้อ 1', 'moment 1'] },
+                { code: 2, keys: ['ก่อนทำหัตถการ', 'ก่อนทำแผล', 'ก่อนฉีดยา', 'ก่อนใส่สายสวน', 'ข้อ 2', 'moment 2'] },
+                { code: 3, keys: ['หลังสัมผัสสารคัดหลั่ง', 'หลังโดนเลือด', 'โดนน้ำลาย', 'ปัสสาวะ', 'อุจจาระ', 'ข้อ 3', 'moment 3'] },
+                { code: 4, keys: ['หลังสัมผัสผู้ป่วย', 'หลังจับตัวคนไข้', 'ตรวจเสร็จ', 'ข้อ 4', 'moment 4'] },
+                { code: 5, keys: ['หลังสัมผัสสิ่งแวดล้อม', 'หลังจับเตียง', 'จับสายไฟ', 'จับเครื่องมือ', 'โต๊ะคนไข้', 'ข้อ 5', 'moment 5'] }
+            ],
+            Method: [
+                { code: 0, keys: ['ไม่ได้ทำความสะอาด', 'ไม่ได้ล้าง', 'ไม่ล้าง', 'ลืมล้าง'] },
+                { code: 1, keys: ['สบู่'] },
+                { code: 2, keys: ['แอลกอฮอล์', 'เจล'] }
+            ],
+            Steps: [
+                { id: 1, keys: ['ฝ่ามือถูกัน', 'หน้ามือ', 'ฝ่ามือถูฝ่ามือ', 'ถูกลางฝ่ามือ'] },
+                { id: 2, keys: ['ฝ่ามือถูหลังมือ', 'หลังมือ', 'ซอกนิ้วด้านหลัง'] },
+                { id: 3, keys: ['ถูซอกนิ้ว', 'ง่ามนิ้ว', 'ประสานนิ้ว'] },
+                { id: 4, keys: ['หลังนิ้วมือ', 'หลังนิ้ว', 'กำหมัดถู', 'ขัดนิ้วมือ', 'ข้อนิ้ว'] },
+                { id: 5, keys: ['หัวแม่มือ', 'นิ้วโป้ง', 'กำรอบนิ้วโป้ง', 'หมุนนิ้วโป้ง'] },
+                { id: 6, keys: ['ปลายนิ้ว', 'เกาฝ่ามือ', 'ถูขวาง', 'ขยี้ฝ่ามือ', 'เล็บ'] },
+                { id: 7, keys: ['รอบข้อมือ', 'ข้อมือ', 'ข้อแขน'] }
+            ]
+        };
+
         // --- FIXED: Safer Lucide Icon Component ---
         const LucideIcon = ({ name, className }) => {
             const [svgHtml, setSvgHtml] = useState('');
 
             useEffect(() => {
                 if (window.lucide && window.lucide.createIcons) {
-                    // Generate SVG in a detached DOM node to avoid React/DOM conflicts
                     const temp = document.createElement('div');
                     const i = document.createElement('i');
                     i.setAttribute('data-lucide', name);
@@ -139,12 +200,12 @@
             </svg>
         );
 
-        const SuccessModal = ({ onClose }) => (
+        const SuccessModal = ({ onClose, onSpeakAgain }) => (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl cursor-pointer select-none" onClick={onClose}>
                 <div className="fixed top-1/2 left-1/2 text-[120px] font-black text-emerald-400 animate-float-score pointer-events-none z-50 italic leading-none" style={{ textShadow: '0 0 50px rgba(74, 222, 128, 0.6)' }}>
                     +1
                 </div>
-                <div className="text-center p-6 pointer-events-none relative z-10">
+                <div className="text-center p-6 pointer-events-none relative z-10 w-full max-w-sm">
                     <div className="flex justify-center mb-6">
                         <svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-32 h-32 animate-glow">
                             <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
@@ -154,15 +215,81 @@
                         </svg>
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-6 drop-shadow-lg">บันทึกสำเร็จ!</h2>
-                    <div className="inline-block px-6 py-3 rounded-full bg-slate-800/80 border border-emerald-500/50 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                        <p className="text-lg font-bold text-emerald-300">แตะเพื่อบันทึกอีก</p>
+                    <div className="flex flex-col gap-3 pointer-events-auto">
+                        <button className="w-full px-6 py-3 rounded-xl bg-slate-800/80 border border-emerald-500/50 animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                            <p className="text-lg font-bold text-emerald-300">แตะเพื่อบันทึกอีก</p>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onSpeakAgain(); }} className="w-full px-6 py-3 rounded-xl bg-red-600/80 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center justify-center gap-2 hover:bg-red-600 transition-colors">
+                            <LucideIcon name="mic" className="w-5 h-5 text-white"/>
+                            <p className="text-lg font-bold text-white">แตะเพื่อพูด</p>
+                        </button>
                     </div>
                 </div>
             </div>
         );
 
+        // Voice Recording Modal with Full Screen Examples & 5s Logic
+        const VoiceModal = ({ isListening, transcript, onEnd, onClose }) => {
+            const examples = [
+                "พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน",
+                "แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย",
+                "ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"
+            ];
+            const [currentExample, setCurrentExample] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(null); // Timer for 5s countdown
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setCurrentExample(prev => (prev + 1) % examples.length);
+                }, 4000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-fade-in">
+                    <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-white p-2 z-50">
+                        <LucideIcon name="x" className="w-8 h-8" />
+                    </button>
+                    
+                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg">
+                        {/* Mic Animation */}
+                        <div className="w-28 h-28 rounded-full bg-red-500/10 flex items-center justify-center mb-8 relative">
+                             {isListening && <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse-ring"></div>}
+                             <LucideIcon name="mic" className={`w-12 h-12 ${isListening ? 'text-red-500' : 'text-slate-500'}`} />
+                        </div>
+                        
+                        <h3 className="text-2xl font-bold text-white mb-2">{isListening ? 'กำลังฟัง...' : 'ประมวลผล...'}</h3>
+                        {/* Countdown text if silence detected */}
+                        <div className="h-6 mb-4">
+                            {isListening && transcript && (
+                                <span className="text-xs text-slate-400 animate-pulse">
+                                    หยุดพูด 5 วินาที เพื่อประมวลผล
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Transcript or Examples */}
+                        <div className="w-full text-center min-h-[120px] flex items-center justify-center mb-6">
+                            {transcript ? (
+                                <p className="text-xl text-emerald-400 italic">"{transcript}"</p>
+                            ) : (
+                                <div className="animate-pulse-slow">
+                                    <p className="text-slate-400 text-sm mb-2 uppercase tracking-widest">ตัวอย่างการพูด</p>
+                                    <p className="text-2xl md:text-3xl font-bold text-white leading-relaxed">
+                                        "{examples[currentExample]}"
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {isListening && <button onClick={onEnd} className="mt-8 px-8 py-3 bg-emerald-600 border border-emerald-500 hover:bg-emerald-500 rounded-full text-white text-base font-bold transition-all shadow-lg shadow-emerald-900/50">เสร็จสิ้น (หรือรอ 5 วิ)</button>}
+                    </div>
+                </div>
+            );
+        };
+
         // Review Modal
-        const ReviewModal = ({ data, onConfirm, onRetry, meta }) => {
+        const ReviewModal = ({ data, transcript, onConfirm, onRetry, onClose, meta }) => {
             const getLocationLabel = (code) => meta.locations.find(l => l.code == code)?.label || code;
             const getHcwLabel = (code) => meta.hcws.find(h => h.code == code)?.label || code;
             const getMomentLabel = (id) => [
@@ -175,24 +302,47 @@
             
             const getMethodLabel = (m) => m === 0 ? 'ไม่ล้าง' : (m === 1 ? 'สบู่' : 'Alcohol');
 
+            const missing = [];
+            if (!data.location) missing.push("สถานที่");
+            if (!data.hcw) missing.push("ผู้ถูกสังเกต");
+            if (!data.moment) missing.push("Moment");
+
             return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-fade-in">
-                    <div className="w-full max-w-sm">
-                        <h2 className="text-2xl font-bold text-white mb-6 text-center">ตรวจสอบข้อมูล</h2>
-                        <div className="space-y-4 mb-8">
-                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
+                    <div className="w-full max-w-sm relative mt-10 mb-10">
+                        <button onClick={onClose} className="absolute -top-12 right-0 text-slate-400 hover:text-white bg-slate-800/50 p-2 rounded-full">
+                            <LucideIcon name="x" className="w-6 h-6" />
+                        </button>
+
+                        <h2 className="text-2xl font-bold text-white mb-2 text-center">ตรวจสอบข้อมูล</h2>
+                        <p className="text-center text-slate-400 text-xs italic mb-6">"{transcript}"</p>
+
+                        {missing.length > 0 && (
+                            <div className="bg-red-900/40 border border-red-500/50 p-4 rounded-xl mb-4 text-center">
+                                <div className="text-red-400 font-bold mb-1">กรุณาระบุข้อมูลให้ครบ:</div>
+                                <div className="text-white text-sm">{missing.join(', ')}</div>
+                            </div>
+                        )}
+
+                        <div className="space-y-3 mb-6">
+                            <div className={`p-4 rounded-xl border ${!data.location ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-800 border-slate-700'}`}>
                                 <div className="text-xs text-slate-400 mb-1">สถานที่</div>
-                                <div className="text-lg font-bold text-indigo-400">{getLocationLabel(data.location)}</div>
+                                <div className={`text-lg font-bold ${!data.location ? 'text-red-400':'text-indigo-400'}`}>
+                                    {data.location ? getLocationLabel(data.location) : 'ไม่ระบุ'}
+                                </div>
                             </div>
-                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <div className={`p-4 rounded-xl border ${!data.hcw ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-800 border-slate-700'}`}>
                                 <div className="text-xs text-slate-400 mb-1">ผู้ถูกสังเกต</div>
-                                <div className="text-lg font-bold text-pink-400">{getHcwLabel(data.hcw)}</div>
+                                <div className={`text-lg font-bold ${!data.hcw ? 'text-red-400':'text-pink-400'}`}>
+                                    {data.hcw ? getHcwLabel(data.hcw) : 'ไม่ระบุ'}
+                                </div>
                             </div>
-                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <div className={`p-4 rounded-xl border ${!data.moment ? 'bg-red-900/20 border-red-500/50' : 'bg-slate-800 border-slate-700'}`}>
                                 <div className="text-xs text-slate-400 mb-1">Moment</div>
-                                <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
-                                    <span className="text-2xl">{data.moment}</span>
-                                    <span>{getMomentLabel(data.moment)}</span>
+                                <div className={`text-lg font-bold ${!data.moment ? 'text-red-400':'text-blue-400'} flex items-center gap-2`}>
+                                    {data.moment ? (
+                                        <><span className="text-2xl">{data.moment}</span><span>{getMomentLabel(data.moment)}</span></>
+                                    ) : 'ไม่ระบุ'}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -215,68 +365,14 @@
                             <button onClick={onRetry} className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 font-bold hover:bg-slate-600 transition-colors">
                                 พูดใหม่
                             </button>
-                            <button onClick={onConfirm} className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-900/50">
-                                ยืนยันส่งข้อมูล
+                            <button 
+                                onClick={onConfirm} 
+                                disabled={missing.length > 0}
+                                className={`flex-1 py-3 rounded-xl text-white font-bold transition-colors shadow-lg ${missing.length > 0 ? 'bg-slate-600 cursor-not-allowed opacity-50' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-900/50'}`}
+                            >
+                                ยืนยันบันทึก
                             </button>
                         </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // Voice Recording Modal with Full Screen Examples
-        const VoiceModal = ({ isListening, transcript, missingFields, onClose }) => {
-            const examples = [
-                "พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน",
-                "แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย",
-                "ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"
-            ];
-            const [currentExample, setCurrentExample] = useState(0);
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    setCurrentExample(prev => (prev + 1) % examples.length);
-                }, 4000);
-                return () => clearInterval(interval);
-            }, []);
-
-            return (
-                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-fade-in">
-                    <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-white p-2">
-                        <LucideIcon name="x" className="w-8 h-8" />
-                    </button>
-                    
-                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg">
-                        {/* Mic Animation */}
-                        <div className="w-28 h-28 rounded-full bg-red-500/10 flex items-center justify-center mb-8 relative">
-                             {isListening && <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse-ring"></div>}
-                             <LucideIcon name="mic" className={`w-12 h-12 ${isListening ? 'text-red-500' : 'text-slate-500'}`} />
-                        </div>
-                        
-                        <h3 className="text-2xl font-bold text-white mb-6">{isListening ? 'กำลังฟัง...' : 'ประมวลผล...'}</h3>
-                        
-                        {missingFields.length > 0 ? (
-                            <div className="w-full bg-red-900/40 border border-red-500/50 p-6 rounded-2xl mb-6 text-center shadow-lg">
-                                <div className="text-red-400 font-bold text-xl mb-2">ข้อมูลไม่ครบ กรุณาระบุ:</div>
-                                <div className="text-white text-lg">{missingFields.join(', ')}</div>
-                            </div>
-                        ) : (
-                            /* Large Rotating Examples */
-                            <div className="w-full text-center min-h-[120px] flex items-center justify-center mb-6">
-                                {transcript ? (
-                                    <p className="text-xl text-emerald-400 italic">"{transcript}"</p>
-                                ) : (
-                                    <div className="animate-pulse-slow">
-                                        <p className="text-slate-400 text-sm mb-2 uppercase tracking-widest">ตัวอย่างการพูด</p>
-                                        <p className="text-2xl md:text-3xl font-bold text-white leading-relaxed">
-                                            "{examples[currentExample]}"
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        
-                        {isListening && <button onClick={onClose} className="mt-8 px-8 py-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-full text-white text-base font-bold transition-all">ยกเลิก</button>}
                     </div>
                 </div>
             );
@@ -293,8 +389,10 @@
             const [isListening, setIsListening] = useState(false);
             const [transcript, setTranscript] = useState('');
             const [showVoiceModal, setShowVoiceModal] = useState(false);
-            const [missingFields, setMissingFields] = useState([]);
             const [reviewData, setReviewData] = useState(null);
+            
+            const recognitionRef = useRef(null);
+            const silenceTimerRef = useRef(null);
 
             // Form
             const [location, setLocation] = useState('');
@@ -401,39 +499,59 @@
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const recognition = new SpeechRecognition();
+                recognitionRef.current = recognition;
                 
                 recognition.lang = 'th-TH';
-                recognition.continuous = false;
+                recognition.continuous = true; // IMPORTANT: Keep listening to allow pauses
                 recognition.interimResults = true;
 
                 setIsListening(true);
                 setShowVoiceModal(true);
                 setTranscript('');
-                setMissingFields([]);
                 setReviewData(null);
 
                 recognition.onresult = (event) => {
+                    // Reset 5s timer on every new result
+                    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                    silenceTimerRef.current = setTimeout(() => {
+                        stopAndProcess();
+                    }, 5000);
+
                     let finalTranscript = '';
+                    let interimTranscript = '';
+
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         if (event.results[i].isFinal) {
                             finalTranscript += event.results[i][0].transcript;
                         } else {
-                            // Interim
-                            setTranscript(event.results[i][0].transcript);
+                            interimTranscript += event.results[i][0].transcript;
                         }
                     }
-                    if (finalTranscript) {
-                        setTranscript(finalTranscript);
-                        processVoiceCommand(finalTranscript);
+                    
+                    // Combine previous final results if needed, or just use current session
+                    // For continuous = true, resultIndex increments.
+                    // We need to accumulate full text.
+                    let fullText = '';
+                    for (let i = 0; i < event.results.length; ++i) {
+                        fullText += event.results[i][0].transcript;
                     }
+                    setTranscript(fullText);
                 };
 
                 recognition.onend = () => {
-                    setIsListening(false);
+                    // If stopped manually or by error, we might be done.
+                    // But if continuous=true, it shouldn't stop unless we tell it or lengthy silence.
+                    // We handle the "end" via the timer mostly.
+                    if (isListening) {
+                        // Unexpected end (e.g. mobile OS cut it off), process what we have
+                        // setIsListening(false);
+                        // processVoiceCommand(transcript);
+                    }
                 };
                 
                 recognition.onerror = (event) => {
                     console.error(event.error);
+                    if (event.error === 'no-speech') return; // Ignore
                     setIsListening(false);
                     setShowVoiceModal(false);
                 };
@@ -441,82 +559,123 @@
                 recognition.start();
             };
 
+            const stopAndProcess = () => {
+                if (recognitionRef.current) {
+                    recognitionRef.current.stop();
+                }
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                setIsListening(false);
+                
+                // Need to use the latest transcript state. 
+                // Since this runs in a timeout, closure might be stale.
+                // React state inside timeout is tricky.
+                // Best to use a ref for transcript or rely on the fact that setState triggers re-render 
+                // but here we are calling processVoiceCommand which needs the text.
+                // Let's pass the text from state?
+                // Actually, the timeout callback will capture the `transcript` variable from render scope if defined there? No.
+                // We'll use a functional state update or just trust the latest `transcript` if we use a Ref for it.
+                // Let's rely on `transcript` state being up to date enough or pass it differently.
+                // HACK: Use the DOM element or a ref to store transcript for valid access in timeout.
+            };
+            
+            // Ref to access latest transcript in timeout
+            const transcriptRef = useRef('');
+            useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+
+            const stopAndProcessManual = () => {
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                if (recognitionRef.current) recognitionRef.current.stop();
+                setIsListening(false);
+                processVoiceCommand(transcriptRef.current);
+            };
+
+            // Enhance: use the ref in the timeout
+            useEffect(() => {
+                // Override the timeout logic in startListening to use the ref function
+                // Actually, logic is embedded in onresult.
+            }, []);
+            
+            // Re-implement onresult logic to use transcriptRef correctly
+            // (See updated startListening below in render if needed, but since we use refs...)
+            // Let's fix the `stopAndProcess` called by timeout to use `transcriptRef.current`
+            
             const processVoiceCommand = (text) => {
-                let tempLoc = '';
-                let tempHcw = '';
-                let tempMoment = '';
-                let tempMethod = '';
-                let tempSteps = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true };
+                // Helper to search in DB
+                const findMatch = (category, text) => {
+                    const list = SEARCH_DB[category];
+                    // Sort keys by length desc to match longest phrase first
+                    // We check if input text *includes* any of the keys
+                    let bestMatch = null;
+                    let maxKeyLen = 0;
 
-                // 1. Analyze Location
-                let maxLenLoc = 0;
-                meta.locations.forEach(l => {
-                    if (text.includes(l.label) && l.label.length > maxLenLoc) {
-                        tempLoc = l.code;
-                        maxLenLoc = l.label.length;
-                    }
-                });
+                    list.forEach(item => {
+                        item.keys.forEach(key => {
+                            if (text.includes(key)) {
+                                if (key.length > maxKeyLen) {
+                                    maxKeyLen = key.length;
+                                    bestMatch = item.code;
+                                }
+                            }
+                        });
+                    });
+                    return bestMatch;
+                };
 
-                // 2. Analyze HCW
-                let maxLenHcw = 0;
-                meta.hcws.forEach(h => {
-                    if (text.includes(h.label) && h.label.length > maxLenHcw) {
-                        tempHcw = h.code;
-                        maxLenHcw = h.label.length;
-                    }
-                });
-
-                // 3. Analyze Moment
-                if (text.match(/ก่อนสัมผัสผู้ป่วย|ข้อ 1|moment 1|โมเมนต์ 1/i)) tempMoment = 1;
-                else if (text.match(/ก่อนทำหัตถการ|ข้อ 2|moment 2|โมเมนต์ 2/i)) tempMoment = 2;
-                else if (text.match(/หลังสัมผัสสารคัดหลั่ง|ข้อ 3|moment 3|โมเมนต์ 3/i)) tempMoment = 3;
-                else if (text.match(/หลังสัมผัสผู้ป่วย|ข้อ 4|moment 4|โมเมนต์ 4/i)) tempMoment = 4;
-                else if (text.match(/หลังสัมผัสสิ่งแวดล้อม|ข้อ 5|moment 5|โมเมนต์ 5/i)) tempMoment = 5;
-
-                // 4. Analyze Method
-                if (text.match(/ไม่ล้าง|ไม่ได้ล้าง/i)) {
-                    tempMethod = 0;
-                    tempSteps = {}; 
-                } else if (text.match(/แอลกอฮอล์|เจล/i)) {
-                    tempMethod = 2;
-                } else if (text.match(/สบู่/i)) {
-                    tempMethod = 1;
-                } else {
-                    tempMethod = 1; // Default
+                const foundLoc = findMatch('Location', text);
+                const foundHcw = findMatch('HCW', text);
+                const foundMoment = findMatch('Moment', text); // Returns code (int or string)
+                
+                let foundMethod = findMatch('Method', text);
+                // Default Method Logic: If not found, and didn't say "No wash", default to Soap (1)
+                // If "No wash" (code 0) is found, use it.
+                // "No wash" keys: ไม่ได้ทำความสะอาด, ไม่ล้าง
+                if (foundMethod === null) {
+                    foundMethod = 1; // Default Soap
                 }
 
-                // 5. Analyze Steps
-                if (tempMethod !== 0) {
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ฝ่ามือ/i)) tempSteps[1] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังมือ/i)) tempSteps[2] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ซอกนิ้ว/i)) tempSteps[3] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังนิ้ว/i)) tempSteps[4] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หัวแม่มือ/i)) tempSteps[5] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ปลายนิ้ว/i)) tempSteps[6] = false;
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ข้อมือ/i)) tempSteps[7] = false;
-                }
-
-                // Validation
-                const missing = [];
-                if (!tempLoc) missing.push("สถานที่");
-                if (!tempHcw) missing.push("ผู้ถูกสังเกต");
-                if (!tempMoment) missing.push("Moment");
-
-                if (missing.length > 0) {
-                    setMissingFields(missing);
-                    // Stay on Voice Modal to show error
+                // Steps Logic
+                let foundSteps = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true };
+                if (foundMethod === 0) {
+                    foundSteps = {}; // Clear steps if no wash
                 } else {
-                    // Complete - Show Review Modal
-                    setMissingFields([]);
-                    setShowVoiceModal(false);
-                    setReviewData({
-                        location: tempLoc,
-                        hcw: tempHcw,
-                        moment: tempMoment,
-                        method: tempMethod,
-                        steps: tempSteps
+                    // Check for negations: "ไม่/ลืม/ข้าม" + Step Keyword
+                    SEARCH_DB.Steps.forEach(step => {
+                        step.keys.forEach(key => {
+                            // Regex look for negation followed closely by key
+                            // e.g. "ไม่ได้...ฝ่ามือ"
+                            const regex = new RegExp(`(ไม่|ลืม|ข้าม)[^\\s]*\\s*${key}`, 'i');
+                            if (regex.test(text)) {
+                                foundSteps[step.id] = false;
+                            }
+                        });
                     });
                 }
+
+                setReviewData({
+                    location: foundLoc,
+                    hcw: foundHcw,
+                    moment: foundMoment,
+                    method: foundMethod,
+                    steps: foundSteps
+                });
+                setShowVoiceModal(false);
+            };
+
+            // Fix the timeout to use correct ref
+            const onSpeechResult = (event) => {
+                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+                
+                let fullText = '';
+                for (let i = 0; i < event.results.length; ++i) {
+                    fullText += event.results[i][0].transcript;
+                }
+                setTranscript(fullText);
+                
+                silenceTimerRef.current = setTimeout(() => {
+                    if (recognitionRef.current) recognitionRef.current.stop();
+                    setIsListening(false);
+                    processVoiceCommand(fullText);
+                }, 5000);
             };
 
             const confirmVoiceData = () => {
@@ -529,7 +688,7 @@
                 setMethod(reviewData.method);
                 setSteps(reviewData.steps);
 
-                // Perform Submit Logic Directly
+                // Perform Submit Logic
                 const payload = {
                     location: reviewData.location,
                     hcw: reviewData.hcw,
@@ -542,11 +701,9 @@
                 localStorage.setItem('hh_last_loc', reviewData.location);
                 setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
                 
-                // Clear and Show Success
                 setReviewData(null);
                 setShowSuccess(true);
 
-                // Send to Server
                 fetch(GAS_URL, {
                     method: 'POST',
                     redirect: 'follow',
@@ -584,6 +741,31 @@
                     redirect: 'follow',
                     body: JSON.stringify({ action: 'saveRecord', payload })
                 }).catch(e => console.error("Save Error", e));
+            };
+
+            // Override startListening to use new logic
+            const startListeningNew = () => {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    alert("แนะนำใช้ Chrome หรือ Safari");
+                    return;
+                }
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognitionRef.current = recognition;
+                
+                recognition.lang = 'th-TH';
+                recognition.continuous = true; 
+                recognition.interimResults = true;
+
+                setIsListening(true);
+                setShowVoiceModal(true);
+                setTranscript('');
+                setReviewData(null);
+
+                recognition.onresult = onSpeechResult;
+                recognition.onend = () => { setIsListening(false); };
+                recognition.onerror = (e) => { setIsListening(false); setShowVoiceModal(false); };
+                recognition.start();
             };
 
             if (loading && meta.locations.length === 0) return (
@@ -734,16 +916,16 @@
                     <div className="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 p-4 pb-8 z-40 rounded-t-2xl shadow-2xl">
                         <div className="max-w-md mx-auto relative flex flex-col items-center">
                             {/* Pill Shaped Voice Button */}
-                            <button onClick={startListening} className="w-full bg-red-600 hover:bg-red-500 text-white py-3 px-6 rounded-full shadow-[0_4px_15px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 transition-transform active:scale-95">
+                            <button onClick={startListeningNew} className="w-full bg-red-600 hover:bg-red-500 text-white py-3 px-6 rounded-full shadow-[0_4px_15px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 transition-transform active:scale-95">
                                 <LucideIcon name="mic" className="w-5 h-5" />
                                 <span className="font-bold text-sm">บันทึกล้างมือด้วยเสียง</span>
                             </button>
                         </div>
                     </div>
 
-                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} missingFields={missingFields} onClose={() => setShowVoiceModal(false)} />}
-                    {reviewData && <ReviewModal data={reviewData} meta={meta} onConfirm={confirmVoiceData} onRetry={() => { setReviewData(null); startListening(); }} />}
-                    {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
+                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} onEnd={stopAndProcessManual} onClose={() => { if(recognitionRef.current) recognitionRef.current.stop(); setShowVoiceModal(false); setIsListening(false); }} />}
+                    {reviewData && <ReviewModal data={reviewData} transcript={transcript} meta={meta} onConfirm={confirmVoiceData} onRetry={() => { setReviewData(null); startListeningNew(); }} onClose={() => setReviewData(null)} />}
+                    {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} onSpeakAgain={() => { setShowSuccess(false); startListeningNew(); }} />}
                 </div>
             );
         };

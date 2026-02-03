@@ -115,7 +115,7 @@
       </div>
     </div>
     
-    <!-- Checklist & Summary Views (Same as before) -->
+    <!-- Checklist & Summary Views -->
     <div id="checklistDiv" style="display: none;"><h3 id="checklistHeader" class="no-print mb-3"></h3><div id="checklistFormContainer"></div></div>
     <div id="summaryDiv" style="display: none;"><div class="card"><div class="card-header"><h3>สรุปผลการประเมิน</h3></div><div class="card-body text-center"><h4 id="summaryDept"></h4><p id="summaryScore" class="fs-3"></p><p id="summaryPercentage" class="fs-1 fw-bold text-success"></p><div id="summaryCategoryScores" class="mt-4 text-start"></div><div class="no-print mt-4"><button class="btn btn-success me-2" onclick="printReport('summaryDiv')">พิมพ์รายงาน</button><button class="btn btn-primary" onclick="goBack()">กลับไปหน้าแรก</button></div></div></div></div>
 
@@ -193,6 +193,12 @@
     const LIFF_ID = '2008690634-hcI0haXq';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJxVa9n3OsRR6WoFLZmptc9K0SORf1tvUwYoa0Ec7cvdkt3HLNQUgDdvf-vOGzNM3W/exec';
     
+    // UI Elements Declarations
+    const loader = document.querySelector('.loader');
+    const mainContent = document.getElementById('mainContent');
+    const checklistView = document.getElementById('checklistDiv');
+    const summaryView = document.getElementById('summaryDiv');
+
     let currentSelection = {}, allDepartments = [], allRounds = [], currentUser = {};
     let lastSubmissionResults = [];
     let activeRiskData = [];
@@ -202,7 +208,7 @@
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action, ...payload }),
+          body: JSON.stringify({ action: action, ...payload }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         const data = await response.json();
@@ -330,20 +336,22 @@
           reader.readAsDataURL(file);
         });
         const base64 = await base64Promise;
-        const uploadRes = await callGAS('uploadImage', { fileData: { data: base64, name: file.name } });
-        imageId = uploadRes.id;
+        try {
+          const uploadRes = await callGAS('uploadImage', { fileData: { data: base64, name: file.name } });
+          imageId = uploadRes.id;
+        } catch (e) { console.error("Upload failed", e); }
       }
 
       const updates = {
         action_note: document.getElementById('editActionNote').value,
         action_type: document.getElementById('editActionType').value,
-        action_date: new Date(),
+        action_date: new Date().toISOString(),
         audit_result: document.getElementById('editAuditResult').value,
         current_status: document.getElementById('editCurrentStatus').value,
         auditor_id: currentUser.name
       };
       if (imageId) updates.img_evidence = imageId;
-      if (updates.current_status === 'ปิดความเสี่ยง') updates.closed_date = new Date();
+      if (updates.current_status === 'ปิดความเสี่ยง') updates.closed_date = new Date().toISOString();
 
       try {
         await callGAS('updateRiskAction', { riskId, updates });
@@ -352,12 +360,19 @@
       } catch (e) { onFailure(e); }
     }
 
-    // ฟังก์ชันเดิมที่ต้องคงไว้
-    function loadHistoryMatrix() {
+    function openManualRiskModal() {
+        alert("หน้าจอบันทึกความเสี่ยงด้วยตัวเองกำลังพัฒนา หรือกรุณาติดต่อผู้ดูแลระบบ");
+    }
+
+    async function loadHistoryMatrix() {
         if (!currentUser.name) return;
         loader.style.display = 'block';
-        google.script.run.withSuccessHandler(onHistoryMatrixSuccess).withFailureHandler(onFailure).getHistoryMatrixData();
+        try {
+          const data = await callGAS('getHistoryMatrixData');
+          onHistoryMatrixSuccess(data);
+        } catch (e) { onFailure(e); }
     }
+
     function onHistoryMatrixSuccess(data) {
       loader.style.display = 'none';
       const { departments, rounds, matrix } = data;
@@ -375,18 +390,28 @@
       });
       document.getElementById('historyTableContainer').innerHTML = html + '</tbody></table></div>';
     }
+
     function startNewRound(id, name, round) {
       document.getElementById('department').value = id;
       document.getElementById('roundPeriod').value = round;
       new bootstrap.Tab(document.getElementById('evaluate-tab')).show();
     }
+
     function viewRound(id, name, round) { startEvaluation(id, name, round, '', true); }
+
     function handleLogout() { if (liff.isLoggedIn()) { liff.logout(); window.location.reload(); } }
+
     function goBack() { showView('mainContent'); }
-    function showView(v) { ['mainContent','checklistDiv','summaryDiv'].forEach(id => document.getElementById(id).style.display = id === v ? 'block' : 'none'); }
+
+    function showView(v) { 
+        ['mainContent','checklistDiv','summaryDiv'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = id === v ? 'block' : 'none';
+        });
+    }
+
     function onFailure(e) { loader.style.display='none'; alert(e.message || e); }
     
-    // UI Event สำหรับการประเมิน (เหมือนเดิมทุกประการ)
     async function handleStartEvaluation() {
       const deptId = document.getElementById('department').value;
       const round = document.getElementById('roundPeriod').value;
@@ -439,6 +464,16 @@
         const res = await callGAS('saveRoundData', { ...currentSelection, results });
         onSaveSuccess(res);
       } catch (e) { onFailure(e); }
+    }
+
+    function onSaveSuccess(data) {
+      loader.style.display = 'none';
+      if(data.status === 'success'){
+        document.getElementById('summaryDept').textContent = `${currentSelection.departmentName} (รอบ ${currentSelection.roundPeriod})`;
+        document.getElementById('summaryScore').textContent = `คะแนน: ${data.compliant} / ${data.total}`;
+        document.getElementById('summaryPercentage').textContent = `${((data.compliant / data.total) * 100).toFixed(0)}%`;
+        showView('summaryDiv');
+      } else onFailure(data);
     }
   </script>
 </body>
