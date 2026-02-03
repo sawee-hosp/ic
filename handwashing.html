@@ -34,6 +34,7 @@
             font-size: 14px;
             margin: 0;
             padding: 0;
+            padding-bottom: 180px; /* Space for footer voice controls */
         }
         button, input, select, textarea { font-family: 'Google Sans', sans-serif; }
 
@@ -94,17 +95,19 @@
             </svg>
         );
 
+        // Fixed LucideIcon to prevent null reference error
         const LucideIcon = ({ name, className }) => {
             const ref = useRef(null);
             useEffect(() => {
+                // Ensure lucide exists and ref is attached to a DOM node
                 if (window.lucide && ref.current) {
                     window.lucide.createIcons({
-                        root: ref.current.parentNode,
+                        root: ref.current.parentNode, 
                         nameAttr: 'data-lucide',
                         attrs: { class: className }
                     });
                 }
-            }, [name]);
+            }, [name, className]);
             return <i data-lucide={name} ref={ref} className={className}></i>;
         };
 
@@ -130,8 +133,71 @@
             </div>
         );
 
-        // Voice Recording Modal
-        const VoiceModal = ({ isListening, transcript, onClose }) => (
+        // Review Modal (New)
+        const ReviewModal = ({ data, onConfirm, onRetry, meta }) => {
+            const getLocationLabel = (code) => meta.locations.find(l => l.code == code)?.label || code;
+            const getHcwLabel = (code) => meta.hcws.find(h => h.code == code)?.label || code;
+            const getMomentLabel = (id) => [
+                'ก่อนสัมผัสผู้ป่วย', 
+                'ก่อนทำหัตถการ', 
+                'หลังสัมผัสสารคัดหลั่ง', 
+                'หลังสัมผัสผู้ป่วย', 
+                'หลังสัมผัสสิ่งแวดล้อม'
+            ][id-1] || id;
+            
+            const getMethodLabel = (m) => m === 0 ? 'ไม่ล้าง' : (m === 1 ? 'สบู่' : 'Alcohol');
+
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4 animate-fade-in">
+                    <div className="w-full max-w-sm">
+                        <h2 className="text-2xl font-bold text-white mb-6 text-center">ตรวจสอบข้อมูล</h2>
+                        <div className="space-y-4 mb-8">
+                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                <div className="text-xs text-slate-400 mb-1">สถานที่</div>
+                                <div className="text-lg font-bold text-indigo-400">{getLocationLabel(data.location)}</div>
+                            </div>
+                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                <div className="text-xs text-slate-400 mb-1">ผู้ถูกสังเกต</div>
+                                <div className="text-lg font-bold text-pink-400">{getHcwLabel(data.hcw)}</div>
+                            </div>
+                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                <div className="text-xs text-slate-400 mb-1">Moment</div>
+                                <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
+                                    <span className="text-2xl">{data.moment}</span>
+                                    <span>{getMomentLabel(data.moment)}</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                    <div className="text-xs text-slate-400 mb-1">วิธีการ</div>
+                                    <div className={`text-lg font-bold ${data.method===0 ? 'text-red-400':'text-emerald-400'}`}>
+                                        {getMethodLabel(data.method)}
+                                    </div>
+                                </div>
+                                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                    <div className="text-xs text-slate-400 mb-1">ขั้นตอน</div>
+                                    <div className="text-lg font-bold text-slate-200">
+                                        {Object.values(data.steps).filter(v=>v).length} / 7
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={onRetry} className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 font-bold hover:bg-slate-600 transition-colors">
+                                พูดใหม่
+                            </button>
+                            <button onClick={onConfirm} className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-900/50">
+                                ยืนยันส่งข้อมูล
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Voice Recording Modal (Updated with Missing Fields Warning)
+        const VoiceModal = ({ isListening, transcript, missingFields, onClose }) => (
             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm pb-10 animate-fade-in">
                 <div className="bg-slate-900 border border-slate-700 w-[90%] max-w-md rounded-2xl p-6 flex flex-col items-center relative shadow-2xl">
                     <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white">
@@ -144,9 +210,17 @@
                     </div>
                     
                     <h3 className="text-lg font-bold text-white mb-2">{isListening ? 'กำลังฟัง...' : 'ประมวลผลเสร็จสิ้น'}</h3>
-                    <p className="text-sm text-slate-300 text-center min-h-[60px] w-full bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 italic">
-                        "{transcript || 'พูดประโยค เช่น "พยาบาล ที่ไอซียู ล้างด้วยแอลกอฮอล์ ก่อนสัมผัสผู้ป่วย" ...'}"
-                    </p>
+                    
+                    {missingFields.length > 0 ? (
+                        <div className="w-full bg-red-900/30 border border-red-500/50 p-3 rounded-lg mb-2 text-center">
+                            <div className="text-red-400 font-bold mb-1">ข้อมูลไม่ครบ กรุณาระบุ:</div>
+                            <div className="text-white text-sm">{missingFields.join(', ')}</div>
+                        </div>
+                    ) : (
+                         <p className="text-sm text-slate-300 text-center min-h-[40px] w-full italic">
+                            "{transcript || 'พูดประโยค เช่น "พยาบาล ที่ไอซียู ล้างด้วยแอลกอฮอล์ ก่อนสัมผัสผู้ป่วย" ...'}"
+                        </p>
+                    )}
                     
                     {isListening && <button onClick={onClose} className="mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white text-sm font-bold">หยุด</button>}
                 </div>
@@ -164,6 +238,8 @@
             const [isListening, setIsListening] = useState(false);
             const [transcript, setTranscript] = useState('');
             const [showVoiceModal, setShowVoiceModal] = useState(false);
+            const [missingFields, setMissingFields] = useState([]);
+            const [reviewData, setReviewData] = useState(null);
 
             // Form
             const [location, setLocation] = useState('');
@@ -278,6 +354,8 @@
                 setIsListening(true);
                 setShowVoiceModal(true);
                 setTranscript('');
+                setMissingFields([]);
+                setReviewData(null);
 
                 recognition.onresult = (event) => {
                     let finalTranscript = '';
@@ -297,7 +375,6 @@
 
                 recognition.onend = () => {
                     setIsListening(false);
-                    setTimeout(() => setShowVoiceModal(false), 2000);
                 };
                 
                 recognition.onerror = (event) => {
@@ -310,77 +387,121 @@
             };
 
             const processVoiceCommand = (text) => {
+                let tempLoc = '';
+                let tempHcw = '';
+                let tempMoment = '';
+                let tempMethod = '';
+                let tempSteps = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true };
+
                 // 1. Analyze Location
-                let bestLoc = '';
                 let maxLenLoc = 0;
                 meta.locations.forEach(l => {
                     if (text.includes(l.label) && l.label.length > maxLenLoc) {
-                        bestLoc = l.code;
+                        tempLoc = l.code;
                         maxLenLoc = l.label.length;
                     }
                 });
-                if (bestLoc) setLocation(bestLoc);
 
                 // 2. Analyze HCW
-                let bestHcw = '';
                 let maxLenHcw = 0;
                 meta.hcws.forEach(h => {
                     if (text.includes(h.label) && h.label.length > maxLenHcw) {
-                        bestHcw = h.code;
+                        tempHcw = h.code;
                         maxLenHcw = h.label.length;
                     }
                 });
-                if (bestHcw) setHcw(bestHcw);
 
                 // 3. Analyze Moment
-                // Match keywords to Moment ID
-                if (text.match(/ก่อนสัมผัสผู้ป่วย|ข้อ 1|moment 1|โมเมนต์ 1/i)) setMoment(1);
-                else if (text.match(/ก่อนทำหัตถการ|ข้อ 2|moment 2|โมเมนต์ 2/i)) setMoment(2);
-                else if (text.match(/หลังสัมผัสสารคัดหลั่ง|ข้อ 3|moment 3|โมเมนต์ 3/i)) setMoment(3);
-                else if (text.match(/หลังสัมผัสผู้ป่วย|ข้อ 4|moment 4|โมเมนต์ 4/i)) setMoment(4);
-                else if (text.match(/หลังสัมผัสสิ่งแวดล้อม|ข้อ 5|moment 5|โมเมนต์ 5/i)) setMoment(5);
+                if (text.match(/ก่อนสัมผัสผู้ป่วย|ข้อ 1|moment 1|โมเมนต์ 1/i)) tempMoment = 1;
+                else if (text.match(/ก่อนทำหัตถการ|ข้อ 2|moment 2|โมเมนต์ 2/i)) tempMoment = 2;
+                else if (text.match(/หลังสัมผัสสารคัดหลั่ง|ข้อ 3|moment 3|โมเมนต์ 3/i)) tempMoment = 3;
+                else if (text.match(/หลังสัมผัสผู้ป่วย|ข้อ 4|moment 4|โมเมนต์ 4/i)) tempMoment = 4;
+                else if (text.match(/หลังสัมผัสสิ่งแวดล้อม|ข้อ 5|moment 5|โมเมนต์ 5/i)) tempMoment = 5;
 
                 // 4. Analyze Method
                 if (text.match(/ไม่ล้าง|ไม่ได้ล้าง/i)) {
-                    setMethod(0);
-                    setSteps({}); // Reset steps
+                    tempMethod = 0;
+                    tempSteps = {}; 
                 } else if (text.match(/แอลกอฮอล์|เจล/i)) {
-                    setMethod(2);
+                    tempMethod = 2;
                 } else if (text.match(/สบู่/i)) {
-                    setMethod(1);
+                    tempMethod = 1;
                 } else {
-                    // Default logic: If method not mentioned but also not "no wash", assume Soap (1) or keep current?
-                    // User requirement: "ถ้าแยกไม่ออกให้ถือว่าล้างสบู่"
-                    if (method === '' || method === 0) setMethod(1);
+                    tempMethod = 1; // Default to soap if not specified
                 }
 
-                // 5. Analyze Steps (Only if method is not 'No Wash')
-                if (!text.match(/ไม่ล้าง|ไม่ได้ล้าง/i)) {
-                    const newSteps = { ...steps }; // Default all true from initial state or keep current
-                    
-                    // Reset all to true first if it's a new command? 
-                    // Better to assume "Perfect" then subtract based on user speech.
-                    // User said: "ถ้าไม่บอกก็ถือว่าล้างครบ ถ้ามีบอก ก็ให้ดูว่าผิดขั้นตอนไหน"
-                    [1, 2, 3, 4, 5, 6, 7].forEach(s => newSteps[s] = true);
-
-                    // Logic: Search for negative context + step keywords
-                    // Step 1: ฝ่ามือ
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ฝ่ามือ/i)) newSteps[1] = false;
-                    // Step 2: หลังมือ
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังมือ/i)) newSteps[2] = false;
-                    // Step 3: ซอกนิ้ว
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ซอกนิ้ว/i)) newSteps[3] = false;
-                    // Step 4: หลังนิ้ว
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังนิ้ว/i)) newSteps[4] = false;
-                    // Step 5: หัวแม่มือ
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หัวแม่มือ/i)) newSteps[5] = false;
-                    // Step 6: ปลายนิ้ว
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ปลายนิ้ว/i)) newSteps[6] = false;
-                    // Step 7: รอบข้อมือ
-                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ข้อมือ/i)) newSteps[7] = false;
-
-                    setSteps(newSteps);
+                // 5. Analyze Steps
+                if (tempMethod !== 0) {
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ฝ่ามือ/i)) tempSteps[1] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังมือ/i)) tempSteps[2] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ซอกนิ้ว/i)) tempSteps[3] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หลังนิ้ว/i)) tempSteps[4] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}หัวแม่มือ/i)) tempSteps[5] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ปลายนิ้ว/i)) tempSteps[6] = false;
+                    if (text.match(/(ไม่|ลืม|ข้าม).{0,10}ข้อมือ/i)) tempSteps[7] = false;
                 }
+
+                // Validation
+                const missing = [];
+                if (!tempLoc) missing.push("สถานที่");
+                if (!tempHcw) missing.push("ผู้ถูกสังเกต");
+                if (!tempMoment) missing.push("Moment (ช่วงเวลา)");
+
+                if (missing.length > 0) {
+                    setMissingFields(missing);
+                    // Stay on Voice Modal to show error
+                } else {
+                    // Complete - Show Review Modal
+                    setMissingFields([]);
+                    setShowVoiceModal(false);
+                    setReviewData({
+                        location: tempLoc,
+                        hcw: tempHcw,
+                        moment: tempMoment,
+                        method: tempMethod,
+                        steps: tempSteps
+                    });
+                }
+            };
+
+            const confirmVoiceData = () => {
+                if (!reviewData) return;
+                
+                // Update Main State
+                setLocation(reviewData.location);
+                setHcw(reviewData.hcw);
+                setMoment(reviewData.moment);
+                setMethod(reviewData.method);
+                setSteps(reviewData.steps);
+
+                // Perform Submit Logic Directly
+                const payload = {
+                    location: reviewData.location,
+                    hcw: reviewData.hcw,
+                    moment: reviewData.moment,
+                    method: reviewData.method,
+                    ...reviewData.steps,
+                    observer: user?.name || 'Unknown'
+                };
+                
+                localStorage.setItem('hh_last_loc', reviewData.location);
+                setMeta(prev => ({...prev, totalCount: (prev.totalCount || 0) + 1}));
+                
+                // Clear and Show Success
+                setReviewData(null);
+                setShowSuccess(true);
+
+                // Send to Server
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify({ action: 'saveRecord', payload })
+                }).catch(e => console.error("Save Error", e));
+
+                // Reset Form
+                setMoment('');
+                setMethod('');
+                setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
             };
 
             const handleSubmit = async () => {
@@ -419,7 +540,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col relative">
-                    {/* Header: Compact */}
+                    {/* Header */}
                     <div className="glass-nav px-3 py-1.5 flex items-center justify-between sticky top-0 z-50 shadow-md">
                         <div className="flex items-center gap-2">
                             <HandIcon />
@@ -440,8 +561,8 @@
                         </div>
                     </div>
 
-                    <div className="max-w-md mx-auto w-full p-1.5 flex-1 flex flex-col gap-1 pb-20">
-                        {/* Progress: Compact */}
+                    <div className="max-w-md mx-auto w-full p-1.5 flex-1 flex flex-col gap-1">
+                        {/* Progress */}
                         <div className="glass-panel px-3 py-1 rounded-lg flex justify-between items-center">
                             <span className="text-[10px] text-slate-400 font-bold uppercase">เป้าหมายเดือนนี้</span>
                             <div className="flex items-center gap-2">
@@ -452,7 +573,7 @@
                             </div>
                         </div>
 
-                        {/* 1. Location (Fixed: w-fit, items-start, tight spacing) */}
+                        {/* 1. Location */}
                         <div>
                             <div className="text-[10px] text-slate-500 ml-1 font-bold">สถานที่</div>
                             <div className="flex flex-col flex-wrap h-[68px] overflow-x-auto no-scrollbar content-start items-start gap-1 pb-1"> 
@@ -466,7 +587,7 @@
                             </div>
                         </div>
 
-                        {/* 2. HCW (Fixed: w-fit, items-start, tight spacing) */}
+                        {/* 2. HCW */}
                         <div>
                             <div className="text-[10px] text-slate-500 ml-1 font-bold">ผู้ถูกสังเกต</div>
                             <div className="flex flex-col flex-wrap h-[68px] overflow-x-auto no-scrollbar content-start items-start gap-1 pb-1">
@@ -480,7 +601,7 @@
                             </div>
                         </div>
 
-                        {/* 3. Moments (Reduced height & gaps) */}
+                        {/* 3. Moments */}
                         <div>
                             <div className="text-[10px] text-slate-500 ml-1 font-bold">Moments</div>
                             <div className="grid grid-cols-5 gap-1">
@@ -500,7 +621,7 @@
                             </div>
                         </div>
 
-                        {/* 4. Method (Compact) */}
+                        {/* 4. Method */}
                         <div>
                             <div className="text-[10px] text-slate-500 ml-1 font-bold">วิธีการ</div>
                             <div className="flex gap-1">
@@ -516,13 +637,13 @@
                             </div>
                         </div>
 
-                        {/* 5. Steps (Compact) */}
+                        {/* 5. Steps (Updated Style: Fatter, Bolder) */}
                         {method !== 0 && method !== '' && (
                             <div className="animate-fade-in pb-1">
                                 <div className="text-[10px] text-slate-500 ml-1 flex justify-between font-bold">
                                     <span>7 ขั้นตอน (แตะอันที่ไม่ได้ทำออก)</span>
                                 </div>
-                                <div className="grid grid-cols-4 gap-1">
+                                <div className="grid grid-cols-4 gap-1.5">
                                     {[
                                         'ฝ่ามือถูฝ่ามือ',
                                         'ถูหลังมือ',
@@ -535,9 +656,9 @@
                                         const id = i + 1;
                                         return (
                                             <button key={id} onClick={() => toggleStep(id)} 
-                                                className={`item-btn px-0.5 py-1 rounded-md text-[9px] font-bold border flex flex-col items-center justify-center leading-none min-h-[40px] ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-slate-300' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
+                                                className={`item-btn px-0.5 py-1.5 rounded-xl text-[10px] font-extrabold border flex flex-col items-center justify-center leading-none min-h-[55px] shadow-sm ${steps[id] ? 'bg-slate-800 border-emerald-500/30 text-emerald-100' : 'bg-red-900/30 border-red-500/50 text-red-400 opacity-80'} ${id > 4 ? 'col-span-1.33' : ''}`}> 
                                                 <style>{`.grid-cols-4 > button:nth-child(n+5) { grid-column: span 1.33; }`}</style>
-                                                {steps[id] ? <LucideIcon name="check" className="w-3.5 h-3.5 text-emerald-500 mb-0.5"/> : <LucideIcon name="x" className="w-3.5 h-3.5 text-red-500 mb-0.5"/>}
+                                                {steps[id] ? <LucideIcon name="check" className="w-5 h-5 text-emerald-500 mb-1"/> : <LucideIcon name="x" className="w-5 h-5 text-red-500 mb-1"/>}
                                                 {t}
                                             </button>
                                         )
@@ -554,12 +675,29 @@
                         </div>
                     </div>
 
-                    {/* Voice FAB */}
-                    <button onClick={startListening} className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center z-40 transition-transform active:scale-90 animate-bounce-in">
-                        <LucideIcon name="mic" className="w-8 h-8" />
-                    </button>
+                    {/* Fixed Bottom Voice Area */}
+                    <div className="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 p-4 pb-8 z-40 rounded-t-2xl shadow-2xl">
+                        <div className="max-w-md mx-auto relative flex flex-col items-center">
+                            {/* Running Examples */}
+                            <div className="w-full overflow-hidden mb-3 relative h-6">
+                                <div className="absolute whitespace-nowrap animate-[marquee_20s_linear_infinite] text-[10px] text-slate-400 italic">
+                                    <span className="mx-4">"พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน"</span>
+                                    <span className="mx-4">"แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย"</span>
+                                    <span className="mx-4">"ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"</span>
+                                </div>
+                                <style>{`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }`}</style>
+                            </div>
 
-                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} onClose={() => setShowVoiceModal(false)} />}
+                            {/* Pill Shaped Voice Button */}
+                            <button onClick={startListening} className="w-full bg-red-600 hover:bg-red-500 text-white py-3 px-6 rounded-full shadow-[0_4px_15px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 transition-transform active:scale-95">
+                                <LucideIcon name="mic" className="w-5 h-5" />
+                                <span className="font-bold text-sm">บันทึกล้างมือด้วยเสียง</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} missingFields={missingFields} onClose={() => setShowVoiceModal(false)} />}
+                    {reviewData && <ReviewModal data={reviewData} meta={meta} onConfirm={confirmVoiceData} onRetry={() => { setReviewData(null); startListening(); }} />}
                     {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
                 </div>
             );
