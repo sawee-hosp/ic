@@ -14,10 +14,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
+    <!-- Note: Tailwind CDN is used for demo purposes. In production, compile CSS. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- LIFF SDK -->
@@ -34,7 +38,7 @@
             font-size: 14px;
             margin: 0;
             padding: 0;
-            padding-bottom: 180px; /* Space for footer voice controls */
+            padding-bottom: 120px; /* Space for FAB */
         }
         button, input, select, textarea { font-family: 'Google Sans', sans-serif; }
 
@@ -74,18 +78,53 @@
             100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-slow { animation: pulse-text 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyX0pC3eLOod07tKyR3loiCecqps6er8EDcGhbtHVm885s2R2Zri6HSr94tKw3GosMI/exec";
         const LIFF_ID = "2008690634-UG4TJcVB";
         const REG_URL = "https://sawee-hosp.github.io/ic/index.html";
 
-        // SVG Icons
+        // --- FIXED: Safer Lucide Icon Component ---
+        const LucideIcon = ({ name, className }) => {
+            const iconHtml = useMemo(() => {
+                if (!window.lucide || !window.lucide.icons) return '';
+                
+                // Convert kebab-case (refresh-cw) to PascalCase (RefreshCw)
+                const pascalName = name
+                    .split('-')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join('');
+
+                const iconNode = window.lucide.icons[pascalName];
+                
+                if (iconNode) {
+                    // Generate SVG string directly
+                    return iconNode.toSvg({ class: className });
+                }
+                return '';
+            }, [name, className]);
+
+            if (!iconHtml) return <span className={`inline-block w-4 h-4 bg-slate-700 rounded ${className}`}></span>;
+
+            return (
+                <span 
+                    className="inline-flex items-center justify-center"
+                    dangerouslySetInnerHTML={{ __html: iconHtml }} 
+                />
+            );
+        };
+
         const HandIcon = () => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 text-emerald-400 animate-glow">
                 <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
@@ -94,22 +133,6 @@
                 <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
             </svg>
         );
-
-        // Fixed LucideIcon to prevent null reference error
-        const LucideIcon = ({ name, className }) => {
-            const ref = useRef(null);
-            useEffect(() => {
-                // Ensure lucide exists and ref is attached to a DOM node
-                if (window.lucide && ref.current) {
-                    window.lucide.createIcons({
-                        root: ref.current.parentNode, 
-                        nameAttr: 'data-lucide',
-                        attrs: { class: className }
-                    });
-                }
-            }, [name, className]);
-            return <i data-lucide={name} ref={ref} className={className}></i>;
-        };
 
         const SuccessModal = ({ onClose }) => (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl cursor-pointer select-none" onClick={onClose}>
@@ -133,7 +156,7 @@
             </div>
         );
 
-        // Review Modal (New)
+        // Review Modal
         const ReviewModal = ({ data, onConfirm, onRetry, meta }) => {
             const getLocationLabel = (code) => meta.locations.find(l => l.code == code)?.label || code;
             const getHcwLabel = (code) => meta.hcws.find(h => h.code == code)?.label || code;
@@ -196,36 +219,63 @@
             );
         };
 
-        // Voice Recording Modal (Updated with Missing Fields Warning)
-        const VoiceModal = ({ isListening, transcript, missingFields, onClose }) => (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm pb-10 animate-fade-in">
-                <div className="bg-slate-900 border border-slate-700 w-[90%] max-w-md rounded-2xl p-6 flex flex-col items-center relative shadow-2xl">
-                    <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white">
-                        <LucideIcon name="x" className="w-5 h-5" />
+        // Voice Recording Modal with Full Screen Examples
+        const VoiceModal = ({ isListening, transcript, missingFields, onClose }) => {
+            const examples = [
+                "พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน",
+                "แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย",
+                "ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"
+            ];
+            const [currentExample, setCurrentExample] = useState(0);
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setCurrentExample(prev => (prev + 1) % examples.length);
+                }, 4000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-fade-in">
+                    <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-white p-2">
+                        <LucideIcon name="x" className="w-8 h-8" />
                     </button>
                     
-                    <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4 relative">
-                         {isListening && <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse-ring"></div>}
-                         <LucideIcon name="mic" className={`w-8 h-8 ${isListening ? 'text-red-500' : 'text-slate-400'}`} />
-                    </div>
-                    
-                    <h3 className="text-lg font-bold text-white mb-2">{isListening ? 'กำลังฟัง...' : 'ประมวลผลเสร็จสิ้น'}</h3>
-                    
-                    {missingFields.length > 0 ? (
-                        <div className="w-full bg-red-900/30 border border-red-500/50 p-3 rounded-lg mb-2 text-center">
-                            <div className="text-red-400 font-bold mb-1">ข้อมูลไม่ครบ กรุณาระบุ:</div>
-                            <div className="text-white text-sm">{missingFields.join(', ')}</div>
+                    <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg">
+                        {/* Mic Animation */}
+                        <div className="w-28 h-28 rounded-full bg-red-500/10 flex items-center justify-center mb-8 relative">
+                             {isListening && <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse-ring"></div>}
+                             <LucideIcon name="mic" className={`w-12 h-12 ${isListening ? 'text-red-500' : 'text-slate-500'}`} />
                         </div>
-                    ) : (
-                         <p className="text-sm text-slate-300 text-center min-h-[40px] w-full italic">
-                            "{transcript || 'พูดประโยค เช่น "พยาบาล ที่ไอซียู ล้างด้วยแอลกอฮอล์ ก่อนสัมผัสผู้ป่วย" ...'}"
-                        </p>
-                    )}
-                    
-                    {isListening && <button onClick={onClose} className="mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-full text-white text-sm font-bold">หยุด</button>}
+                        
+                        <h3 className="text-2xl font-bold text-white mb-6">{isListening ? 'กำลังฟัง...' : 'ประมวลผล...'}</h3>
+                        
+                        {missingFields.length > 0 ? (
+                            <div className="w-full bg-red-900/40 border border-red-500/50 p-6 rounded-2xl mb-6 text-center shadow-lg">
+                                <div className="text-red-400 font-bold text-xl mb-2">ข้อมูลไม่ครบ กรุณาระบุ:</div>
+                                <div className="text-white text-lg">{missingFields.join(', ')}</div>
+                            </div>
+                        ) : (
+                            /* Large Rotating Examples */
+                            <div className="w-full text-center min-h-[120px] flex items-center justify-center mb-6">
+                                {transcript ? (
+                                    <p className="text-xl text-emerald-400 italic">"{transcript}"</p>
+                                ) : (
+                                    <div className="animate-pulse-slow">
+                                        <p className="text-slate-400 text-sm mb-2 uppercase tracking-widest">ตัวอย่างการพูด</p>
+                                        <p className="text-2xl md:text-3xl font-bold text-white leading-relaxed">
+                                            "{examples[currentExample]}"
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {isListening && <button onClick={onClose} className="mt-8 px-8 py-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-full text-white text-base font-bold transition-all">ยกเลิก</button>}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const App = () => {
             const [meta, setMeta] = useState({ locations: [], hcws: [], totalCount: 0 });
@@ -427,7 +477,7 @@
                 } else if (text.match(/สบู่/i)) {
                     tempMethod = 1;
                 } else {
-                    tempMethod = 1; // Default to soap if not specified
+                    tempMethod = 1; // Default
                 }
 
                 // 5. Analyze Steps
@@ -445,7 +495,7 @@
                 const missing = [];
                 if (!tempLoc) missing.push("สถานที่");
                 if (!tempHcw) missing.push("ผู้ถูกสังเกต");
-                if (!tempMoment) missing.push("Moment (ช่วงเวลา)");
+                if (!tempMoment) missing.push("Moment");
 
                 if (missing.length > 0) {
                     setMissingFields(missing);
@@ -678,16 +728,6 @@
                     {/* Fixed Bottom Voice Area */}
                     <div className="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 p-4 pb-8 z-40 rounded-t-2xl shadow-2xl">
                         <div className="max-w-md mx-auto relative flex flex-col items-center">
-                            {/* Running Examples */}
-                            <div className="w-full overflow-hidden mb-3 relative h-6">
-                                <div className="absolute whitespace-nowrap animate-[marquee_20s_linear_infinite] text-[10px] text-slate-400 italic">
-                                    <span className="mx-4">"พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน"</span>
-                                    <span className="mx-4">"แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย"</span>
-                                    <span className="mx-4">"ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"</span>
-                                </div>
-                                <style>{`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }`}</style>
-                            </div>
-
                             {/* Pill Shaped Voice Button */}
                             <button onClick={startListening} className="w-full bg-red-600 hover:bg-red-500 text-white py-3 px-6 rounded-full shadow-[0_4px_15px_rgba(239,68,68,0.4)] flex items-center justify-center gap-2 transition-transform active:scale-95">
                                 <LucideIcon name="mic" className="w-5 h-5" />
