@@ -93,7 +93,6 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const LIFF_ID = '2008690634-hcI0haXq';
-    // เพิ่ม GAS_URL เพื่อเชื่อมต่อจากภายนอก (GitHub)
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJxVa9n3OsRR6WoFLZmptc9K0SORf1tvUwYoa0Ec7cvdkt3HLNQUgDdvf-vOGzNM3W/exec';
     
     const mainContent = document.getElementById('mainContent');
@@ -103,17 +102,23 @@
     let currentSelection = {}, allDepartments = [], allRounds = [], currentUser = {};
     let lastSubmissionResults = [];
 
-    // ฟังก์ชันช่วยในการเรียกใช้ GAS ผ่าน Fetch (แทนที่ google.script.run)
+    // ฟังก์ชันช่วยในการเรียกใช้ GAS ผ่าน Fetch (รักษาการใช้ POST + Content-Type text/plain)
     async function callGAS(action, payload = null) {
+      if (!navigator.onLine) {
+        throw new Error('กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ');
+      }
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
           body: JSON.stringify({ action: action, ...payload }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        if (!response.ok) throw new Error('Network response was not ok');
-        return await response.json();
+        if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อ Server ได้ (' + response.status + ')');
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        return data;
       } catch (error) {
+        console.error('callGAS error:', error);
         throw error;
       }
     }
@@ -126,7 +131,10 @@
             document.getElementById(viewIdToShow).style.display = 'block';
         }
     }
-    function onFailure(error) { loader.style.display = 'none'; alert('เกิดข้อผิดพลาด: ' + (error.message || error)); }
+    function onFailure(error) { 
+        loader.style.display = 'none'; 
+        alert('เกิดข้อผิดพลาด: ' + (error.message || error)); 
+    }
     function goBack() { showView('mainContent'); }
     function printReport(divId) { document.querySelectorAll('.printable-area').forEach(el => el.classList.remove('printable-area')); document.getElementById(divId).classList.add('printable-area'); window.print(); }
 
@@ -140,17 +148,24 @@
     });
 
     async function initLiff() {
+        if (!navigator.onLine) {
+            alert("คุณกำลังออฟไลน์อยู่ กรุณาเชื่อมต่ออินเทอร์เน็ต");
+            return;
+        }
         try {
-            await liff.init({ liffId: LIFF_ID });
+            // ล้างค่า Query Parameters ที่อาจตกค้างจาก Redirect ที่ผิดพลาด (ถ้าจำเป็น)
+            await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+            
             if (!liff.isLoggedIn()) {
-                liff.login();
+                liff.login({ redirectUri: window.location.href });
             } else {
                 const profile = await liff.getProfile();
                 handleAuthentication(profile.userId);
             }
         } catch (err) {
-            console.error(err);
-            alert("LIFF Initialization failed.");
+            console.error('LIFF Init error:', err);
+            // กรณี Failed to fetch มักเกิดจากการโดนบล็อก ให้ลองแจ้งเตือนชัดเจนขึ้น
+            alert("ไม่สามารถเข้าสู่ระบบ LINE ได้: " + (err.message || "Failed to fetch. โปรดเช็คการเชื่อมต่ออินเทอร์เน็ต"));
         }
     }
 
@@ -400,6 +415,5 @@
         startEvaluation(departmentId, departmentName, round, '', true); 
     }
   </script>
-
 </body>
 </html>
