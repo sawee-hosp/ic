@@ -90,37 +90,42 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        // Explicitly use window.React and window.ReactDOM to avoid ReferenceError
+        const { useState, useEffect, useRef, useMemo } = window.React;
+        const ReactDOM = window.ReactDOM;
+        
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyX0pC3eLOod07tKyR3loiCecqps6er8EDcGhbtHVm885s2R2Zri6HSr94tKw3GosMI/exec";
         const LIFF_ID = "2008690634-UG4TJcVB";
         const REG_URL = "https://sawee-hosp.github.io/ic/index.html";
 
         // --- FIXED: Safer Lucide Icon Component ---
         const LucideIcon = ({ name, className }) => {
-            const iconHtml = useMemo(() => {
-                if (!window.lucide || !window.lucide.icons) return '';
-                
-                // Convert kebab-case (refresh-cw) to PascalCase (RefreshCw)
-                const pascalName = name
-                    .split('-')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join('');
+            const [svgHtml, setSvgHtml] = useState('');
 
-                const iconNode = window.lucide.icons[pascalName];
-                
-                if (iconNode) {
-                    // Generate SVG string directly
-                    return iconNode.toSvg({ class: className });
+            useEffect(() => {
+                if (window.lucide && window.lucide.createIcons) {
+                    // Generate SVG in a detached DOM node to avoid React/DOM conflicts
+                    const temp = document.createElement('div');
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    temp.appendChild(i);
+                    
+                    window.lucide.createIcons({
+                        root: temp,
+                        nameAttr: 'data-lucide',
+                        attrs: { class: className }
+                    });
+                    
+                    setSvgHtml(temp.innerHTML);
                 }
-                return '';
             }, [name, className]);
 
-            if (!iconHtml) return <span className={`inline-block w-4 h-4 bg-slate-700 rounded ${className}`}></span>;
+            if (!svgHtml) return <span className={`inline-block w-4 h-4 bg-slate-700/50 rounded ${className}`}></span>;
 
             return (
                 <span 
-                    className="inline-flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: iconHtml }} 
+                    style={{ display: 'contents' }}
+                    dangerouslySetInnerHTML={{ __html: svgHtml }} 
                 />
             );
         };

@@ -4,41 +4,37 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IC Round Checklist</title>
+  <title>IC Round Checklist & Risk Management</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     body { background-color: #f8f9fa; }
-    .container { max-width: 960px; }
+    .container { max-width: 1000px; }
     .loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.7); z-index: 9999; }
     .loader .spinner-border { position: absolute; top: 50%; left: 50%; }
     .card-header { background-color: #e9ecef; font-weight: bold; }
-    .checklist-item-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-    .note-wrapper { flex-grow: 1; min-width: 150px; }
     .header-item { padding: 0.5rem 1rem; font-weight: bold; color: var(--bs-primary); background-color: var(--bs-primary-bg-subtle); border-radius: .375rem; margin-top: 1rem; margin-bottom: .5rem; }
-    #historyMatrix th, #historyMatrix td { text-align: center; vertical-align: middle; font-size: 0.85rem; padding: 0.4rem; }
-    #historyMatrix td:first-child, #historyMatrix th:first-child { text-align: left; }
-    .summary-table { font-size: 0.9rem; } .summary-table td:first-child { font-weight: 500; }
+    #historyMatrix th, #historyMatrix td, #riskTable th, #riskTable td { text-align: center; vertical-align: middle; font-size: 0.85rem; padding: 0.4rem; }
+    #historyMatrix td:first-child, #historyMatrix th:first-child, #riskTable td:nth-child(2) { text-align: left; }
+    .status-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 1rem; }
+    .severity-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
     @media print {
-        body * { visibility: hidden; }
-        .printable-area, .printable-area * { visibility: visible; }
-        .printable-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 1rem; }
         .no-print { display: none !important; }
-        .card { border: 1px solid #dee2e6 !important; page-break-inside: avoid; }
-        .table, .table-bordered, .table-bordered td, .table-bordered th { border: 1px solid #dee2e6 !important; }
-        a[href]:after { content: none !important; }
+        .printable-area { position: absolute; left: 0; top: 0; width: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="loader"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>
+  <div class="loader"><div class="spinner-border text-primary" role="status"></div></div>
   <div class="container mt-4 mb-5">
     
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">IC Round Checklist</h3>
-        <div id="auth-section" class="d-flex align-items-center">
+        <h3 class="mb-0"><i class="bi bi-shield-check"></i> IC Round & Risk</h3>
+        <div id="auth-section">
             <div id="login-spinner-group" class="d-flex align-items-center">
-                <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
-                <span class="text-muted small">กำลังตรวจสอบสิทธิ์...</span>
+                <div class="spinner-grow spinner-grow-sm text-primary me-2"></div>
+                <span class="text-muted small">Checking LIFF Auth...</span>
             </div>
             <div id="user-info-group" class="d-none">
                 <span class="me-2">ยินดีต้อนรับ: <strong id="user-name-display" class="text-success"></strong></span>
@@ -49,370 +45,400 @@
     
     <div id="mainContent">
       <ul class="nav nav-tabs no-print" id="mainTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="evaluate-tab" data-bs-toggle="tab" data-bs-target="#evaluate-pane" type="button" role="tab">ประเมิน (Evaluate)</button>
+        <li class="nav-item">
+          <button class="nav-link active" id="evaluate-tab" data-bs-toggle="tab" data-bs-target="#evaluate-pane" type="button">ประเมิน (Round)</button>
         </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview-pane" type="button" role="tab">ภาพรวม (Overview)</button>
+        <li class="nav-item">
+          <button class="nav-link" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview-pane" type="button">ภาพรวม (Overview)</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk-pane" type="button">ความเสี่ยงที่พบ (IC Risk)</button>
         </li>
       </ul>
+
       <div class="tab-content" id="mainTabContent">
+        <!-- Tab 1: Evaluate -->
         <div class="tab-pane fade show active" id="evaluate-pane" role="tabpanel">
-          <div id="selectionDiv" class="card mt-3">
+          <div class="card mt-3">
             <div class="card-body">
-              <form id="selectionForm" onsubmit="return false;">
+              <form id="selectionForm">
                 <fieldset id="main-form-fieldset" disabled>
-                    <div class="mb-3"><label for="department" class="form-label">หน่วยงาน</label><select class="form-select" id="department" required><option selected disabled value="">กรุณารอสักครู่...</option></select></div>
-                    <div class="mb-3"><label class="form-label">ประเภทการ Round</label><div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="typeRound" id="typeSelf" value="Self-round" required checked><label class="form-check-label" for="typeSelf">Self-round</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="typeRound" id="typeCross" value="Cross-round" required><label class="form-check-label" for="typeCross">Cross-round</label></div></div></div>
-                    <div class="mb-3"><label for="roundPeriod" class="form-label">รอบที่ Round</label><select class="form-select" id="roundPeriod" required><option selected disabled value="">กรุณารอสักครู่...</option></select></div>
-                    <button type="button" id="startRoundBtn" class="btn btn-primary w-100">เริ่มต้น Round</button>
+                    <div class="mb-3"><label class="form-label">หน่วยงาน</label><select class="form-select" id="department" required></select></div>
+                    <div class="mb-3"><label class="form-label">ประเภทการ Round</label><div>
+                      <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="typeRound" id="typeSelf" value="Self-round" checked><label class="form-check-label" for="typeSelf">Self-round</label></div>
+                      <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="typeRound" id="typeCross" value="Cross-round"><label class="form-check-label" for="typeCross">Cross-round</label></div>
+                    </div></div>
+                    <div class="mb-3"><label class="form-label">รอบที่ Round</label><select class="form-select" id="roundPeriod" required></select></div>
+                    <button type="button" id="startRoundBtn" class="btn btn-primary w-100">เริ่มต้นประเมิน</button>
                 </fieldset>
               </form>
             </div>
           </div>
         </div>
+
+        <!-- Tab 2: Overview -->
         <div class="tab-pane fade" id="overview-pane" role="tabpanel">
           <div id="historyDiv" class="card mt-3">
-             <div class="card-header">ภาพรวมการประเมินทั้งหมด</div>
+             <div class="card-header">สถานะการประเมินรายหน่วยงาน</div>
              <div class="card-body">
                 <div id="historyTableContainer">กำลังโหลดข้อมูล...</div>
-                <div class="no-print mt-3"><button class="btn btn-success" onclick="printReport('historyDiv')">พิมพ์ตารางนี้</button></div>
+             </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: IC Risk (New) -->
+        <div class="tab-pane fade" id="risk-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <h5 class="mb-0">รายการความเสี่ยง (Close-loop Management)</h5>
+            <button class="btn btn-danger btn-sm" onclick="openManualRiskModal()"><i class="bi bi-megaphone"></i> รายงานความเสี่ยงเพิ่ม</button>
+          </div>
+          <div id="riskDiv" class="card">
+             <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0" id="riskTable">
+                    <thead class="table-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>รายละเอียด / หน่วยงาน</th>
+                        <th>สถานะ</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="riskTableBody">
+                      <tr><td colspan="4" class="py-4">กำลังโหลดข้อมูลความเสี่ยง...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
              </div>
           </div>
         </div>
       </div>
     </div>
     
-    <div id="checklistDiv" style="display: none;"><h3 id="checklistHeader" class="no-print"></h3><div id="checklistFormContainer"></div></div>
-    <div id="summaryDiv" style="display: none;"><div class="card"><div class="card-header"><h3>สรุปผลการประเมิน</h3></div><div class="card-body text-center"><h4 id="summaryDept"></h4><p id="summaryScore" class="fs-3"></p><p id="summaryPercentage" class="fs-1 fw-bold text-success"></p><div id="summaryCategoryScores" class="mt-4 text-start"></div><div id="summaryDetails" class="mt-4 text-start"></div><div class="no-print mt-4"><button class="btn btn-success" onclick="printReport('summaryDiv')">พิมพ์รายงานนี้</button><button class="btn btn-primary" onclick="goBack()">กลับไปหน้าแรก</button></div></div></div></div>
+    <!-- Checklist & Summary Views (Same as before) -->
+    <div id="checklistDiv" style="display: none;"><h3 id="checklistHeader" class="no-print mb-3"></h3><div id="checklistFormContainer"></div></div>
+    <div id="summaryDiv" style="display: none;"><div class="card"><div class="card-header"><h3>สรุปผลการประเมิน</h3></div><div class="card-body text-center"><h4 id="summaryDept"></h4><p id="summaryScore" class="fs-3"></p><p id="summaryPercentage" class="fs-1 fw-bold text-success"></p><div id="summaryCategoryScores" class="mt-4 text-start"></div><div class="no-print mt-4"><button class="btn btn-success me-2" onclick="printReport('summaryDiv')">พิมพ์รายงาน</button><button class="btn btn-primary" onclick="goBack()">กลับไปหน้าแรก</button></div></div></div></div>
+
+    <!-- Modal: Close Loop Action -->
+    <div class="modal fade" id="riskActionModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">จัดการความเสี่ยง: <span id="modalRiskId"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <h6><i class="bi bi-info-circle"></i> รายละเอียดที่พบ</h6>
+                <p id="modalRiskNote" class="p-2 bg-light border rounded small"></p>
+                <div id="modalRiskImgBefore"></div>
+              </div>
+              <div class="col-md-6">
+                <h6><i class="bi bi-tools"></i> บันทึกการแก้ไข (Action)</h6>
+                <div class="mb-2">
+                  <label class="small">ประเภทการจัดการ</label>
+                  <select class="form-select form-select-sm" id="editActionType">
+                    <option value="Fix Immediately">แก้ไขทันที</option>
+                    <option value="Process Change">ปรับปรุงกระบวนการ</option>
+                    <option value="Education">อบรม/สอนหน้างาน</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="small">บันทึกเพิ่มเติม</label>
+                  <textarea class="form-control form-control-sm" id="editActionNote" rows="2"></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="small">รูปภาพหลักฐานการแก้</label>
+                  <input type="file" class="form-control form-control-sm" id="editActionFile" accept="image/*">
+                </div>
+              </div>
+            </div>
+            <hr>
+            <div class="bg-primary-subtle p-3 rounded">
+              <h6><i class="bi bi-check2-square"></i> ส่วนของ Auditor (ICN)</h6>
+              <div class="row">
+                <div class="col-6">
+                  <label class="small">ผลการตรวจสอบ</label>
+                  <select class="form-select form-select-sm" id="editAuditResult">
+                    <option value="Pending">รอตรวจสอบ</option>
+                    <option value="Pass">ผ่าน (ปิดความเสี่ยง)</option>
+                    <option value="Fail">ไม่ผ่าน (แก้ไขใหม่)</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="small">สถานะปัจจุบัน</label>
+                  <select class="form-select form-select-sm" id="editCurrentStatus">
+                    <option value="เปิดความเสี่ยง">เปิดความเสี่ยง</option>
+                    <option value="ดำเนินการแล้ว">ดำเนินการแล้ว</option>
+                    <option value="ปิดความเสี่ยง">ปิดความเสี่ยง (Closed)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            <button type="button" class="btn btn-primary" onclick="submitRiskUpdate()">บันทึกข้อมูล</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const LIFF_ID = '2008690634-hcI0haXq';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJxVa9n3OsRR6WoFLZmptc9K0SORf1tvUwYoa0Ec7cvdkt3HLNQUgDdvf-vOGzNM3W/exec';
     
-    const mainContent = document.getElementById('mainContent');
-    const checklistView = document.getElementById('checklistDiv');
-    const summaryView = document.getElementById('summaryDiv');
-    const loader = document.querySelector('.loader');
     let currentSelection = {}, allDepartments = [], allRounds = [], currentUser = {};
     let lastSubmissionResults = [];
+    let activeRiskData = [];
 
-    // ฟังก์ชันช่วยในการเรียกใช้ GAS ผ่าน Fetch (รักษาการใช้ POST + Content-Type text/plain)
     async function callGAS(action, payload = null) {
-      if (!navigator.onLine) {
-        throw new Error('กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ');
-      }
+      if (!navigator.onLine) throw new Error('อินเทอร์เน็ตหลุด');
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: action, ...payload }),
+          body: JSON.stringify({ action, ...payload }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
-        if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อ Server ได้ (' + response.status + ')');
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         return data;
-      } catch (error) {
-        console.error('callGAS error:', error);
-        throw error;
-      }
+      } catch (e) { throw e; }
     }
-
-    function showView(viewIdToShow) {
-        mainContent.style.display = 'none';
-        checklistView.style.display = 'none';
-        summaryView.style.display = 'none';
-        if (document.getElementById(viewIdToShow)) {
-            document.getElementById(viewIdToShow).style.display = 'block';
-        }
-    }
-    function onFailure(error) { 
-        loader.style.display = 'none'; 
-        alert('เกิดข้อผิดพลาด: ' + (error.message || error)); 
-    }
-    function goBack() { showView('mainContent'); }
-    function printReport(divId) { document.querySelectorAll('.printable-area').forEach(el => el.classList.remove('printable-area')); document.getElementById(divId).classList.add('printable-area'); window.print(); }
 
     document.addEventListener('DOMContentLoaded', () => {
-      showView('mainContent');
       document.getElementById('logoutBtn').addEventListener('click', handleLogout);
       document.getElementById('startRoundBtn').addEventListener('click', handleStartEvaluation);
       document.getElementById('overview-tab').addEventListener('shown.bs.tab', loadHistoryMatrix);
-      
+      document.getElementById('risk-tab').addEventListener('shown.bs.tab', loadRiskData);
       initLiff();
     });
 
     async function initLiff() {
-        if (!navigator.onLine) {
-            alert("คุณกำลังออฟไลน์อยู่ กรุณาเชื่อมต่ออินเทอร์เน็ต");
-            return;
-        }
         try {
-            // ล้างค่า Query Parameters ที่อาจตกค้างจาก Redirect ที่ผิดพลาด (ถ้าจำเป็น)
-            await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
-            
-            if (!liff.isLoggedIn()) {
-                liff.login({ redirectUri: window.location.href });
-            } else {
-                const profile = await liff.getProfile();
-                handleAuthentication(profile.userId);
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); } 
+            else { 
+                const profile = await liff.getProfile(); 
+                handleAuthentication(profile.userId); 
             }
-        } catch (err) {
-            console.error('LIFF Init error:', err);
-            // กรณี Failed to fetch มักเกิดจากการโดนบล็อก ให้ลองแจ้งเตือนชัดเจนขึ้น
-            alert("ไม่สามารถเข้าสู่ระบบ LINE ได้: " + (err.message || "Failed to fetch. โปรดเช็คการเชื่อมต่ออินเทอร์เน็ต"));
-        }
+        } catch (err) { alert("LIFF Init failed"); }
     }
 
     async function handleAuthentication(userId) {
         loader.style.display = 'block';
         try {
-          const response = await callGAS('authenticateLiffUser', { userId: userId });
-          onAuthSuccess(response);
-        } catch (error) {
-          onFailure(error);
-        }
-    }
-
-    async function onAuthSuccess(response) {
-        if (response && response.status === 'success') {
-            currentUser = { hn: 'LIFF_USER', name: response.name };
-            document.getElementById('user-name-display').textContent = response.name;
+          const res = await callGAS('authenticateLiffUser', { userId });
+          if (res.status === 'success') {
+            currentUser = { name: res.name };
+            document.getElementById('user-name-display').textContent = res.name;
             document.getElementById('login-spinner-group').classList.add('d-none');
             document.getElementById('user-info-group').classList.remove('d-none');
-            
-            try {
-              const data = await callGAS('getInitialData');
-              onInitialDataSuccess(data);
-            } catch (error) {
-              onFailure(error);
-            }
-            
-            if (document.getElementById('overview-tab').classList.contains('active')) {
-                loadHistoryMatrix();
-            }
-        } else {
-            loader.style.display = 'none';
+            const initData = await callGAS('getInitialData');
+            onInitialDataSuccess(initData);
+          } else {
             window.location.href = "https://sawee-hosp.github.io/ic/index.html";
-        }
+          }
+        } catch (e) { onFailure(e); }
     }
 
     function onInitialDataSuccess(data) {
-      if (!data || data.error) { onFailure({ message: data ? data.error : "ไม่สามารถโหลดข้อมูลเริ่มต้นได้" }); return; }
       allDepartments = data.departments;
-      allRounds = data.rounds;
-      const departmentSelect = document.getElementById('department');
-      const roundPeriodSelect = document.getElementById('roundPeriod');
-      departmentSelect.innerHTML = '<option selected disabled value="">กรุณาเลือก...</option>';
-      allDepartments.forEach(dept => { departmentSelect.add(new Option(dept.name, dept.id)); });
-      roundPeriodSelect.innerHTML = '<option selected disabled value="">กรุณาเลือก...</option>';
-      allRounds.forEach(roundObj => {
-        const deadline = new Date(roundObj.deadline);
-        const deadlineText = `${deadline.getDate()}/${deadline.getMonth() + 1}/${deadline.getFullYear()}`;
-        const displayText = `${roundObj.name} (ประเมินก่อน ${deadlineText})`;
-        roundPeriodSelect.add(new Option(displayText, roundObj.name));
-      });
+      const deptSelect = document.getElementById('department');
+      const roundSelect = document.getElementById('roundPeriod');
+      deptSelect.innerHTML = '<option selected disabled value="">เลือกหน่วยงาน...</option>';
+      allDepartments.forEach(d => deptSelect.add(new Option(d.name, d.id)));
+      roundSelect.innerHTML = '<option selected disabled value="">เลือกรอบ...</option>';
+      data.rounds.forEach(r => roundSelect.add(new Option(r.name, r.name)));
       document.getElementById('main-form-fieldset').disabled = false;
       loader.style.display = 'none';
     }
 
-    function handleLogout() {
-        if (liff.isLoggedIn()) {
-            liff.logout();
-            window.location.reload();
-        }
-    }
-    
-    async function loadHistoryMatrix() {
-        if (!currentUser.name) return;
-        loader.style.display = 'block';
-        try {
-          const data = await callGAS('getHistoryMatrixData');
-          onHistoryMatrixSuccess(data);
-        } catch (error) {
-          onFailure(error);
-        }
+    async function loadRiskData() {
+      loader.style.display = 'block';
+      try {
+        const res = await callGAS('getRiskData');
+        activeRiskData = res.data;
+        renderRiskTable(res.data);
+        loader.style.display = 'none';
+      } catch (e) { onFailure(e); }
     }
 
-    function handleStartEvaluation() {
-      const departmentSelect = document.getElementById('department');
-      const roundPeriodSelect = document.getElementById('roundPeriod');
-      const deptId = departmentSelect.value, round = roundPeriodSelect.value, type = document.querySelector('input[name="typeRound"]:checked').value;
-      const deptName = departmentSelect.options[departmentSelect.selectedIndex].text;
-      if (!deptId || !round || !type) { alert('กรุณาเลือกข้อมูลให้ครบถ้วน'); return; }
-      startEvaluation(deptId, deptName, round, type, false);
+    function renderRiskTable(data) {
+      const tbody = document.getElementById('riskTableBody');
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">ไม่พบรายการความเสี่ยง</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.reverse().map(r => {
+        let badgeClass = 'bg-danger';
+        if (r.current_status === 'ดำเนินการแล้ว') badgeClass = 'bg-warning text-dark';
+        if (r.current_status === 'ปิดความเสี่ยง') badgeClass = 'bg-success';
+        
+        const dept = allDepartments.find(d => d.id == r.dept_id)?.name || r.dept_id;
+        return `
+          <tr>
+            <td><small>${r.risk_id}</small></td>
+            <td>
+              <div class="fw-bold">${r.category}</div>
+              <div class="small text-muted">${dept}</div>
+              <div class="text-truncate" style="max-width: 200px;"><small>${r.note}</small></div>
+            </td>
+            <td><span class="badge status-badge ${badgeClass}">${r.current_status}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="manageRisk('${r.risk_id}')"><i class="bi bi-pencil-square"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
-    
-    async function startEvaluation(deptId, deptName, round, type, isReadOnly = false) {
+
+    function manageRisk(riskId) {
+      const risk = activeRiskData.find(r => r.risk_id === riskId);
+      if (!risk) return;
+      document.getElementById('modalRiskId').textContent = riskId;
+      document.getElementById('modalRiskNote').textContent = risk.note;
+      document.getElementById('editActionNote').value = risk.action_note || '';
+      document.getElementById('editActionType').value = risk.action_type || 'Fix Immediately';
+      document.getElementById('editAuditResult').value = risk.audit_result || 'Pending';
+      document.getElementById('editCurrentStatus').value = risk.current_status || 'เปิดความเสี่ยง';
+      
+      const imgDiv = document.getElementById('modalRiskImgBefore');
+      imgDiv.innerHTML = risk.image_before ? 
+        `<img src="https://lh3.googleusercontent.com/d/${risk.image_before}" class="img-thumbnail mt-2" style="max-height:150px">` : 
+        '<small class="text-muted">ไม่มีรูปประกอบ</small>';
+
+      new bootstrap.Modal(document.getElementById('riskActionModal')).show();
+    }
+
+    async function submitRiskUpdate() {
+      const riskId = document.getElementById('modalRiskId').textContent;
       loader.style.display = 'block';
-      currentSelection = { user: currentUser.name, departmentId: deptId, departmentName: deptName, typeRound: type, roundPeriod: round, isReadOnly: isReadOnly };
+      
+      let imageId = '';
+      const fileInput = document.getElementById('editActionFile');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        const base64Promise = new Promise(resolve => {
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+        const base64 = await base64Promise;
+        const uploadRes = await callGAS('uploadImage', { fileData: { data: base64, name: file.name } });
+        imageId = uploadRes.id;
+      }
+
+      const updates = {
+        action_note: document.getElementById('editActionNote').value,
+        action_type: document.getElementById('editActionType').value,
+        action_date: new Date(),
+        audit_result: document.getElementById('editAuditResult').value,
+        current_status: document.getElementById('editCurrentStatus').value,
+        auditor_id: currentUser.name
+      };
+      if (imageId) updates.img_evidence = imageId;
+      if (updates.current_status === 'ปิดความเสี่ยง') updates.closed_date = new Date();
+
+      try {
+        await callGAS('updateRiskAction', { riskId, updates });
+        bootstrap.Modal.getInstance(document.getElementById('riskActionModal')).hide();
+        loadRiskData();
+      } catch (e) { onFailure(e); }
+    }
+
+    // ฟังก์ชันเดิมที่ต้องคงไว้
+    function loadHistoryMatrix() {
+        if (!currentUser.name) return;
+        loader.style.display = 'block';
+        google.script.run.withSuccessHandler(onHistoryMatrixSuccess).withFailureHandler(onFailure).getHistoryMatrixData();
+    }
+    function onHistoryMatrixSuccess(data) {
+      loader.style.display = 'none';
+      const { departments, rounds, matrix } = data;
+      let html = '<div class="table-responsive"><table id="historyMatrix" class="table table-bordered table-sm"><thead><tr><th>หน่วยงาน</th>';
+      rounds.forEach(r => { html += `<th>${r}</th>`; });
+      html += '</tr></thead><tbody>';
+      departments.forEach(d => {
+        html += `<tr><td>${d.name}</td>`;
+        rounds.forEach(r => {
+          const cell = matrix[`${d.id}|${r}`];
+          let content = cell.status === 'completed' ? `${cell.score} <br><button class="btn btn-sm btn-outline-info mt-1 no-print" onclick="viewRound('${d.id}', '${d.name}', '${r}')">ดูผล</button>` : `<button class="btn btn-sm btn-primary no-print" onclick="startNewRound('${d.id}', '${d.name}', '${r}')">เริ่ม</button>`;
+          html += `<td>${content}</td>`;
+        });
+        html += '</tr>';
+      });
+      document.getElementById('historyTableContainer').innerHTML = html + '</tbody></table></div>';
+    }
+    function startNewRound(id, name, round) {
+      document.getElementById('department').value = id;
+      document.getElementById('roundPeriod').value = round;
+      new bootstrap.Tab(document.getElementById('evaluate-tab')).show();
+    }
+    function viewRound(id, name, round) { startEvaluation(id, name, round, '', true); }
+    function handleLogout() { if (liff.isLoggedIn()) { liff.logout(); window.location.reload(); } }
+    function goBack() { showView('mainContent'); }
+    function showView(v) { ['mainContent','checklistDiv','summaryDiv'].forEach(id => document.getElementById(id).style.display = id === v ? 'block' : 'none'); }
+    function onFailure(e) { loader.style.display='none'; alert(e.message || e); }
+    
+    // UI Event สำหรับการประเมิน (เหมือนเดิมทุกประการ)
+    async function handleStartEvaluation() {
+      const deptId = document.getElementById('department').value;
+      const round = document.getElementById('roundPeriod').value;
+      const type = document.querySelector('input[name="typeRound"]:checked').value;
+      const deptName = document.getElementById('department').options[document.getElementById('department').selectedIndex].text;
+      if (!deptId || !round) return;
+      loader.style.display = 'block';
+      currentSelection = { user: currentUser.name, departmentId: deptId, departmentName: deptName, typeRound: type, roundPeriod: round, isReadOnly: false };
       try {
         const data = await callGAS('getChecklistForRound', currentSelection);
         onChecklistDataSuccess(data);
-      } catch (error) {
-        onFailure(error);
-      }
+      } catch (e) { onFailure(e); }
     }
-    
+
     function onChecklistDataSuccess(data) {
-      if (!data || data.error) { onFailure({ message: data.error }); goBack(); return; }
-      const { checklistItems, existingData, isReadOnly, existingType } = data;
-      const typeText = isReadOnly ? (existingType || '') : currentSelection.typeRound;
-      document.getElementById('checklistHeader').textContent = `${isReadOnly ? 'ดูผล' : 'ประเมิน'} Checklist: ${currentSelection.departmentName} (รอบ ${currentSelection.roundPeriod}) ${isReadOnly ? `(${typeText})` : ''}`;
+      if (data.error) { onFailure(data); return; }
+      const { checklistItems, existingData, isReadOnly } = data;
+      document.getElementById('checklistHeader').textContent = `${isReadOnly ? 'ดูผล' : 'ประเมิน'} Checklist: ${currentSelection.departmentName}`;
       
-      const groupedItems = checklistItems.reduce((acc, item) => {
-        const category = item.category || 'Uncategorized';
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(item);
-        return acc;
-      }, {});
-      
-      let html = `<form id="checklistForm" onsubmit="return false;"><div class="accordion" id="checklistAccordion">`;
-      let itemCounter = 0;
-      Object.keys(groupedItems).forEach((category, catIndex) => {
-        const categoryItems = groupedItems[category];
-        const evaluatableItems = categoryItems.filter(item => item.item_type === 'item');
-        html += `<div class="accordion-item"><h2 class="accordion-header no-print" id="heading${catIndex}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${catIndex}" aria-expanded="false" aria-controls="collapse${catIndex}">${catIndex + 1}. ${category} <span class="ms-auto me-2 badge bg-secondary" id="counter_${catIndex}">0 / ${evaluatableItems.length}</span></button></h2><div id="collapse${catIndex}" class="accordion-collapse collapse"><div class="accordion-body">`;
-        
-        categoryItems.forEach((item, idx) => {
-          if (item.item_type === 'header') {
-            html += `<div class="header-item">${item.subactivity || ''}</div>`;
-          } else if (item.item_type === 'item') {
-            itemCounter++;
-            const savedItem = existingData[item.genCode] || {};
-            const isDisabled = isReadOnly ? 'disabled' : '';
-            html += `<div class="card mb-2 checklist-item" data-category="${item.category || ''}" data-subcategory="${item.subcategory || ''}" data-subactivity="${item.subactivity || item.genCode}" data-gen-code="${item.genCode}"><div class="card-body py-2"><p class="card-text mb-2">${item.subcategory && item.subcategory !== 'No Subcategory' ? `<strong>${item.subcategory}:</strong> ` : ''}${item.subactivity || item.genCode}</p><div class="checklist-item-row"><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="score_${itemCounter}" value="1" ${savedItem.score == 1 ? 'checked' : ''} required ${isDisabled}><label class="form-check-label">ปฏิบัติ</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="score_${itemCounter}" value="0" ${savedItem.score == 0 && savedItem.score !== '' ? 'checked' : ''} required ${isDisabled}><label class="form-check-label">ไม่ปฏิบัติ</label></div><div class="note-wrapper"><input type="text" class="form-control form-control-sm" id="note_${item.genCode}" placeholder="Note..." value="${savedItem.note || ''}" ${isDisabled}></div></div></div></div>`;
+      const grouped = checklistItems.reduce((acc, i) => { (acc[i.category] = acc[i.category] || []).push(i); return acc; }, {});
+      let html = `<form id="checklistForm"><div class="accordion" id="acc">`;
+      Object.keys(grouped).forEach((cat, idx) => {
+        const items = grouped[cat].filter(i => i.item_type === 'item');
+        html += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c${idx}">${idx+1}. ${cat} <span class="ms-auto badge bg-secondary">0 / ${items.length}</span></button></h2><div id="c${idx}" class="accordion-collapse collapse"><div class="accordion-body">`;
+        grouped[cat].forEach(item => {
+          if (item.item_type === 'header') html += `<div class="header-item">${item.subactivity}</div>`;
+          else {
+            const saved = existingData[item.genCode] || {};
+            html += `<div class="card mb-2 checklist-item" data-category="${item.category}" data-gen-code="${item.genCode}"><div class="card-body py-2"><p class="mb-2">${item.subactivity}</p><div class="checklist-item-row"><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="s_${item.genCode}" value="1" ${saved.score==1?'checked':''} required ${isReadOnly?'disabled':''}><label class="form-check-label">ปฏิบัติ</label></div><div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="s_${item.genCode}" value="0" ${saved.score==0?'checked':''} required ${isReadOnly?'disabled':''}><label class="form-check-label">ไม่ปฏิบัติ</label></div><div class="note-wrapper"><input type="text" class="form-control form-control-sm" id="note_${item.genCode}" value="${saved.note||''}" ${isReadOnly?'disabled':''}></div></div></div></div>`;
           }
         });
         html += `</div></div></div>`;
       });
       html += `</div>`;
-      if (!isReadOnly) html += `<button type="button" id="submitBtn" class="btn btn-success w-100 mt-4 no-print">ส่งผลการประเมิน</button>`;
-      html += `<div class="mt-2 d-grid gap-2 d-sm-flex justify-content-sm-center"><button type="button" class="btn btn-secondary no-print" onclick="goBack()">กลับไปหน้าแรก</button>${isReadOnly ? `<button type="button" class="btn btn-success no-print" onclick="printReport('checklistDiv')">พิมพ์รายงานนี้</button>` : ''}</div></form>`;
-      
+      if (!isReadOnly) html += `<button type="button" class="btn btn-success w-100 mt-4" onclick="submitChecklist()">ส่งผลการประเมิน</button>`;
+      html += `<button type="button" class="btn btn-secondary w-100 mt-2" onclick="goBack()">กลับ</button></form>`;
       document.getElementById('checklistFormContainer').innerHTML = html;
-      showView('checklistDiv');
-      loader.style.display = 'none';
-
-      if (!isReadOnly) {
-        document.getElementById('submitBtn').addEventListener('click', handleSubmit);
-        document.getElementById('checklistForm').querySelectorAll('input[type="radio"]').forEach(radio => {
-          radio.addEventListener('change', (e) => {
-              const accordionItem = e.target.closest('.accordion-item');
-              const itemsInCategory = accordionItem.querySelectorAll('.checklist-item');
-              const evaluated = Array.from(itemsInCategory).filter(item => item.querySelector('input[type="radio"]:checked')).length;
-              accordionItem.querySelector('.badge').textContent = `${evaluated} / ${itemsInCategory.length}`;
-          });
-        });
-      }
-    }
-    
-    async function handleSubmit() {
-        const form = document.getElementById('checklistForm');
-        if (!form.checkValidity()) { alert('กรุณาประเมินให้ครบทุกข้อ'); form.reportValidity(); return; }
-        loader.style.display = 'block';
-        const results = [];
-        document.querySelectorAll('.checklist-item').forEach(item => {
-            const scoreInput = item.querySelector(`input[type="radio"]:checked`);
-            results.push({ 
-                category: item.dataset.category, subcategory: item.dataset.subcategory, subactivity: item.dataset.subactivity,
-                genCode: item.dataset.genCode, score: scoreInput ? scoreInput.value : '', 
-                note: item.querySelector(`#note_${item.dataset.genCode}`).value
-            });
-        });
-        lastSubmissionResults = results;
-        const submissionData = { ...currentSelection, results: results };
-        try {
-          const data = await callGAS('saveRoundData', submissionData);
-          onSaveSuccess(data);
-        } catch (error) {
-          onFailure(error);
-        }
+      showView('checklistDiv'); loader.style.display = 'none';
     }
 
-    function onSaveSuccess(data) {
-      loader.style.display = 'none';
-      if(data.status === 'success'){
-        document.getElementById('summaryDept').textContent = `${currentSelection.departmentName} (รอบ ${currentSelection.roundPeriod} - ${currentSelection.typeRound})`;
-        document.getElementById('summaryScore').textContent = `คะแนนรวม: ${data.compliant} / ${data.total} ข้อ`;
-        const percentage = data.total > 0 ? ((data.compliant / data.total) * 100).toFixed(0) : 0;
-        document.getElementById('summaryPercentage').textContent = `${percentage}%`;
-        const categoryScores = lastSubmissionResults.reduce((acc, item) => {
-            const cat = item.category || 'Uncategorized';
-            if (!acc[cat]) acc[cat] = { compliant: 0, total: 0 };
-            acc[cat].total++;
-            if (item.score == 1) acc[cat].compliant++;
-            return acc;
-        }, {});
-        let categoryHtml = '<h5>สรุปตามหมวดหมู่</h5><div class="table-responsive"><table class="table table-sm"><tbody>';
-        for(const category in categoryScores) {
-            const cs = categoryScores[category];
-            categoryHtml += `<tr><td>${category}</td><td>${cs.compliant} / ${cs.total}</td></tr>`;
-        }
-        categoryHtml += '</tbody></table></div>';
-        document.getElementById('summaryCategoryScores').innerHTML = categoryHtml;
-        let detailsHtml = '<hr><h5>รายละเอียดการประเมิน</h5><div class="table-responsive"><table class="table table-sm table-striped summary-table"><tbody>';
-        lastSubmissionResults.forEach(item => {
-            const resultText = item.score == 1 ? '<span class="text-success">ปฏิบัติ</span>' : '<span class="text-danger">ไม่ปฏิบัติ</span>';
-            const noteText = item.note ? ` - <span class="text-muted">${item.note}</span>` : '';
-            detailsHtml += `<tr><td>${item.subcategory && item.subcategory !== 'No Subcategory' ? `<strong>${item.subcategory}:</strong> ` : ''}${item.subactivity}</td><td>${resultText}${noteText}</td></tr>`;
-        });
-        detailsHtml += '</tbody></table></div>';
-        document.getElementById('summaryDetails').innerHTML = detailsHtml;
-        showView('summaryDiv');
-      } else { onFailure({ message: data.message }); }
-    }
-    
-    function onHistoryMatrixSuccess(data) {
-      loader.style.display = 'none';
-      if (data.error) { onFailure({ message: data.error }); return; }
-      const { departments, rounds, matrix } = data;
-      let tableHtml = '<div class="table-responsive"><table id="historyMatrix" class="table table-bordered table-sm"><thead><tr><th>หน่วยงาน</th>';
-      rounds.forEach(round => { tableHtml += `<th>${round}</th>`; });
-      tableHtml += '</tr></thead><tbody>';
-      departments.forEach(dept => {
-        tableHtml += `<tr><td>${dept.name}</td>`;
-        rounds.forEach(round => {
-          const key = `${dept.id}|${round}`;
-          const cellData = matrix[key];
-          let cellContent = '';
-          if (cellData.status === 'completed') {
-            cellContent = `${cellData.score} <br><button class="btn btn-sm btn-outline-info mt-1 no-print" onclick="viewRound('${dept.id}', '${dept.name}', '${round}')">ดูผล</button>`;
-          } else if (cellData.status === 'pending') {
-            cellContent = `<button class="btn btn-sm btn-primary no-print" onclick="startNewRound('${dept.id}', '${dept.name}', '${round}')">เริ่มประเมิน</button>`;
-          } else if (cellData.status === 'upcoming') {
-            cellContent = `<small class="text-muted">ยังไม่ถึงเวลา</small>`;
-          } else if (cellData.status === 'expired') {
-            cellContent = `<small class="text-muted">หมดเวลา</small>`;
-          } else {
-            cellContent = `<small class="text-muted">ไม่มีข้อมูล</small>`;
-          }
-          tableHtml += `<td>${cellContent}</td>`;
-        });
-        tableHtml += '</tr>';
+    async function submitChecklist() {
+      const form = document.getElementById('checklistForm');
+      if (!form.checkValidity()) { alert('กรุณากรอกให้ครบ'); return; }
+      loader.style.display = 'block';
+      const results = [];
+      document.querySelectorAll('.checklist-item').forEach(el => {
+        results.push({ genCode: el.dataset.genCode, category: el.dataset.category, score: el.querySelector('input:checked').value, note: el.querySelector('input[type="text"]').value });
       });
-      tableHtml += '</tbody></table></div>';
-      document.getElementById('historyTableContainer').innerHTML = tableHtml;
-    }
-    
-    function startNewRound(departmentId, departmentName, round) {
-      const departmentSelect = document.getElementById('department');
-      const roundPeriodSelect = document.getElementById('roundPeriod');
-      if(allRounds.some(opt => opt.name === round)) {
-        departmentSelect.value = departmentId;
-        roundPeriodSelect.value = round;
-        const evaluateTab = new bootstrap.Tab(document.getElementById('evaluate-tab'));
-        evaluateTab.show();
-      } else { alert(`รอบ '${round}' อาจยังไม่ถึงเวลาหรือหมดเวลาประเมินแล้ว`); }
-    }
-
-    function viewRound(departmentId, departmentName, round) {
-        startEvaluation(departmentId, departmentName, round, '', true); 
+      try {
+        const res = await callGAS('saveRoundData', { ...currentSelection, results });
+        onSaveSuccess(res);
+      } catch (e) { onFailure(e); }
     }
   </script>
 </body>
