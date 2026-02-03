@@ -86,7 +86,7 @@
           </div>
         </div>
 
-        <!-- Tab 3: IC Risk (New) -->
+        <!-- Tab 3: IC Risk (Manual Management) -->
         <div class="tab-pane fade" id="risk-pane" role="tabpanel">
           <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
             <h5 class="mb-0">รายการความเสี่ยง (Close-loop Management)</h5>
@@ -105,7 +105,7 @@
                       </tr>
                     </thead>
                     <tbody id="riskTableBody">
-                      <tr><td colspan="4" class="py-4">กำลังโหลดข้อมูลความเสี่ยง...</td></tr>
+                      <tr><td colspan="4" class="py-4 text-center">กำลังโหลดข้อมูลความเสี่ยง...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -115,11 +115,13 @@
       </div>
     </div>
     
-    <!-- Checklist & Summary Views -->
+    <!-- Checklist View -->
     <div id="checklistDiv" style="display: none;"><h3 id="checklistHeader" class="no-print mb-3"></h3><div id="checklistFormContainer"></div></div>
+    
+    <!-- Summary View -->
     <div id="summaryDiv" style="display: none;"><div class="card"><div class="card-header"><h3>สรุปผลการประเมิน</h3></div><div class="card-body text-center"><h4 id="summaryDept"></h4><p id="summaryScore" class="fs-3"></p><p id="summaryPercentage" class="fs-1 fw-bold text-success"></p><div id="summaryCategoryScores" class="mt-4 text-start"></div><div class="no-print mt-4"><button class="btn btn-success me-2" onclick="printReport('summaryDiv')">พิมพ์รายงาน</button><button class="btn btn-primary" onclick="goBack()">กลับไปหน้าแรก</button></div></div></div></div>
 
-    <!-- Modal: Close Loop Action -->
+    <!-- Modal: Close Loop Action (Manage existing) -->
     <div class="modal fade" id="riskActionModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -131,10 +133,10 @@
             <div class="row mb-3">
               <div class="col-md-6">
                 <h6><i class="bi bi-info-circle"></i> รายละเอียดที่พบ</h6>
-                <p id="modalRiskNote" class="p-2 bg-light border rounded small"></p>
+                <p id="modalRiskNote" class="p-2 bg-light border rounded small" style="white-space: pre-line;"></p>
                 <div id="modalRiskImgBefore"></div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-6 border-start">
                 <h6><i class="bi bi-tools"></i> บันทึกการแก้ไข (Action)</h6>
                 <div class="mb-2">
                   <label class="small">ประเภทการจัดการ</label>
@@ -146,16 +148,16 @@
                 </div>
                 <div class="mb-2">
                   <label class="small">บันทึกเพิ่มเติม</label>
-                  <textarea class="form-control form-control-sm" id="editActionNote" rows="2"></textarea>
+                  <textarea class="form-control form-control-sm" id="editActionNote" rows="3" placeholder="ระบุสิ่งที่ดำเนินการแก้ไข..."></textarea>
                 </div>
                 <div class="mb-2">
-                  <label class="small">รูปภาพหลักฐานการแก้</label>
+                  <label class="small">รูปภาพหลักฐานการแก้ไข</label>
                   <input type="file" class="form-control form-control-sm" id="editActionFile" accept="image/*">
                 </div>
               </div>
             </div>
             <hr>
-            <div class="bg-primary-subtle p-3 rounded">
+            <div class="bg-primary-subtle p-3 rounded shadow-sm">
               <h6><i class="bi bi-check2-square"></i> ส่วนของ Auditor (ICN)</h6>
               <div class="row">
                 <div class="col-6">
@@ -178,8 +180,50 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
             <button type="button" class="btn btn-primary" onclick="submitRiskUpdate()">บันทึกข้อมูล</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Manual Risk Report (Add new) -->
+    <div class="modal fade" id="manualRiskModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-megaphone"></i> รายงานความเสี่ยงใหม่</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label small">หน่วยงานที่พบ</label>
+              <select class="form-select" id="manualRiskDept" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">หมวดหมู่</label>
+              <select class="form-select" id="manualRiskCategory" onchange="updateManualRiskItems()" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">รายการความเสี่ยง</label>
+              <select class="form-select" id="manualRiskItem" onchange="updateSeveritySuggestion()" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">ระดับความรุนแรงแนะนำ</label>
+              <input type="text" class="form-control bg-light" id="manualRiskSeverity" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">บันทึกรายละเอียดเพิ่มเติม/พฤติกรรมที่พบ</label>
+              <textarea class="form-control" id="manualRiskNote" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">รูปภาพหลักฐาน</label>
+              <input type="file" class="form-control" id="manualRiskFile" accept="image/*">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-danger" onclick="submitManualRisk()">ส่งรายงาน</button>
           </div>
         </div>
       </div>
@@ -193,15 +237,40 @@
     const LIFF_ID = '2008690634-hcI0haXq';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJxVa9n3OsRR6WoFLZmptc9K0SORf1tvUwYoa0Ec7cvdkt3HLNQUgDdvf-vOGzNM3W/exec';
     
-    // UI Elements Declarations
     const loader = document.querySelector('.loader');
     const mainContent = document.getElementById('mainContent');
     const checklistView = document.getElementById('checklistDiv');
     const summaryView = document.getElementById('summaryDiv');
 
     let currentSelection = {}, allDepartments = [], allRounds = [], currentUser = {};
-    let lastSubmissionResults = [];
     let activeRiskData = [];
+
+    // Master Data สำหรับ Risk รายงานเอง
+    const RISK_MASTER = {
+      "1. Personnel Safety": [
+        { risk: "อุบัติเหตุเข็มตำ / ของมีคมบาด (Needle Stick Injury)", sev: "สูง (High)" },
+        { risk: "สารคัดหลั่งกระเด็นเข้าตา/เยื่อบุ", sev: "ปานกลาง" },
+        { risk: "ปฏิบัติงานกับผู้ป่วยติดเชื้อโดยไม่สวม PPE ที่ถูกต้อง", sev: "สูง" }
+      ],
+      "2. Environment": [
+        { risk: "ถังขยะติดเชื้อชำรุด / ฝาปิดไม่สนิท / มีรูรั่ว", sev: "ปานกลาง" },
+        { risk: "การคัดแยกขยะไม่ถูกต้อง (ขยะติดเชื้อปนขยะทั่วไป)", sev: "ปานกลาง" },
+        { risk: "พบแมลง/สัตว์พาหะนำโรคในหอผู้ป่วย", sev: "สูง" },
+        { risk: "ระบบระบายอากาศห้องแยกโรค (Neg Pressure) ไม่ทำงาน", sev: "สูง (Critical)" },
+        { risk: "น้ำยาล้างมือ/Alcohol Gel หมด หรือหัวกดชำรุด", sev: "ต่ำ" },
+        { risk: "สภาพแวดล้อมสกปรก มีคราบเลือด/สารคัดหลั่ง", sev: "ปานกลาง" }
+      ],
+      "3. Process / Care": [
+        { risk: "ไม่ล้างมือก่อน/หลัง สัมผัสผู้ป่วย (Low Compliance)", sev: "ปานกลาง" },
+        { risk: "ลืมทำ Bundle ป้องกันการติดเชื้อ (เช่น Oral care ใน VAP)", sev: "สูง" },
+        { risk: "การเคลื่อนย้ายผู้ป่วยติดเชื้อโดยไม่มีมาตรการป้องกัน", sev: "สูง" }
+      ],
+      "4. Equipment / Supplies": [
+        { risk: "ห่ออุปกรณ์ปราศจากเชื้อ ฉีกขาด/เปียกชื้น/หมดอายุ", sev: "สูง" },
+        { risk: "เครื่องมือแพทย์ (เช่น เครื่องช่วยหายใจ) ไม่ผ่านการทำความสะอาดหลังใช้", sev: "สูง" },
+        { risk: "ขวดยา Multiple dose เปิดใช้นานเกินกำหนด/ไม่ระบุวันเปิด", sev: "ปานกลาง" }
+      ]
+    };
 
     async function callGAS(action, payload = null) {
       if (!navigator.onLine) throw new Error('อินเทอร์เน็ตหลุด');
@@ -265,6 +334,7 @@
       loader.style.display = 'none';
     }
 
+    // --- IC Risk Logic ---
     async function loadRiskData() {
       loader.style.display = 'block';
       try {
@@ -278,7 +348,7 @@
     function renderRiskTable(data) {
       const tbody = document.getElementById('riskTableBody');
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">ไม่พบรายการความเสี่ยง</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">ไม่พบรายการความเสี่ยง</td></tr>';
         return;
       }
       tbody.innerHTML = data.reverse().map(r => {
@@ -291,17 +361,88 @@
           <tr>
             <td><small>${r.risk_id}</small></td>
             <td>
-              <div class="fw-bold">${r.category}</div>
+              <div class="fw-bold text-primary">${r.category}</div>
               <div class="small text-muted">${dept}</div>
-              <div class="text-truncate" style="max-width: 200px;"><small>${r.note}</small></div>
+              <div class="text-truncate" style="max-width: 250px;"><small>${r.note}</small></div>
             </td>
             <td><span class="badge status-badge ${badgeClass}">${r.current_status}</span></td>
             <td>
-              <button class="btn btn-sm btn-outline-primary" onclick="manageRisk('${r.risk_id}')"><i class="bi bi-pencil-square"></i></button>
+              <button class="btn btn-sm btn-outline-dark" onclick="manageRisk('${r.risk_id}')"><i class="bi bi-gear-fill"></i></button>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    function openManualRiskModal() {
+        const deptSelect = document.getElementById('manualRiskDept');
+        const catSelect = document.getElementById('manualRiskCategory');
+        
+        deptSelect.innerHTML = '<option selected disabled value="">เลือกหน่วยงาน...</option>';
+        allDepartments.forEach(d => deptSelect.add(new Option(d.name, d.id)));
+        
+        catSelect.innerHTML = '<option selected disabled value="">เลือกหมวดหมู่...</option>';
+        Object.keys(RISK_MASTER).forEach(cat => catSelect.add(new Option(cat, cat)));
+        
+        document.getElementById('manualRiskItem').innerHTML = '<option disabled value="">โปรดเลือกหมวดหมู่ก่อน</option>';
+        document.getElementById('manualRiskSeverity').value = '';
+        document.getElementById('manualRiskNote').value = '';
+        
+        new bootstrap.Modal(document.getElementById('manualRiskModal')).show();
+    }
+
+    function updateManualRiskItems() {
+      const cat = document.getElementById('manualRiskCategory').value;
+      const itemSelect = document.getElementById('manualRiskItem');
+      itemSelect.innerHTML = '<option selected disabled value="">เลือกรายการความเสี่ยง...</option>';
+      if (RISK_MASTER[cat]) {
+        RISK_MASTER[cat].forEach(i => itemSelect.add(new Option(i.risk, i.risk)));
+      }
+      updateSeveritySuggestion();
+    }
+
+    function updateSeveritySuggestion() {
+      const cat = document.getElementById('manualRiskCategory').value;
+      const itemVal = document.getElementById('manualRiskItem').value;
+      const sevInput = document.getElementById('manualRiskSeverity');
+      if (RISK_MASTER[cat]) {
+        const match = RISK_MASTER[cat].find(i => i.risk === itemVal);
+        sevInput.value = match ? match.sev : '';
+      }
+    }
+
+    async function submitManualRisk() {
+      const deptId = document.getElementById('manualRiskDept').value;
+      const cat = document.getElementById('manualRiskCategory').value;
+      const item = document.getElementById('manualRiskItem').value;
+      const note = document.getElementById('manualRiskNote').value;
+      
+      if (!deptId || !cat || !item) { alert('กรุณาระบุข้อมูลให้ครบถ้วน'); return; }
+      
+      loader.style.display = 'block';
+      let imageId = '';
+      const fileInput = document.getElementById('manualRiskFile');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const base64 = await toBase64(file);
+        const uploadRes = await callGAS('uploadImage', { fileData: { data: base64, name: file.name } });
+        imageId = uploadRes.id;
+      }
+
+      const payload = {
+        reporter: currentUser.name,
+        dept_id: deptId,
+        category: cat,
+        note: `[${item}] ${note}`,
+        severity_level: document.getElementById('manualRiskSeverity').value,
+        image_before: imageId
+      };
+
+      try {
+        await callGAS('saveManualRisk', { payload });
+        bootstrap.Modal.getInstance(document.getElementById('manualRiskModal')).hide();
+        loadRiskData();
+      } catch (e) { onFailure(e); }
     }
 
     function manageRisk(riskId) {
@@ -317,7 +458,7 @@
       const imgDiv = document.getElementById('modalRiskImgBefore');
       imgDiv.innerHTML = risk.image_before ? 
         `<img src="https://lh3.googleusercontent.com/d/${risk.image_before}" class="img-thumbnail mt-2" style="max-height:150px">` : 
-        '<small class="text-muted">ไม่มีรูปประกอบ</small>';
+        '<small class="text-muted">ไม่มีรูปภาพประกอบ</small>';
 
       new bootstrap.Modal(document.getElementById('riskActionModal')).show();
     }
@@ -330,12 +471,7 @@
       const fileInput = document.getElementById('editActionFile');
       if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        const reader = new FileReader();
-        const base64Promise = new Promise(resolve => {
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        });
-        const base64 = await base64Promise;
+        const base64 = await toBase64(file);
         try {
           const uploadRes = await callGAS('uploadImage', { fileData: { data: base64, name: file.name } });
           imageId = uploadRes.id;
@@ -360,10 +496,15 @@
       } catch (e) { onFailure(e); }
     }
 
-    function openManualRiskModal() {
-        alert("หน้าจอบันทึกความเสี่ยงด้วยตัวเองกำลังพัฒนา หรือกรุณาติดต่อผู้ดูแลระบบ");
-    }
+    // --- Helper Functions ---
+    const toBase64 = file => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
 
+    // --- Legacy Functions (Maintained) ---
     async function loadHistoryMatrix() {
         if (!currentUser.name) return;
         loader.style.display = 'block';
@@ -372,7 +513,6 @@
           onHistoryMatrixSuccess(data);
         } catch (e) { onFailure(e); }
     }
-
     function onHistoryMatrixSuccess(data) {
       loader.style.display = 'none';
       const { departments, rounds, matrix } = data;
@@ -390,26 +530,15 @@
       });
       document.getElementById('historyTableContainer').innerHTML = html + '</tbody></table></div>';
     }
-
     function startNewRound(id, name, round) {
       document.getElementById('department').value = id;
       document.getElementById('roundPeriod').value = round;
       new bootstrap.Tab(document.getElementById('evaluate-tab')).show();
     }
-
     function viewRound(id, name, round) { startEvaluation(id, name, round, '', true); }
-
     function handleLogout() { if (liff.isLoggedIn()) { liff.logout(); window.location.reload(); } }
-
     function goBack() { showView('mainContent'); }
-
-    function showView(v) { 
-        ['mainContent','checklistDiv','summaryDiv'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = id === v ? 'block' : 'none';
-        });
-    }
-
+    function showView(v) { ['mainContent','checklistDiv','summaryDiv'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = id === v ? 'block' : 'none'; }); }
     function onFailure(e) { loader.style.display='none'; alert(e.message || e); }
     
     async function handleStartEvaluation() {
@@ -430,7 +559,6 @@
       if (data.error) { onFailure(data); return; }
       const { checklistItems, existingData, isReadOnly } = data;
       document.getElementById('checklistHeader').textContent = `${isReadOnly ? 'ดูผล' : 'ประเมิน'} Checklist: ${currentSelection.departmentName}`;
-      
       const grouped = checklistItems.reduce((acc, i) => { (acc[i.category] = acc[i.category] || []).push(i); return acc; }, {});
       let html = `<form id="checklistForm"><div class="accordion" id="acc">`;
       Object.keys(grouped).forEach((cat, idx) => {
@@ -458,7 +586,7 @@
       loader.style.display = 'block';
       const results = [];
       document.querySelectorAll('.checklist-item').forEach(el => {
-        results.push({ genCode: el.dataset.genCode, category: el.dataset.category, score: el.querySelector('input:checked').value, note: el.querySelector('input[type="text"]').value });
+        results.push({ genCode: el.dataset.genCode, category: el.dataset.category, subactivity: el.querySelector('p').textContent, score: el.querySelector('input:checked').value, note: el.querySelector('input[type="text"]').value });
       });
       try {
         const res = await callGAS('saveRoundData', { ...currentSelection, results });

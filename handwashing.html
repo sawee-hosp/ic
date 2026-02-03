@@ -15,13 +15,15 @@
 
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Changed to Cloudflare CDN for better stability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" referrerpolicy="no-referrer"></script>
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" referrerpolicy="no-referrer"></script>
     
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -89,9 +91,16 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // Explicitly use window.React and window.ReactDOM to avoid ReferenceError
-        const { useState, useEffect, useRef, useMemo } = window.React;
+        // Safe check for React
+        const React = window.React;
         const ReactDOM = window.ReactDOM;
+
+        if (!React || !ReactDOM) {
+            document.getElementById('root').innerHTML = '<div style="color:white; text-align:center; padding:20px;">Error: React failed to load. Please refresh.</div>';
+            throw new Error("React is not loaded");
+        }
+
+        const { useState, useEffect, useRef, useMemo } = React;
         
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyX0pC3eLOod07tKyR3loiCecqps6er8EDcGhbtHVm885s2R2Zri6HSr94tKw3GosMI/exec";
         const LIFF_ID = "2008690634-UG4TJcVB";
@@ -160,7 +169,7 @@
             ]
         };
 
-        // --- FIXED: Safer Lucide Icon Component ---
+        // --- Safer Lucide Icon Component ---
         const LucideIcon = ({ name, className }) => {
             const [svgHtml, setSvgHtml] = useState('');
 
@@ -228,15 +237,14 @@
             </div>
         );
 
-        // Voice Recording Modal with Full Screen Examples & 5s Logic
-        const VoiceModal = ({ isListening, transcript, onEnd, onClose }) => {
+        // Voice Recording Modal - No Manual Submit Button
+        const VoiceModal = ({ isListening, transcript, onClose }) => {
             const examples = [
                 "พยาบาล ห้องคลอด ล้างมือก่อนทำหัตถการ ครบทุกขั้นตอน",
                 "แพทย์ ไม่ได้ล้างมือ ที่ห้องฉุกเฉิน หลังสัมผัสผู้ป่วย",
                 "ผู้ช่วยเหลือคนไข้ วอร์ดชาย ไม่ได้ถูรอบข้อมือ หลังสัมผัสสิ่งแวดล้อม"
             ];
             const [currentExample, setCurrentExample] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(null); // Timer for 5s countdown
 
             useEffect(() => {
                 const interval = setInterval(() => {
@@ -259,11 +267,10 @@
                         </div>
                         
                         <h3 className="text-2xl font-bold text-white mb-2">{isListening ? 'กำลังฟัง...' : 'ประมวลผล...'}</h3>
-                        {/* Countdown text if silence detected */}
                         <div className="h-6 mb-4">
                             {isListening && transcript && (
                                 <span className="text-xs text-slate-400 animate-pulse">
-                                    หยุดพูด 5 วินาที เพื่อประมวลผล
+                                    หยุดพูด 2 วินาที เพื่อประมวลผลอัตโนมัติ
                                 </span>
                             )}
                         </div>
@@ -282,7 +289,7 @@
                             )}
                         </div>
                         
-                        {isListening && <button onClick={onEnd} className="mt-8 px-8 py-3 bg-emerald-600 border border-emerald-500 hover:bg-emerald-500 rounded-full text-white text-base font-bold transition-all shadow-lg shadow-emerald-900/50">เสร็จสิ้น (หรือรอ 5 วิ)</button>}
+                        {/* No Manual Button here anymore */}
                     </div>
                 </div>
             );
@@ -490,19 +497,38 @@
                 }
             };
 
-            // Voice Recognition Logic
-            const startListening = () => {
+            // SILENT BACKGROUND LOGGING
+            const logVoiceToBackend = (data, transcript, status) => {
+                const logPayload = {
+                    timestamp: new Date().toISOString(),
+                    full_text: transcript,
+                    location: data?.location || '',
+                    healthcare_worker: data?.hcw || '',
+                    moment: data?.moment || '',
+                    method: data?.method || '',
+                    step: data?.steps ? Object.keys(data.steps).filter(k => data.steps[k]).join(',') : '',
+                    accept: status
+                };
+
+                // Send without awaiting result (fire and forget from UI perspective)
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    body: JSON.stringify({ action: 'logVoice', payload: logPayload })
+                }).catch(e => console.error("Log Error (Silent)", e));
+            };
+
+            const startListeningNew = () => {
                 if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                    alert("เบราว์เซอร์ของคุณไม่รองรับการสั่งงานด้วยเสียง (แนะนำ Chrome หรือ Safari)");
+                    alert("แนะนำใช้ Chrome หรือ Safari");
                     return;
                 }
-
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const recognition = new SpeechRecognition();
                 recognitionRef.current = recognition;
                 
                 recognition.lang = 'th-TH';
-                recognition.continuous = true; // IMPORTANT: Keep listening to allow pauses
+                recognition.continuous = true; 
                 recognition.interimResults = true;
 
                 setIsListening(true);
@@ -511,103 +537,35 @@
                 setReviewData(null);
 
                 recognition.onresult = (event) => {
-                    // Reset 5s timer on every new result
                     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-                    silenceTimerRef.current = setTimeout(() => {
-                        stopAndProcess();
-                    }, 5000);
-
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                        }
-                    }
                     
-                    // Combine previous final results if needed, or just use current session
-                    // For continuous = true, resultIndex increments.
-                    // We need to accumulate full text.
                     let fullText = '';
                     for (let i = 0; i < event.results.length; ++i) {
                         fullText += event.results[i][0].transcript;
                     }
                     setTranscript(fullText);
+                    
+                    // Reduced to 2 seconds for faster response
+                    silenceTimerRef.current = setTimeout(() => {
+                        if (recognitionRef.current) recognitionRef.current.stop();
+                        setIsListening(false);
+                        processVoiceCommand(fullText);
+                    }, 2000);
                 };
 
-                recognition.onend = () => {
-                    // If stopped manually or by error, we might be done.
-                    // But if continuous=true, it shouldn't stop unless we tell it or lengthy silence.
-                    // We handle the "end" via the timer mostly.
-                    if (isListening) {
-                        // Unexpected end (e.g. mobile OS cut it off), process what we have
-                        // setIsListening(false);
-                        // processVoiceCommand(transcript);
-                    }
+                recognition.onend = () => { setIsListening(false); };
+                recognition.onerror = (e) => { 
+                    setIsListening(false); 
+                    setShowVoiceModal(false); 
                 };
-                
-                recognition.onerror = (event) => {
-                    console.error(event.error);
-                    if (event.error === 'no-speech') return; // Ignore
-                    setIsListening(false);
-                    setShowVoiceModal(false);
-                };
-
                 recognition.start();
             };
 
-            const stopAndProcess = () => {
-                if (recognitionRef.current) {
-                    recognitionRef.current.stop();
-                }
-                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-                setIsListening(false);
-                
-                // Need to use the latest transcript state. 
-                // Since this runs in a timeout, closure might be stale.
-                // React state inside timeout is tricky.
-                // Best to use a ref for transcript or rely on the fact that setState triggers re-render 
-                // but here we are calling processVoiceCommand which needs the text.
-                // Let's pass the text from state?
-                // Actually, the timeout callback will capture the `transcript` variable from render scope if defined there? No.
-                // We'll use a functional state update or just trust the latest `transcript` if we use a Ref for it.
-                // Let's rely on `transcript` state being up to date enough or pass it differently.
-                // HACK: Use the DOM element or a ref to store transcript for valid access in timeout.
-            };
-            
-            // Ref to access latest transcript in timeout
-            const transcriptRef = useRef('');
-            useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
-
-            const stopAndProcessManual = () => {
-                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-                if (recognitionRef.current) recognitionRef.current.stop();
-                setIsListening(false);
-                processVoiceCommand(transcriptRef.current);
-            };
-
-            // Enhance: use the ref in the timeout
-            useEffect(() => {
-                // Override the timeout logic in startListening to use the ref function
-                // Actually, logic is embedded in onresult.
-            }, []);
-            
-            // Re-implement onresult logic to use transcriptRef correctly
-            // (See updated startListening below in render if needed, but since we use refs...)
-            // Let's fix the `stopAndProcess` called by timeout to use `transcriptRef.current`
-            
             const processVoiceCommand = (text) => {
-                // Helper to search in DB
                 const findMatch = (category, text) => {
                     const list = SEARCH_DB[category];
-                    // Sort keys by length desc to match longest phrase first
-                    // We check if input text *includes* any of the keys
                     let bestMatch = null;
                     let maxKeyLen = 0;
-
                     list.forEach(item => {
                         item.keys.forEach(key => {
                             if (text.includes(key)) {
@@ -623,30 +581,19 @@
 
                 const foundLoc = findMatch('Location', text);
                 const foundHcw = findMatch('HCW', text);
-                const foundMoment = findMatch('Moment', text); // Returns code (int or string)
+                const foundMoment = findMatch('Moment', text);
                 
                 let foundMethod = findMatch('Method', text);
-                // Default Method Logic: If not found, and didn't say "No wash", default to Soap (1)
-                // If "No wash" (code 0) is found, use it.
-                // "No wash" keys: ไม่ได้ทำความสะอาด, ไม่ล้าง
-                if (foundMethod === null) {
-                    foundMethod = 1; // Default Soap
-                }
+                if (foundMethod === null) foundMethod = 1;
 
-                // Steps Logic
                 let foundSteps = { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true };
                 if (foundMethod === 0) {
-                    foundSteps = {}; // Clear steps if no wash
+                    foundSteps = {};
                 } else {
-                    // Check for negations: "ไม่/ลืม/ข้าม" + Step Keyword
                     SEARCH_DB.Steps.forEach(step => {
                         step.keys.forEach(key => {
-                            // Regex look for negation followed closely by key
-                            // e.g. "ไม่ได้...ฝ่ามือ"
                             const regex = new RegExp(`(ไม่|ลืม|ข้าม)[^\\s]*\\s*${key}`, 'i');
-                            if (regex.test(text)) {
-                                foundSteps[step.id] = false;
-                            }
+                            if (regex.test(text)) foundSteps[step.id] = false;
                         });
                     });
                 }
@@ -661,34 +608,20 @@
                 setShowVoiceModal(false);
             };
 
-            // Fix the timeout to use correct ref
-            const onSpeechResult = (event) => {
-                if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-                
-                let fullText = '';
-                for (let i = 0; i < event.results.length; ++i) {
-                    fullText += event.results[i][0].transcript;
-                }
-                setTranscript(fullText);
-                
-                silenceTimerRef.current = setTimeout(() => {
-                    if (recognitionRef.current) recognitionRef.current.stop();
-                    setIsListening(false);
-                    processVoiceCommand(fullText);
-                }, 5000);
-            };
-
             const confirmVoiceData = () => {
                 if (!reviewData) return;
                 
-                // Update Main State
+                // LOG: Y
+                logVoiceToBackend(reviewData, transcript, 'Y');
+
+                // Update UI
                 setLocation(reviewData.location);
                 setHcw(reviewData.hcw);
                 setMoment(reviewData.moment);
                 setMethod(reviewData.method);
                 setSteps(reviewData.steps);
 
-                // Perform Submit Logic
+                // Save
                 const payload = {
                     location: reviewData.location,
                     hcw: reviewData.hcw,
@@ -710,10 +643,22 @@
                     body: JSON.stringify({ action: 'saveRecord', payload })
                 }).catch(e => console.error("Save Error", e));
 
-                // Reset Form
                 setMoment('');
                 setMethod('');
                 setSteps({ 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true });
+            };
+
+            const handleRetryVoice = () => {
+                // LOG: N (Retry)
+                logVoiceToBackend(reviewData, transcript, 'N');
+                setReviewData(null); 
+                startListeningNew();
+            };
+
+            const handleCloseVoice = () => {
+                // LOG: N (Close)
+                logVoiceToBackend(reviewData, transcript, 'N');
+                setReviewData(null);
             };
 
             const handleSubmit = async () => {
@@ -741,31 +686,6 @@
                     redirect: 'follow',
                     body: JSON.stringify({ action: 'saveRecord', payload })
                 }).catch(e => console.error("Save Error", e));
-            };
-
-            // Override startListening to use new logic
-            const startListeningNew = () => {
-                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                    alert("แนะนำใช้ Chrome หรือ Safari");
-                    return;
-                }
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognitionRef.current = recognition;
-                
-                recognition.lang = 'th-TH';
-                recognition.continuous = true; 
-                recognition.interimResults = true;
-
-                setIsListening(true);
-                setShowVoiceModal(true);
-                setTranscript('');
-                setReviewData(null);
-
-                recognition.onresult = onSpeechResult;
-                recognition.onend = () => { setIsListening(false); };
-                recognition.onerror = (e) => { setIsListening(false); setShowVoiceModal(false); };
-                recognition.start();
             };
 
             if (loading && meta.locations.length === 0) return (
@@ -923,8 +843,8 @@
                         </div>
                     </div>
 
-                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} onEnd={stopAndProcessManual} onClose={() => { if(recognitionRef.current) recognitionRef.current.stop(); setShowVoiceModal(false); setIsListening(false); }} />}
-                    {reviewData && <ReviewModal data={reviewData} transcript={transcript} meta={meta} onConfirm={confirmVoiceData} onRetry={() => { setReviewData(null); startListeningNew(); }} onClose={() => setReviewData(null)} />}
+                    {showVoiceModal && <VoiceModal isListening={isListening} transcript={transcript} onClose={() => { if(recognitionRef.current) recognitionRef.current.stop(); setShowVoiceModal(false); setIsListening(false); }} />}
+                    {reviewData && <ReviewModal data={reviewData} transcript={transcript} meta={meta} onConfirm={confirmVoiceData} onRetry={handleRetryVoice} onClose={handleCloseVoice} />}
                     {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} onSpeakAgain={() => { setShowSuccess(false); startListeningNew(); }} />}
                 </div>
             );
