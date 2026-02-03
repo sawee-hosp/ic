@@ -36,14 +36,12 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">IC Round Checklist</h3>
         <div id="auth-section" class="d-flex align-items-center">
-            <!-- เดิมเป็น login-group ถูกแทนที่ด้วยสถานะกำลังเข้าสู่ระบบ -->
             <div id="login-spinner-group" class="d-flex align-items-center">
                 <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
                 <span class="text-muted small">กำลังตรวจสอบสิทธิ์...</span>
             </div>
             <div id="user-info-group" class="d-none">
                 <span class="me-2">ยินดีต้อนรับ: <strong id="user-name-display" class="text-success"></strong></span>
-                <!-- ปุ่ม Logout ทำการปิดหน้าต่าง liff -->
                 <button class="btn btn-sm btn-outline-danger no-print" id="logoutBtn">Log out</button>
             </div>
         </div>
@@ -95,12 +93,30 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const LIFF_ID = '2008690634-hcI0haXq';
+    // เพิ่ม GAS_URL เพื่อเชื่อมต่อจากภายนอก (GitHub)
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwJxVa9n3OsRR6WoFLZmptc9K0SORf1tvUwYoa0Ec7cvdkt3HLNQUgDdvf-vOGzNM3W/exec';
+    
     const mainContent = document.getElementById('mainContent');
     const checklistView = document.getElementById('checklistDiv');
     const summaryView = document.getElementById('summaryDiv');
     const loader = document.querySelector('.loader');
     let currentSelection = {}, allDepartments = [], allRounds = [], currentUser = {};
     let lastSubmissionResults = [];
+
+    // ฟังก์ชันช่วยในการเรียกใช้ GAS ผ่าน Fetch (แทนที่ google.script.run)
+    async function callGAS(action, payload = null) {
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: action, ...payload }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        if (!response.ok) throw new Error('Network response was not ok');
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    }
 
     function showView(viewIdToShow) {
         mainContent.style.display = 'none';
@@ -110,7 +126,7 @@
             document.getElementById(viewIdToShow).style.display = 'block';
         }
     }
-    function onFailure(error) { loader.style.display = 'none'; alert('เกิดข้อผิดพลาด: ' + error.message); }
+    function onFailure(error) { loader.style.display = 'none'; alert('เกิดข้อผิดพลาด: ' + (error.message || error)); }
     function goBack() { showView('mainContent'); }
     function printReport(divId) { document.querySelectorAll('.printable-area').forEach(el => el.classList.remove('printable-area')); document.getElementById(divId).classList.add('printable-area'); window.print(); }
 
@@ -123,9 +139,6 @@
       initLiff();
     });
 
-    /**
-     * ระบบเริ่ม Login ผ่าน LINE LIFF
-     */
     async function initLiff() {
         try {
             await liff.init({ liffId: LIFF_ID });
@@ -141,29 +154,35 @@
         }
     }
 
-    function handleAuthentication(userId) {
+    async function handleAuthentication(userId) {
         loader.style.display = 'block';
-        google.script.run
-            .withSuccessHandler(onAuthSuccess)
-            .withFailureHandler(onFailure)
-            .authenticateLiffUser(userId);
+        try {
+          const response = await callGAS('authenticateLiffUser', { userId: userId });
+          onAuthSuccess(response);
+        } catch (error) {
+          onFailure(error);
+        }
     }
 
-    function onAuthSuccess(response) {
+    async function onAuthSuccess(response) {
         if (response && response.status === 'success') {
-            currentUser = { hn: 'LIFF_USER', name: response.name }; // รักษาโครงสร้าง currentUser เดิม แต่เปลี่ยนแหล่งที่มาชื่อ
+            currentUser = { hn: 'LIFF_USER', name: response.name };
             document.getElementById('user-name-display').textContent = response.name;
             document.getElementById('login-spinner-group').classList.add('d-none');
             document.getElementById('user-info-group').classList.remove('d-none');
             
-            google.script.run.withSuccessHandler(onInitialDataSuccess).withFailureHandler(onFailure).getInitialData();
+            try {
+              const data = await callGAS('getInitialData');
+              onInitialDataSuccess(data);
+            } catch (error) {
+              onFailure(error);
+            }
             
             if (document.getElementById('overview-tab').classList.contains('active')) {
                 loadHistoryMatrix();
             }
         } else {
             loader.style.display = 'none';
-            // ไม่พบ userId หรือมีข้อผิดพลาด ให้ Redirect ไปตาม URL ที่กำหนด
             window.location.href = "https://sawee-hosp.github.io/ic/index.html";
         }
     }
@@ -194,10 +213,15 @@
         }
     }
     
-    function loadHistoryMatrix() {
+    async function loadHistoryMatrix() {
         if (!currentUser.name) return;
         loader.style.display = 'block';
-        google.script.run.withSuccessHandler(onHistoryMatrixSuccess).withFailureHandler(onFailure).getHistoryMatrixData();
+        try {
+          const data = await callGAS('getHistoryMatrixData');
+          onHistoryMatrixSuccess(data);
+        } catch (error) {
+          onFailure(error);
+        }
     }
 
     function handleStartEvaluation() {
@@ -209,10 +233,15 @@
       startEvaluation(deptId, deptName, round, type, false);
     }
     
-    function startEvaluation(deptId, deptName, round, type, isReadOnly = false) {
+    async function startEvaluation(deptId, deptName, round, type, isReadOnly = false) {
       loader.style.display = 'block';
       currentSelection = { user: currentUser.name, departmentId: deptId, departmentName: deptName, typeRound: type, roundPeriod: round, isReadOnly: isReadOnly };
-      google.script.run.withSuccessHandler(onChecklistDataSuccess).withFailureHandler(onFailure).getChecklistForRound(currentSelection);
+      try {
+        const data = await callGAS('getChecklistForRound', currentSelection);
+        onChecklistDataSuccess(data);
+      } catch (error) {
+        onFailure(error);
+      }
     }
     
     function onChecklistDataSuccess(data) {
@@ -268,7 +297,7 @@
       }
     }
     
-    function handleSubmit() {
+    async function handleSubmit() {
         const form = document.getElementById('checklistForm');
         if (!form.checkValidity()) { alert('กรุณาประเมินให้ครบทุกข้อ'); form.reportValidity(); return; }
         loader.style.display = 'block';
@@ -283,7 +312,12 @@
         });
         lastSubmissionResults = results;
         const submissionData = { ...currentSelection, results: results };
-        google.script.run.withSuccessHandler(onSaveSuccess).withFailureHandler(onFailure).saveRoundData(submissionData);
+        try {
+          const data = await callGAS('saveRoundData', submissionData);
+          onSaveSuccess(data);
+        } catch (error) {
+          onFailure(error);
+        }
     }
 
     function onSaveSuccess(data) {
@@ -366,5 +400,7 @@
         startEvaluation(departmentId, departmentName, round, '', true); 
     }
   </script>
+
+  
 </body>
 </html>
