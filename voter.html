@@ -3,458 +3,455 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>โหวตบุคคลดีเด่น รพ.สวี</title>
+    <title>โหวตบุคคลต้นแบบ 2025 - รพ.สวี</title>
     
-    <!-- Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-        /* Theme: Sawi Hospital Warm & Professional */
-        body { font-family: 'Sarabun', sans-serif; background: #f0fdf4; color: #1e293b; overflow-x: hidden; }
+        body { font-family: 'Kanit', sans-serif; }
+        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+        .heart-beat { animation: heartbeat 1.5s infinite; }
+        .float-animation { animation: float 3s ease-in-out infinite; }
         
-        /* Modern Glass Effect for Light Theme */
-        .glass-panel { 
-            background: rgba(255, 255, 255, 0.85); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes heartbeat {
+            0% { transform: scale(1); } 14% { transform: scale(1.1); } 28% { transform: scale(1); }
+            42% { transform: scale(1.1); } 70% { transform: scale(1); }
         }
-        
-        .header-bg {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            color: white;
+        @keyframes float {
+            0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); }
         }
 
-        .input-glass { 
-            background: rgba(255, 255, 255, 0.9); 
-            border: 1px solid #e2e8f0; 
-            color: #334155; 
-        }
-        .input-glass:focus { 
-            border-color: #10b981; 
-            outline: none; 
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); 
+        .bg-pattern-heart {
+            background-color: #fff5f7;
+            background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffccd5' fill-opacity='0.4'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6 2.686-6 6 0 2.21 1.79 4 4 4 3.314 0 6-2.686 6-6zm-4-2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2zm30 0c0-2.21-1.79-4-4-4-3.314 0-6 2.686-6 6 0 2.21 1.79 4 4 4 3.314 0 6-2.686 6-6zm-4-2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
-        .btn-primary { 
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            position: relative; overflow: hidden;
-            color: white;
-        }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px -4px rgba(5, 150, 105, 0.3); }
-        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
-
-        .candidate-card { transition: all 0.3s ease; background: white; border: 1px solid #e2e8f0; }
-        .candidate-card:hover:not(.disabled) { transform: translateY(-4px); border-color: #10b981; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        .candidate-card.selected { border-color: #10b981; background: #ecfdf5; box-shadow: 0 0 0 2px #10b981; }
-        .candidate-card.disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
-
-        .quote-text { font-family: 'Kanit', sans-serif; }
-
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0px); } }
-        .floating { animation: float 5s ease-in-out infinite; }
-
-        .loader { border: 3px solid rgba(16, 185, 129, 0.2); border-left-color: #059669; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .marquee-wrapper { display: flex; overflow: hidden; width: 100%; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); padding: 1rem 0; }
+        .marquee-content { display: flex; gap: 1.5rem; animation: scroll 40s linear infinite; padding-left: 1.5rem; }
+        .marquee-wrapper:hover .marquee-content { animation-play-state: paused; }
+        .marquee-content.reverse { animation: scroll-reverse 40s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes scroll-reverse { 0% { transform: translateX(-100%); } 100% { transform: translateX(0); } }
+        .suggestion-list::-webkit-scrollbar { width: 4px; }
+        .suggestion-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body>
+<body class="bg-pattern-heart min-h-screen text-gray-700">
     <div id="root"></div>
 
     <script type="text/babel">
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAlIL1gekP4kNJmvcpq5wWfMSzQBSG805exfEL6ccZ_vID6A7nfR4Eeyfv-GLOAjRu/exec"; 
+        const LIFF_ID = "2008690634-qeZq6pVP";
+        const DEADLINE = new Date("2026-01-05T16:00:00+07:00").getTime(); // 5 ม.ค. 2569
+
         const { useState, useEffect, useMemo } = React;
-        const LIFF_ID = "YOUR_LIFF_ID_HERE"; 
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQRd_pMI2YCDkCZEJgj0GYkLSSgjK-DWDGleIksljsf13SIToe6MkgpzKnL9lk7TkkWQ/exec';
+        const colors = ["bg-red-200 text-red-700", "bg-orange-200 text-orange-700", "bg-amber-200 text-amber-700", "bg-yellow-200 text-yellow-700", "bg-lime-200 text-lime-700", "bg-green-200 text-green-700", "bg-emerald-200 text-emerald-700", "bg-teal-200 text-teal-700", "bg-cyan-200 text-cyan-700", "bg-sky-200 text-sky-700", "bg-blue-200 text-blue-700", "bg-indigo-200 text-indigo-700", "bg-violet-200 text-violet-700", "bg-purple-200 text-purple-700", "bg-fuchsia-200 text-fuchsia-700", "bg-pink-200 text-pink-700", "bg-rose-200 text-rose-700"];
 
-        // Mock Data: รายชื่อพนักงาน (ผู้มีสิทธิ์โหวต)
-        const STAFF_LIST = [
-            { id: 'S001', name: 'นายสมชาย ใจดี', job: 'พยาบาลวิชาชีพ', dept: 'IPD' },
-            { id: 'S002', name: 'นางสาววิไล รักงาน', job: 'เภสัชกร', dept: 'Pharmacy' },
-            { id: 'S003', name: 'นายแพทย์เก่ง รักษา', job: 'แพทย์', dept: 'Medical' },
-            { id: 'S004', name: 'นางสาวสวย ใส', job: 'ธุรการ', dept: 'Admin' },
-            { id: 'S005', name: 'Dr. Strange', job: 'แพทย์', dept: 'ER' }, // Mock เพื่อทดสอบการห้ามโหวตตัวเอง
-        ];
+        // UI Components
+        const Heart = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={className}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
+        const Search = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+        const Lock = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
+        const User = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const Clock = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
-        // Mock Data: ผู้ถูกเสนอชื่อ (Candidates) - ในความเป็นจริงอาจจะมาจาก STAFF_LIST เช่นกัน
-        const CANDIDATES = [
-            { id: 'C01', name: 'Dr. Strange', img: 'https://cdn.marvel.com/content/1x/drstrange_lob_crd_01.jpg', quote: 'ความเสียสละที่เงียบงัน' },
-            { id: 'C02', name: 'Tony Stark', img: 'https://cdn.marvel.com/content/1x/ironman_lob_crd_01_3.jpg', quote: 'ผู้นำแห่งการเปลี่ยนแปลง' },
-            { id: 'C03', name: 'Thor Odinson', img: 'https://cdn.marvel.com/content/1x/thor_lob_crd_01.jpg', quote: 'พลังใจของทีมงาน' },
-            { id: 'C04', name: 'Steve Rogers', img: 'https://cdn.marvel.com/content/1x/captainamerica_lob_crd_01.jpg', quote: 'ความดีที่ยั่งยืน' },
-            { id: 'C05', name: 'Natasha', img: 'https://cdn.marvel.com/content/1x/blackwidow_lob_crd_01.jpg', quote: 'ปิดทองหลังพระ' },
-        ];
+        const Countdown = () => {
+            const [timeLeft, setTimeLeft] = useState("");
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = DEADLINE - now;
+                    if (distance < 0) { clearInterval(interval); setTimeLeft("หมดเวลาโหวตแล้ว"); return; }
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    setTimeLeft(`เหลือเวลา ${days} วัน ${hours} ชม. ${minutes} นาที`);
+                }, 1000);
+                return () => clearInterval(interval);
+            }, []);
+            return <div className="bg-pink-100 text-pink-600 text-sm py-2 px-4 rounded-full inline-flex items-center gap-2 mb-4 animate-in shadow-sm border border-pink-200"><Clock className="w-4 h-4" /> <span className="font-semibold">{timeLeft}</span></div>;
+        };
 
-        const App = () => {
-            const [profile, setProfile] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [page, setPage] = useState('login'); 
-            const [hasVoted, setHasVoted] = useState(false);
-            const [voterInfo, setVoterInfo] = useState({ id: '', name: '', job: '', dept: '', nickname: '' });
+        const LandingPage = ({ onStart, onAdminClick, liffError, userProfile, hasVoted }) => {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center relative overflow-hidden">
+                    <div className="w-full max-w-md bg-white/80 backdrop-blur rounded-3xl shadow-xl overflow-hidden border border-pink-100 z-10 p-8 space-y-4">
+                        <Heart className="w-20 h-20 mx-auto text-pink-400 drop-shadow-md heart-beat" />
+                        <h1 className="text-2xl font-bold tracking-wide text-gray-800">โหวตบุคคลดีเด่นแห่งปี</h1>
+                        <p className="text-sm text-gray-500">รพ.สวี (Sawi Hospital)</p>
+                        <Countdown />
+                        <div className="text-pink-600 font-medium italic">"เพราะรอยยิ้มและกำลังใจ...เริ่มต้นที่พวกเราเอง" 🏥✨</div>
+                        
+                        <div className="text-sm text-gray-600 space-y-2 py-2">
+                            <p>ภายใต้หน้ากากอนามัย และชุดฟอร์มที่เหนื่อยล้า...<br/>ใครคือคนที่ทำให้คุณรู้สึก <span className="font-bold text-pink-500">มีพลัง?</span></p>
+                            <p>ใครคือคนที่หยิบยื่นน้ำใจให้เพื่อนร่วมงานและคนไข้เสมอมา?</p>
+                        </div>
+
+                        <div className="bg-white/50 p-4 rounded-xl border border-pink-100 text-xs text-left space-y-1 text-gray-500">
+                            <p className="font-bold text-pink-500 mb-2">📌 เงื่อนไข:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                <li>1 คน Log In ผ่าน Line โหวตได้ 1 คน (ห้ามโหวตตัวเอง)</li>
+                                <li>ที่ 1 รางวัลได้รับรางวัลขวัญใจมหาชน</li>
+                                <li>1 ใน 5 อันดับแรกได้จะได้รับคัดเลือกเป็นบุคคลต้นแบบ รพ.สวี</li>
+                                <li>ลุ้นรางวัลสุ่มให้ voter 10 รางวัล</li>
+                                <li>โหวตได้: 08.00-16.00 น. วันที่ 5 ม.ค. 2569</li>
+                                <li>ข้อมูลการโหวตเป็นความลับตาม PDPA</li>
+                            </ul>
+                        </div>
+
+                        {liffError && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">{liffError}</div>}
+
+                        {hasVoted ? (
+                            <button disabled className="w-full font-bold py-4 px-6 rounded-full shadow-lg bg-gray-300 text-gray-500 cursor-not-allowed mt-4">
+                                คุณใช้สิทธิ์โหวตไปแล้ว
+                            </button>
+                        ) : (
+                            <button onClick={onStart} className="w-full font-bold py-4 px-6 rounded-full shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 text-lg bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600 text-white shadow-pink-200 mt-4">
+                                <span>เริ่มโหวต</span> <Heart className="w-5 h-5 fill-current" />
+                            </button>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">บุคคลต้นแบบ สร้างแรงบันดาลใจแห่งปี 2025</p>
+                    </div>
+                    <div onClick={onAdminClick} className="fixed bottom-0 left-0 w-16 h-16 z-50 cursor-pointer opacity-0 hover:opacity-100 flex items-center justify-center">
+                        <Lock className="w-4 h-4 text-gray-400" />
+                    </div>
+                </div>
+            );
+        };
+
+        const IdentifyPage = ({ candidates, onConfirm, loading }) => {
+            const [inputName, setInputName] = useState('');
+            const [nickname, setNickname] = useState('');
+            const [suggestions, setSuggestions] = useState([]);
+            const [showError, setShowError] = useState(false);
+
+            const names = useMemo(() => {
+                if (!Array.isArray(candidates)) return [];
+                return candidates.map(c => c.name).filter(name => typeof name === 'string' && name.trim().length > 0);
+            }, [candidates]);
+
+            const handleInputChange = (e) => {
+                const value = e.target.value;
+                setInputName(value);
+                setShowError(false);
+                if (value.length > 0 && names.length > 0) setSuggestions(names.filter(n => n && n.includes(value)));
+                else setSuggestions([]);
+            };
+
+            const handleManualSearch = () => { if (!names.includes(inputName)) setShowError(true); };
+            const isValidName = names.includes(inputName);
+
+            return (
+                <div className="flex flex-col items-center min-h-screen p-6 pt-20">
+                    <div className="w-full max-w-md bg-white/90 backdrop-blur rounded-2xl shadow-xl p-8 pb-12 border border-pink-100">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">ยืนยันตัวตน</h2>
+                            <p className="text-sm text-pink-600 font-medium mt-2 bg-pink-50 p-2 rounded-lg">
+                                กรอกชื่อจริงของ <span className="underline">ผู้โหวต (ตัวคุณเอง)</span><br/>
+                                ส่วนชื่อคนที่จะโหวต เลือกหน้าถัดไปครับ
+                            </p>
+                        </div>
+                        {loading ? <div className="text-center text-pink-400 animate-pulse">กำลังโหลดรายชื่อ...</div> : (
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <label className="text-xs text-gray-500 ml-1">ชื่อ-นามสกุล (จริง)</label>
+                                    <div className="relative">
+                                        <input type="text" className={`block w-full pl-4 pr-12 py-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-pink-400 text-lg outline-none ${isValidName ? 'border-green-500 bg-green-50' : 'border-gray-200'}`} placeholder="พิมพ์ชื่อจริงของคุณ..." value={inputName} onChange={handleInputChange} onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()} />
+                                        <button onClick={handleManualSearch} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-pink-100 text-pink-600 rounded-lg"><Search className="w-5 h-5" /></button>
+                                    </div>
+                                    {suggestions.length > 0 && (
+                                        <ul className="suggestion-list absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto mt-2 top-full">
+                                            {suggestions.map((name, index) => (
+                                                <li key={index} onClick={() => { setInputName(name); setSuggestions([]); setShowError(false); }} className="px-5 py-3 hover:bg-pink-50 cursor-pointer border-b border-gray-100 last:border-0 text-gray-700 text-left">{name}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-gray-500 ml-1">ชื่อเล่น (สำหรับค้นหาปีหน้า)</label>
+                                    <input type="text" className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-400 text-lg outline-none" placeholder="ขอทราบชื่อเล่นหน่อยนะ :)" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+                                </div>
+
+                                {showError && !isValidName && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center border border-red-200 animate-in">⚠️ ไม่พบรายชื่อนี้ในระบบ</div>}
+                            </div>
+                        )}
+                        <button onClick={() => onConfirm(inputName, nickname)} disabled={!isValidName || !nickname} className={`w-full font-bold py-4 px-6 rounded-xl transition shadow-lg mt-6 ${isValidName && nickname ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-pink-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>ยืนยันตัวตน</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const VotingPage = ({ currentUser, candidates, onVote }) => {
+            const [searchTerm, setSearchTerm] = useState("");
             const [selectedCandidate, setSelectedCandidate] = useState(null);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [submitting, setSubmitting] = useState(false);
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [shuffledCandidates, setShuffledCandidates] = useState([]);
 
+            // Randomize candidates on mount only
+            useEffect(() => {
+                if (candidates.length > 0) {
+                    const shuffled = [...candidates].sort(() => 0.5 - Math.random());
+                    setShuffledCandidates(shuffled);
+                }
+            }, [candidates]);
+
+            const filteredCandidates = useMemo(() => {
+                // Use shuffled list as base
+                let list = shuffledCandidates.filter(c => c.name !== currentUser);
+                if (searchTerm) {
+                    const lower = searchTerm.toLowerCase();
+                    list = list.filter(c => (c.name && c.name.toLowerCase().includes(lower)) || (c.job && c.job.toLowerCase().includes(lower)) || (c.dept && c.dept.toLowerCase().includes(lower)));
+                }
+                return list;
+            }, [shuffledCandidates, currentUser, searchTerm]);
+
+            const candidateColors = useMemo(() => {
+                const map = {};
+                candidates.forEach(c => map[c.name] = colors[Math.floor(Math.random() * colors.length)]);
+                return map;
+            }, [candidates]);
+
+            const chunkedCandidates = useMemo(() => {
+                const chunkSize = 10;
+                const chunks = [];
+                for (let i = 0; i < filteredCandidates.length; i += chunkSize) {
+                    chunks.push(filteredCandidates.slice(i, i + chunkSize));
+                }
+                return chunks;
+            }, [filteredCandidates]);
+
+            const handleVote = async () => {
+                if (!selectedCandidate) return;
+                setIsSubmitting(true);
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                await onVote(selectedCandidate.name);
+                setIsSubmitting(false);
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="bg-white/90 backdrop-blur-md p-4 sticky top-0 z-30 border-b border-pink-100 shadow-sm">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <p className="text-xs text-gray-400">ผู้โหวต</p>
+                                    <p className="font-bold text-gray-800 truncate max-w-[150px]">{currentUser}</p>
+                                </div>
+                                <div className="text-right"><div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">1 สิทธิ์</div></div>
+                            </div>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input type="text" placeholder="ค้นหาชื่อ, ตำแหน่ง, แผนก..." className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-pink-400 transition-all outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 w-full pb-32 overflow-hidden pt-6">
+                        {searchTerm ? (
+                            <div className="max-w-md mx-auto px-4 space-y-4">
+                                {filteredCandidates.map((c, index) => (
+                                    <div key={index} onClick={() => setSelectedCandidate(c)} className="flex items-center gap-4 cursor-pointer bg-white p-3 rounded-xl shadow-sm border border-pink-50 hover:border-pink-300 transition-all">
+                                        <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl shadow-inner ${candidateColors[c.name]}`}>{c.name.charAt(0)}</div>
+                                        <div className="text-left"><h3 className="font-bold text-gray-800">{c.name}</h3><p className="text-xs text-gray-500">{c.job}</p></div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-8">
+                                {chunkedCandidates.map((chunk, rowIndex) => (
+                                    <div key={rowIndex} className="marquee-wrapper">
+                                        {[0, 1].map((dup) => (
+                                            <div key={dup} className={`marquee-content ${rowIndex % 2 !== 0 ? 'reverse' : ''}`}>
+                                                {chunk.map((c, idx) => (
+                                                    <div key={c.name + idx} onClick={() => setSelectedCandidate(c)} className="flex flex-col items-center justify-start w-32 cursor-pointer group flex-shrink-0">
+                                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-2 shadow-lg transition-transform group-hover:scale-110 border-4 border-white ${candidateColors[c.name]}`}><User className="w-10 h-10" /></div>
+                                                        <div className="text-center px-1"><h3 className="font-bold text-sm text-gray-800 line-clamp-2 leading-tight group-hover:text-pink-600">{c.name}</h3><p className="text-[10px] text-gray-500 mt-1 line-clamp-1">{c.job}</p></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+
+                    {selectedCandidate && (
+                        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur shadow-[0_-5px_30px_rgba(0,0,0,0.1)] z-40 animate-in border-t border-pink-100 rounded-t-3xl">
+                            <div className="max-w-md mx-auto text-center">
+                                <p className="text-gray-500 text-sm mb-2">ยืนยันการเลือก</p>
+                                <h3 className="text-xl font-bold text-pink-600 mb-4">{selectedCandidate.name}</h3>
+                                <button onClick={handleVote} disabled={isSubmitting} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-pink-200 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                    {isSubmitting ? 'กำลังบันทึก...' : 'โหวตคนนี้แหละ!'} <Heart className="w-5 h-5 fill-current" />
+                                </button>
+                                <button onClick={() => setSelectedCandidate(null)} className="mt-4 text-gray-400 text-sm hover:text-gray-600">เปลี่ยนใจ</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ThankYouPage = () => (
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center relative overflow-hidden">
+                <div className="w-full max-w-md bg-white/90 backdrop-blur p-10 rounded-3xl shadow-xl border border-pink-100 z-10">
+                    <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Heart className="w-12 h-12 text-pink-500 fill-current heart-beat" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">บันทึกคะแนนเรียบร้อย!</h2>
+                    <p className="text-gray-500 mb-6">ขอบคุณที่เป็นพลังใจให้เพื่อนร่วมงานครับ</p>
+                    <button onClick={() => window.location.reload()} className="text-pink-500 text-sm underline hover:text-pink-700">กลับหน้าหลัก</button>
+                </div>
+            </div>
+        );
+
+        const AdminLogin = ({ onLogin, onCancel }) => {
+            const [pass, setPass] = useState('');
+            return (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-2xl w-80">
+                        <h3 className="font-bold mb-4">ผู้ดูแลระบบ</h3>
+                        <input type="password" value={pass} onChange={e=>setPass(e.target.value)} className="w-full border p-2 rounded mb-4" placeholder="รหัสผ่าน" />
+                        <div className="flex justify-end gap-2"><button onClick={onCancel}>ยกเลิก</button><button onClick={()=>onLogin(pass)} className="bg-blue-600 text-white px-4 py-2 rounded">เข้าสู่ระบบ</button></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ResultsPage = ({ votes }) => {
+            const [top, setTop] = useState([]);
+            useEffect(() => {
+                const c = {}; votes.forEach(v => c[v.votedFor] = (c[v.votedFor]||0)+1);
+                setTop(Object.entries(c).map(([n,v])=>({name:n,count:v})).sort((a,b)=>b.count-a.count).slice(0,10));
+            }, [votes]);
+            return (
+                <div className="min-h-screen bg-slate-900 text-white p-6">
+                    <h1 className="text-2xl font-bold text-yellow-400 mb-6 text-center">🏆 10 อันดับสูงสุด</h1>
+                    <div className="max-w-md mx-auto space-y-3">
+                        {top.map((t,i) => (
+                            <div key={i} className="flex justify-between bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                <div className="flex gap-3"><span className="font-bold text-slate-500">#{i+1}</span> <span>{t.name}</span></div>
+                                <span className="font-bold text-yellow-500">{t.count} ❤️</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [view, setView] = useState('landing');
+            const [currentUser, setCurrentUser] = useState(null);
+            const [currentNickname, setCurrentNickname] = useState(null);
+            const [candidates, setCandidates] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [votes, setVotes] = useState([]);
+            const [userProfile, setUserProfile] = useState(null);
+            const [liffError, setLiffError] = useState(null);
+            const [hasVoted, setHasVoted] = useState(false);
+
+            useEffect(() => {
+                fetch(GOOGLE_SCRIPT_URL + "?action=getData")
+                    .then(res => res.json())
+                    .then(json => {
+                        if (json.status === 'success') setCandidates(json.data);
+                        setLoading(false);
+                    })
+                    .catch(() => setLoading(false));
+            }, []);
+
+            // LIFF Initialization
             useEffect(() => {
                 const initLiff = async () => {
                     try {
-                        // Mock Login
-                        setTimeout(() => setLoading(false), 1500);
-                    } catch (e) {
-                        console.error("LIFF Init Failed", e);
-                        setLoading(false);
+                        await liff.init({ liffId: LIFF_ID });
+                        if (liff.isLoggedIn()) {
+                            const profile = await liff.getProfile();
+                            setUserProfile(profile);
+                            
+                            // Check if this user has already voted
+                            checkVoteStatus(profile.userId);
+                        } else {
+                            liff.login();
+                        }
+                    } catch (err) {
+                        console.error('LIFF Init Error:', err);
+                        setLiffError('LIFF Init Failed: ' + err.toString());
                     }
                 };
-                if(window.lucide) window.lucide.createIcons();
                 initLiff();
             }, []);
 
             const checkVoteStatus = async (userId) => {
-                console.log("Checking vote for", userId);
-                // setHasVoted(true); // Uncomment to simulate voted status
-            };
-
-            const handleLogin = async () => {
-                const mockProfile = { 
-                    userId: 'U1234567890abcdef', 
-                    displayName: 'Somchai Line', 
-                    pictureUrl: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' 
-                };
-                setProfile(mockProfile);
-                await checkVoteStatus(mockProfile.userId);
-                setPage('register');
-            };
-
-            const handleRegister = () => {
-                if (!voterInfo.id || !voterInfo.nickname) {
-                    alert("กรุณาเลือกชื่อจริงและระบุชื่อเล่น");
-                    return;
-                }
-                setPage('voting');
-            };
-
-            const handleSubmitVote = async () => {
-                if (!selectedCandidate) return;
-                
-                // Double check self-voting
-                if (selectedCandidate.name === voterInfo.name) {
-                    alert("ไม่สามารถโหวตให้ตัวเองได้ครับ");
-                    return;
-                }
-
-                setSubmitting(true);
-                const payload = {
-                    action: 'save_vote',
-                    ...voterInfo,
-                    vote: selectedCandidate.name,
-                    userid: profile.userId,
-                    displayname: profile.displayName,
-                    photo: profile.pictureUrl,
-                    timestamp: new Date().toISOString()
-                };
-
                 try {
-                    // await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                    console.log("Submitting Vote:", payload);
-                    await new Promise(r => setTimeout(r, 1500)); 
-                    setPage('success');
+                    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkUser&userid=${userId}`);
+                    const json = await res.json();
+                    if (json.status === 'success' && json.voted) {
+                        setHasVoted(true);
+                    }
                 } catch (e) {
-                    alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
-                } finally {
-                    setSubmitting(false);
+                    console.error("Check status error", e);
                 }
             };
 
-            const randomizedCandidates = useMemo(() => {
-                return [...CANDIDATES].sort(() => Math.random() - 0.5);
-            }, [page]); 
-
-            // --- RENDER PAGES ---
-
-            const renderLogin = () => (
-                <div className="flex flex-col items-center justify-center min-h-[70vh] p-4">
-                    <div className="max-w-md w-full glass-panel rounded-3xl p-8 text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-teal-500"></div>
-                        
-                        <div className="floating mb-6 inline-block">
-                            <img src="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" className="w-24 h-24 drop-shadow-xl" alt="Hospital Icon" />
-                        </div>
-                        
-                        <h1 className="text-2xl font-bold text-slate-800 mb-1 quote-text">โหวตบุคคลดีเด่นแห่งปี</h1>
-                        <h2 className="text-xl font-semibold text-green-700 mb-4 quote-text">รพ.สวี (Sawi Hospital)</h2>
-                        
-                        <div className="bg-green-50 p-4 rounded-xl border border-green-100 mb-6 text-sm text-slate-600 italic leading-relaxed">
-                            "ภายใต้หน้ากากอนามัย และชุดฟอร์มที่เหนื่อยล้า...<br/>
-                            ใครคือคนที่ทำให้คุณรู้สึก <span className="font-bold text-green-600">มีพลัง?</span><br/>
-                            ใครคือคนที่หยิบยื่นน้ำใจให้เพื่อนร่วมงานและคนไข้เสมอมา?"
-                        </div>
-
-                        <p className="text-slate-700 font-medium mb-6">
-                            ขอเชิญชาว รพ.สวี ร่วมโหวต<br/>
-                            <span className="text-lg font-bold text-slate-900 bg-amber-100 px-2 rounded">"บุคคลต้นแบบ สร้างแรงบันดาลใจแห่งปี 2025"</span>
-                        </p>
-
-                        {/* Rules Section */}
-                        <div className="text-left text-xs text-slate-500 bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
-                            <strong className="block text-slate-700 mb-1">📌 เงื่อนไขและกติกา:</strong>
-                            <ul className="list-disc pl-4 space-y-1">
-                                <li>1 คน (Log In Line) โหวตได้ 1 ครั้ง</li>
-                                <li className="text-red-500 font-bold">ห้ามโหวตให้ตัวเอง</li>
-                                <li>อันดับ 1 รับรางวัล "ขวัญใจมหาชน"</li>
-                                <li>Top 5 รับคัดเลือกเป็น "บุคคลต้นแบบ รพ.สวี"</li>
-                                <li>ลุ้นรางวัลสุ่ม Voter 10 รางวัล!</li>
-                                <li>โหวตได้: 08.00-16.00 น. วันที่ 5 ม.ค. 2569</li>
-                            </ul>
-                        </div>
-                        
-                        {loading ? (
-                            <div className="flex justify-center"><div className="loader"></div></div>
-                        ) : (
-                            <div className="space-y-4">
-                                {hasVoted ? (
-                                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
-                                        <div className="font-bold flex items-center justify-center gap-2"><i data-lucide="check-circle" className="w-5 h-5"></i> คุณใช้สิทธิ์โหวตไปแล้ว</div>
-                                        <p className="text-sm mt-1">ขอบคุณที่ร่วมเป็นส่วนหนึ่งของการให้กำลังใจครับ</p>
-                                    </div>
-                                ) : (
-                                    <button onClick={handleLogin} className="btn-primary w-full py-3.5 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 group">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" className="w-6 h-6" />
-                                        ลงชื่อเข้าใช้เพื่อโหวต
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                        
-                        <div className="mt-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400">
-                            <i data-lucide="shield-check" className="w-3 h-3 inline mr-1"></i>
-                            ข้อมูลการโหวตเป็นความลับตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)
-                        </div>
-                    </div>
-                </div>
-            );
-
-            const renderRegister = () => {
-                const filteredStaff = STAFF_LIST.filter(s => s.name.includes(searchTerm));
-
-                return (
-                    <div className="max-w-md mx-auto w-full pt-6">
-                        <div className="text-center mb-6">
-                            <img src={profile?.pictureUrl} className="w-20 h-20 rounded-full border-4 border-white shadow-lg mx-auto mb-3" />
-                            <h2 className="text-xl font-bold text-slate-800">สวัสดี, {profile?.displayName}</h2>
-                            <p className="text-slate-500 text-sm">ระบุตัวตนผู้โหวต (Voter)</p>
-                        </div>
-
-                        <div className="glass-panel p-6 rounded-2xl space-y-5">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">1. ค้นหาชื่อจริงของคุณ</label>
-                                <div className="relative">
-                                    <i data-lucide="search" className="absolute left-3 top-3.5 w-5 h-5 text-slate-400"></i>
-                                    <input 
-                                        type="text" 
-                                        placeholder="พิมพ์ชื่อเพื่อค้นหา..." 
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl input-glass"
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                                {searchTerm && !voterInfo.id && (
-                                    <div className="mt-2 max-h-40 overflow-y-auto bg-white rounded-xl border border-slate-200 absolute w-full z-20 shadow-xl">
-                                        {filteredStaff.length > 0 ? filteredStaff.map(s => (
-                                            <div key={s.id} 
-                                                onClick={() => {
-                                                    setVoterInfo({ ...voterInfo, ...s });
-                                                    setSearchTerm('');
-                                                }}
-                                                className="p-3 hover:bg-green-50 cursor-pointer border-b border-slate-100 text-sm flex justify-between items-center"
-                                            >
-                                                <div>
-                                                    <div className="font-bold text-slate-700">{s.name}</div>
-                                                    <div className="text-slate-400 text-xs">{s.job}</div>
-                                                </div>
-                                                <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">{s.dept}</span>
-                                            </div>
-                                        )) : <div className="p-3 text-slate-400 text-center">ไม่พบรายชื่อ</div>}
-                                    </div>
-                                )}
-                            </div>
-
-                            {voterInfo.id && (
-                                <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center text-green-700 font-bold text-lg">
-                                            {voterInfo.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-green-900">{voterInfo.name}</div>
-                                            <div className="text-xs text-green-700">{voterInfo.job} | {voterInfo.dept}</div>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setVoterInfo({ id: '', name: '', job: '', dept: '', nickname: '' })} className="text-xs text-red-500 hover:text-red-700 underline">เปลี่ยน</button>
-                                </div>
-                            )}
-
-                            <div className={!voterInfo.id ? 'opacity-50 pointer-events-none' : ''}>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">2. ชื่อเล่น (Nickname) <span className="text-red-500">*</span></label>
-                                <input 
-                                    type="text" 
-                                    placeholder="เช่น น้องเอ, หมอบี" 
-                                    className="w-full px-4 py-3 rounded-xl input-glass"
-                                    value={voterInfo.nickname}
-                                    onChange={e => setVoterInfo({ ...voterInfo, nickname: e.target.value })}
-                                />
-                                <p className="text-xs text-slate-400 mt-1">ใช้สำหรับประกาศรางวัลผู้โชคดี (10 รางวัล)</p>
-                            </div>
-
-                            <button 
-                                onClick={handleRegister} 
-                                disabled={!voterInfo.id || !voterInfo.nickname}
-                                className="btn-primary w-full py-3 rounded-xl font-bold mt-2 shadow-lg"
-                            >
-                                ถัดไป: เลือกคนดีในดวงใจ <i data-lucide="arrow-right" className="inline w-4 h-4 ml-1"></i>
-                            </button>
-                        </div>
-                    </div>
-                );
+            const handleStart = () => {
+                const now = new Date().getTime();
+                if (now > DEADLINE) return alert("หมดเวลาโหวตแล้วครับ");
+                
+                if (!userProfile && !liffError) {
+                    // Force login if not logged in
+                    liff.login();
+                    return;
+                }
+                
+                setView('identify');
             };
 
-            const renderVoting = () => (
-                <div className="w-full max-w-5xl mx-auto pt-6 pb-24">
-                    <div className="glass-panel p-4 rounded-2xl mb-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-20 z-10 border-b-4 border-green-500">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-800 quote-text">เลือก "บุคคลต้นแบบ" ของคุณ</h2>
-                            <p className="text-slate-500 text-sm">1 สิทธิ์ 1 เสียง เพื่อกำลังใจแด่คนทำงาน</p>
-                        </div>
-                        <div className="text-right flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
-                            <div className="text-xs text-slate-400">ผู้โหวต</div>
-                            <div className="text-sm font-bold text-slate-700">{voterInfo.name} ({voterInfo.nickname})</div>
-                        </div>
-                    </div>
+            const handleVote = async (votedForName) => {
+                try {
+                    const res = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'vote',
+                            voter: currentUser,
+                            nickname: currentNickname,
+                            votedFor: votedForName,
+                            userid: userProfile?.userId || 'unknown',
+                            displayname: userProfile?.displayName || 'unknown',
+                            photo: userProfile?.pictureUrl || ''
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.status === 'success') setView('done');
+                    else alert(json.message);
+                } catch(e) { alert("Error saving vote"); }
+            };
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {randomizedCandidates.map(c => {
-                            // Check Self Voting Logic
-                            const isSelf = c.name === voterInfo.name;
-                            
-                            return (
-                                <div 
-                                    key={c.id} 
-                                    onClick={() => !isSelf && setSelectedCandidate(c)}
-                                    className={`candidate-card relative rounded-2xl overflow-hidden cursor-pointer group ${selectedCandidate?.id === c.id ? 'selected' : ''} ${isSelf ? 'disabled' : ''}`}
-                                >
-                                    <div className="aspect-[3/4] bg-slate-100 relative overflow-hidden">
-                                        <img src={c.img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
-                                        
-                                        {/* Tag for Self */}
-                                        {isSelf && (
-                                            <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center backdrop-blur-sm">
-                                                <span className="bg-red-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">นี่คือตัวคุณ</span>
-                                            </div>
-                                        )}
+            const fetchResults = async () => {
+                const res = await fetch(GOOGLE_SCRIPT_URL + "?action=getResults&password=38311");
+                const json = await res.json();
+                if (json.status === 'success') { setVotes(json.data); setView('results'); }
+            };
 
-                                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                                            <h3 className="font-bold text-lg leading-tight quote-text">{c.name}</h3>
-                                            <div className="h-1 w-10 bg-green-400 my-2 rounded-full"></div>
-                                            <p className="text-xs text-slate-200 italic opacity-90 font-light">"{c.quote}"</p>
-                                        </div>
-                                    </div>
-                                    
-                                    {selectedCandidate?.id === c.id && (
-                                        <div className="absolute top-3 right-3 bg-green-500 text-white rounded-full p-1.5 shadow-lg animate-bounce">
-                                            <i data-lucide="check" className="w-5 h-5"></i>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Fixed Bottom Bar */}
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50">
-                        <div className="max-w-5xl mx-auto flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-xs text-slate-400">คุณกำลังเลือก:</span>
-                                {selectedCandidate ? (
-                                    <span className="font-bold text-green-700 text-lg animate-pulse">{selectedCandidate.name}</span>
-                                ) : (
-                                    <span className="text-slate-500 text-sm italic">กรุณาเลือก 1 ท่าน...</span>
-                                )}
-                            </div>
-                            <button 
-                                onClick={handleSubmitVote}
-                                disabled={!selectedCandidate || submitting}
-                                className="btn-primary px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 min-w-[160px] justify-center"
-                            >
-                                {submitting ? <div className="loader border-white/30 border-l-white w-5 h-5"></div> : <><i data-lucide="send" className="w-5 h-5"></i> ยืนยันการโหวต</>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            const renderSuccess = () => (
-                <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 modal-enter">
-                    <div className="w-28 h-28 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
-                        <i data-lucide="heart" className="w-14 h-14 text-green-500 fill-green-500"></i>
-                    </div>
-                    <h1 className="text-3xl font-bold text-slate-800 mb-2 quote-text">ขอบคุณจากใจ!</h1>
-                    <p className="text-slate-500 mb-8 max-w-sm">
-                        "รอยยิ้มของคุณ คือกำลังใจของเรา"<br/>
-                        ขอบคุณ <span className="font-bold text-green-600">{voterInfo.nickname}</span> ที่ร่วมเป็นส่วนหนึ่งในกิจกรรมดีๆ ของ รพ.สวี ครับ
-                    </p>
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-sm text-slate-500 mb-8">
-                        อย่าลืมลุ้นรางวัล Voter ผู้โชคดี 10 ท่าน<br/>ประกาศผลเร็วๆ นี้
-                    </div>
-                    <button onClick={() => window.close()} className="px-8 py-3 rounded-full bg-slate-800 text-white hover:bg-slate-700 font-bold transition-colors">ปิดหน้าต่าง</button>
-                </div>
-            );
+            if (view === 'results') return <ResultsPage votes={votes} />;
 
             return (
-                <div className="min-h-screen relative">
-                    {/* Decorative Background */}
-                    <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-                        <div className="absolute top-[-100px] right-[-100px] w-96 h-96 bg-green-200/40 rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-[-100px] left-[-100px] w-80 h-80 bg-teal-200/40 rounded-full blur-3xl"></div>
-                        <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-yellow-200/30 rounded-full blur-2xl"></div>
-                    </div>
-
-                    <header className="header-bg sticky top-0 z-50 shadow-lg">
-                        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-inner">
-                                    <i data-lucide="activity" className="w-6 h-6"></i>
-                                </div>
-                                <div>
-                                    <h1 className="font-bold text-white text-lg leading-none quote-text">รพ.สวี</h1>
-                                    <p className="text-[10px] text-green-100 opacity-90 font-light tracking-wider">SAWI HOSPITAL VOTING 2025</p>
-                                </div>
-                            </div>
-                            {profile && (
-                                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
-                                    <img src={profile.pictureUrl} className="w-6 h-6 rounded-full border border-white" />
-                                    <span className="text-xs text-white font-medium max-w-[100px] truncate">{profile.displayName}</span>
-                                </div>
-                            )}
-                        </div>
-                    </header>
-
-                    <main className="max-w-5xl mx-auto px-4">
-                        {page === 'login' && renderLogin()}
-                        {page === 'register' && renderRegister()}
-                        {page === 'voting' && renderVoting()}
-                        {page === 'success' && renderSuccess()}
-                    </main>
+                <div>
+                    {view === 'landing' && <LandingPage onStart={handleStart} onAdminClick={() => setView('admin_login')} liffError={liffError} userProfile={userProfile} hasVoted={hasVoted} />}
+                    {view === 'identify' && <IdentifyPage candidates={candidates} loading={loading} onConfirm={(name, nick) => { setCurrentUser(name); setCurrentNickname(nick); setView('voting'); }} />}
+                    {view === 'voting' && <VotingPage currentUser={currentUser} candidates={candidates} onVote={handleVote} />}
+                    {view === 'done' && <ThankYouPage />}
+                    {view === 'admin_login' && <AdminLogin onLogin={(p) => p==='38311' ? fetchResults() : alert('ผิด')} onCancel={() => setView('landing')} />}
                 </div>
             );
-        };
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
