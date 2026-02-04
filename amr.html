@@ -56,6 +56,10 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        
+        /* Debug Panel */
+        .debug-panel { position: fixed; bottom: 80px; right: 20px; width: 400px; max-height: 500px; background: rgba(0,0,0,0.9); border: 1px solid #334155; color: #00ff00; font-family: monospace; font-size: 10px; z-index: 9999; overflow: auto; padding: 10px; border-radius: 8px; display: none; }
+        .debug-panel.open { display: block; }
     </style>
 </head>
 <body>
@@ -85,26 +89,10 @@
             { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem' },
             { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem' },
             { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem' },
-            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin' }, // Note: Using Cloxacillin as proxy for beta-lactams if Oxacillin not in DDD
+            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin' }, 
             { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone' },
             { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin' },
         ];
-
-        // --- MOCK DATA FOR DEMO WIDGETS ---
-        const CRITICAL_ALERTS = [
-            { hn: '6700123', loc: 'ICU Med', germ: 'A. baumannii (XDR)', time: '10:30' },
-            { hn: '6704599', loc: 'Surg Male', germ: 'K. pneumoniae (CRE)', time: '11:15' },
-            { hn: '6708821', loc: 'ICU Surg', germ: 'C. auris', time: '12:45' },
-            { hn: '6701102', loc: 'Med Female', germ: 'MRSA', time: '13:20' }
-        ];
-
-        const WARD_BEDS = Array.from({ length: 24 }, (_, i) => {
-            const statusRoll = Math.random();
-            let status = 'normal'; 
-            if (statusRoll > 0.9) status = 'infected';
-            else if (statusRoll > 0.75) status = 'risk'; 
-            return { id: i + 1, status };
-        });
 
         // --- COMPONENTS ---
         const GermIcon = ({ color, className }) => (
@@ -119,20 +107,12 @@
         );
 
         const AlertTicker = () => (
-            <div className="w-full bg-red-950/40 border-y border-red-500/20 text-red-100 py-2 relative overflow-hidden flex items-center backdrop-blur-sm z-20">
+             <div className="w-full bg-red-950/40 border-y border-red-500/20 text-red-100 py-2 relative overflow-hidden flex items-center backdrop-blur-sm z-20">
                 <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 ml-4 rounded z-10 shadow-[0_0_10px_rgba(220,38,38,0.5)] absolute left-0 flex items-center gap-1"><i data-lucide="siren" className="w-3 h-3 animate-pulse"></i> CRITICAL</div>
                 <div className="ticker-wrap w-full">
                     <div className="ticker-content pl-24 text-sm font-light flex items-center">
-                        {CRITICAL_ALERTS.map((alert, idx) => (
-                            <span key={idx} className="mr-12 inline-flex items-center gap-2">
-                                <span className="bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30 text-xs font-mono text-red-300">{alert.time}</span>
-                                <span className="font-semibold text-red-200">{alert.loc}</span> 
-                                <span className="text-slate-400">|</span>
-                                <span>HN {alert.hn}</span>
-                                <i data-lucide="arrow-right" className="w-3 h-3 text-red-500"></i>
-                                <b className="text-red-100 underline decoration-red-500/50 decoration-dotted">{alert.germ}</b>
-                            </span>
-                        ))}
+                        <span className="mr-12 inline-flex items-center gap-2">System Status: Online</span>
+                        <span className="mr-12 inline-flex items-center gap-2">Monitoring: Active</span>
                     </div>
                 </div>
             </div>
@@ -152,36 +132,6 @@
                     <span className={trend === 'up' ? 'text-red-400' : 'text-emerald-400'}>{trendVal} from yesterday</span>
                 </div>
                 <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full opacity-20 blur-2xl transition-all group-hover:opacity-30" style={{backgroundColor: glowColor}}></div>
-            </div>
-        );
-
-        const WardMap = () => (
-            <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-purple-500/50 h-full">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <i data-lucide="layout-grid" className="w-5 h-5 text-purple-400 icon-glow"></i> ICU Medical Map
-                    </h3>
-                    <span className="text-[10px] text-red-300 animate-pulse flex items-center gap-1 bg-red-900/20 px-2 py-1 rounded border border-red-500/20">
-                        <div className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_red]"></div> 3 Active
-                    </span>
-                </div>
-                <div className="bed-grid">
-                    {WARD_BEDS.map(bed => {
-                        let color = "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20";
-                        if (bed.status === 'infected') color = "bg-red-500/20 border-red-500/60 text-red-400 shadow-[0_0_8px_rgba(239,68,68,0.2)] animate-pulse";
-                        if (bed.status === 'risk') color = "bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20";
-                        return (
-                            <div key={bed.id} className={`h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all ${color}`} title={`Bed ${bed.id}: ${bed.status}`}>
-                                {bed.id}
-                            </div>
-                        )
-                    })}
-                </div>
-                <div className="flex gap-4 mt-4 text-[10px] text-slate-400 justify-end font-medium">
-                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full"></div> Normal</span>
-                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-yellow-500 rounded-full"></div> Risk</span>
-                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_5px_red]"></div> Infection</span>
-                </div>
             </div>
         );
 
@@ -446,6 +396,18 @@
             );
         };
 
+        const DebugView = ({ logs, visible }) => {
+            if (!visible) return null;
+            return (
+                <div className="debug-panel open">
+                    <h3 className="font-bold border-b border-green-500 mb-2 pb-1">Debug Log</h3>
+                    {logs.map((log, i) => (
+                        <div key={i} className="mb-1 whitespace-pre-wrap">{log}</div>
+                    ))}
+                </div>
+            );
+        };
+
         const App = () => {
             const [rawData, setRawData] = useState([]);
             const [dddRawData, setDddRawData] = useState([]);
@@ -453,6 +415,10 @@
             const [headers, setHeaders] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
+            
+            // Debug State
+            const [debugLogs, setDebugLogs] = useState([]);
+            const [showDebug, setShowDebug] = useState(false);
             
             // Filter States
             const [selectedSpecimen, setSelectedSpecimen] = useState('All');
@@ -466,22 +432,45 @@
             const [modalData, setModalData] = useState(null);
 
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); fetchData(); }, []);
+            
+            const addLog = (msg, obj = null) => {
+                const txt = obj ? `${msg} ${JSON.stringify(obj)}` : msg;
+                setDebugLogs(prev => [...prev, txt]);
+                console.log(msg, obj);
+            };
+
+            const parseNum = (val) => {
+                if (typeof val === 'number') return val;
+                if (!val) return 0;
+                // Remove commas and parse
+                const clean = String(val).replace(/,/g, '').trim();
+                return parseFloat(clean) || 0;
+            };
 
             const fetchData = async () => {
                 try {
+                    addLog("Fetching data from GAS...");
                     const response = await fetch(`${GAS_API_URL}?action=api_data`);
                     const json = await response.json();
+                    
                     if (json.status === 'success') {
+                        addLog("Fetch Success. AMR rows:", json.amr.data.length);
+                        addLog("DDD rows:", json.ddd ? json.ddd.length : 0);
+                        if (json.ddd && json.ddd.length > 0) {
+                            addLog("Sample DDD Row 0:", json.ddd[0]);
+                        }
+
                         setRawData(json.amr.data);
                         setHeaders(json.amr.headers);
                         
-                        // Clean numeric fields in DDD data to be safe
+                        // Clean numeric fields in DDD data AND Date Parsing
                         const cleanedDdd = (json.ddd || []).map(d => ({
                             ...d,
-                            qty_ipd: Number(d.qty_ipd) || 0,
-                            strength_mg: Number(d.strength_mg) || 0,
-                            standard_ddd_mg: Number(d.standard_ddd_mg) || 0,
-                            total_patient_days: Number(d.total_patient_days) || 0
+                            qty_ipd: parseNum(d.qty_ipd),
+                            strength_mg: parseNum(d.strength_mg),
+                            standard_ddd_mg: parseNum(d.standard_ddd_mg),
+                            total_patient_days: parseNum(d.total_patient_days),
+                            // Keep original month for debugging, but we'll parse it in process function
                         }));
                         setDddRawData(cleanedDdd);
                         
@@ -490,116 +479,112 @@
                         setSpecimenList(specs);
                         setTimeList(times);
 
-                        // Process Quarterly DDD from cleaned data
+                        // Process Quarterly DDD
+                        addLog("Starting processQuarterlyDdd...");
                         const qResult = processQuarterlyDdd(cleanedDdd);
+                        addLog("Processed Chart Data:", qResult.data.length);
+                        if(qResult.data.length > 0) addLog("First Chart Point:", qResult.data[0]);
+                        
                         setQuarterlyChartData({ data: qResult.data, keys: qResult.drugKeys });
 
-                    } else { setError(json.message); }
-                } catch (e) { setError("Connection Failed."); } finally { setLoading(false); }
+                    } else { 
+                        addLog("Fetch Error API:", json.message);
+                        setError(json.message); 
+                    }
+                } catch (e) { 
+                    addLog("Fetch Exception:", e.toString());
+                    setError("Connection Failed."); 
+                } finally { setLoading(false); }
+            };
+
+            // Robust Date Parser
+            const parseMonthYear = (val) => {
+                if (!val) return null;
+                const str = String(val).trim();
+                
+                // Try "MM/YYYY" or "M/YYYY" with strict regex first
+                const strictMatch = str.match(/^(\d{1,2})\/(\d{4})$/);
+                if (strictMatch) {
+                    return { m: parseInt(strictMatch[1]), y: parseInt(strictMatch[2]) };
+                }
+                
+                // Try Javascript Date
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return { m: d.getMonth() + 1, y: d.getFullYear() };
+                }
+                
+                return null;
             };
 
             const processQuarterlyDdd = (dddData) => {
-                // Goal: Calculate DDD Rate per Quarter
-                // Formula: (Total DDD Units in Quarter / Total Patient Days in Quarter) * 100
-                // DDD Unit = (Qty * Strength) / Standard_DDD
+                const quarterlyStats = {}; 
+                const monthPatientDays = {}; // Use Map to deduplicate patient days by exact month string
 
-                // 1. Accumulate Data by Quarter
-                const quarterlyStats = {}; // { "Q1-2024": { patientDays: 0, drugUnits: { "Meropenem": 123, ... } } }
-                
-                // Helper to track unique months processed for patient days to avoid double counting
-                const processedMonths = new Set(); 
+                let rowsProcessed = 0;
+                let rowsWithValidDate = 0;
 
-                dddData.forEach(r => {
+                dddData.forEach((r, idx) => {
                     if (!r.month) return;
-                    
-                    // Parse Month/Year
-                    let m, y;
-                    const dateParts = String(r.month).split('/');
-                    if (dateParts.length === 2) {
-                        m = parseInt(dateParts[0]);
-                        y = parseInt(dateParts[1]);
-                    } else {
-                        // Handle Date object if passed
-                        const d = new Date(r.month);
-                        if (!isNaN(d)) {
-                            m = d.getMonth() + 1;
-                            y = d.getFullYear();
+                    rowsProcessed++;
+
+                    const dateObj = parseMonthYear(r.month);
+                    if (!dateObj) {
+                        if (idx < 5) addLog(`Row ${idx} Invalid Date:`, r.month);
+                        return;
+                    }
+                    rowsWithValidDate++;
+
+                    const { m, y } = dateObj;
+                    const q = Math.ceil(m / 3);
+                    const qKey = `Q${q}-${y}`;
+                    const mKey = `${m}-${y}`; // Unique key for this month
+
+                    // 1. Map Month -> Patient Days
+                    // Assuming patient_days is consistent for the whole month file, take the max found
+                    if (r.total_patient_days > 0) {
+                        // Store using mKey to handle duplicates
+                        if (!monthPatientDays[mKey] || r.total_patient_days > monthPatientDays[mKey]) {
+                            monthPatientDays[mKey] = r.total_patient_days;
                         }
                     }
 
-                    if (!m || !y) return;
-
-                    const q = Math.ceil(m / 3);
-                    const qKey = `Q${q}-${y}`;
-                    const mKey = `${m}-${y}`;
-
-                    if (!quarterlyStats[qKey]) {
-                        quarterlyStats[qKey] = { patientDays: 0, drugUnits: {} };
-                    }
-
-                    // 1a. Patient Days (Count once per month per quarter)
-                    // We use a composite key of qKey + mKey to track if we added patient days for this month already
-                    // Note: This relies on the assumption that total_patient_days is repeated for every drug row in that month
-                    // Simpler approach: Create a map of Month -> PatientDays first
-                });
-
-                // Step 1: Map Month -> Patient Days
-                const monthPatientDays = {};
-                dddData.forEach(r => {
-                    if(r.month && r.total_patient_days > 0) {
-                         // Normalize month string
-                         monthPatientDays[r.month] = r.total_patient_days;
+                    // 2. Sum DDD Units
+                    if (r.drug_name && r.standard_ddd_mg > 0 && r.qty_ipd > 0) {
+                        if (!quarterlyStats[qKey]) quarterlyStats[qKey] = {};
+                        
+                        let drugName = r.drug_name.replace(/\[.*?\]/g, '').replace(/^\*/, '').trim();
+                        
+                        const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
+                        quarterlyStats[qKey][drugName] = (quarterlyStats[qKey][drugName] || 0) + units;
                     }
                 });
 
-                // Step 2: Sum Patient Days per Quarter
+                addLog(`Date Parsing Stats: ${rowsWithValidDate}/${rowsProcessed} rows valid.`);
+
+                // 3. Aggregate Patient Days per Quarter
                 const quarterPatientDays = {};
-                Object.keys(monthPatientDays).forEach(mStr => {
-                    const parts = mStr.split('/');
-                    if(parts.length === 2) {
-                        const m = parseInt(parts[0]);
-                        const y = parseInt(parts[1]);
-                        const q = Math.ceil(m/3);
-                        const qKey = `Q${q}-${y}`;
-                        quarterPatientDays[qKey] = (quarterPatientDays[qKey] || 0) + monthPatientDays[mStr];
-                    }
-                });
-
-                // Step 3: Sum DDD Units per Quarter per Drug
-                const quarterDrugUnits = {}; // { "Q1-2024": { "Meropenem": 500, "Total": 1000 } }
-
-                dddData.forEach(r => {
-                    if (!r.month || !r.drug_name || r.standard_ddd_mg === 0) return;
-                    
-                    const parts = String(r.month).split('/');
-                    if(parts.length !== 2) return;
-                    
-                    const m = parseInt(parts[0]);
-                    const y = parseInt(parts[1]);
+                Object.keys(monthPatientDays).forEach(mKey => {
+                    const [m, y] = mKey.split('-').map(Number);
                     const q = Math.ceil(m/3);
                     const qKey = `Q${q}-${y}`;
-
-                    // Clean Drug Name: Remove [..] and *
-                    let drugName = r.drug_name.replace(/\[.*?\]/g, '').replace(/^\*/, '').trim();
-                    // Optional: remove strength info if embedded in name to group better
-                    
-                    if (!quarterDrugUnits[qKey]) quarterDrugUnits[qKey] = {};
-                    
-                    const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
-                    
-                    quarterDrugUnits[qKey][drugName] = (quarterDrugUnits[qKey][drugName] || 0) + units;
+                    quarterPatientDays[qKey] = (quarterPatientDays[qKey] || 0) + monthPatientDays[mKey];
                 });
 
-                // Step 4: Calculate Final Rates
+                // 4. Calculate Final Rates
                 const finalChartData = [];
                 const allDrugs = new Set();
 
-                Object.keys(quarterPatientDays).forEach(qKey => {
-                    const pDays = quarterPatientDays[qKey];
+                // Get all unique quarter keys from both sources
+                const allQKeys = new Set([...Object.keys(quarterPatientDays), ...Object.keys(quarterlyStats)]);
+
+                allQKeys.forEach(qKey => {
+                    const pDays = quarterPatientDays[qKey] || 0;
+                    // Log warning if no patient days but we have drug data
                     if (pDays === 0) return;
 
                     const dataObj = { name: qKey, Total: 0 };
-                    const drugs = quarterDrugUnits[qKey] || {};
+                    const drugs = quarterlyStats[qKey] || {};
                     let totalUnitsInQuarter = 0;
 
                     Object.keys(drugs).forEach(drug => {
@@ -614,9 +599,7 @@
                         }
                     });
 
-                    // Calculate Total Rate based on Total Units (Weighted properly)
                     dataObj.Total = parseFloat(((totalUnitsInQuarter * 100) / pDays).toFixed(2));
-                    
                     finalChartData.push(dataObj);
                 });
 
@@ -640,100 +623,72 @@
                 }
 
                 timePoints.forEach(time => {
-                    // --- 1. Calculate Resistance ---
                     let totalS = 0;
                     let totalN = 0;
                     let drugUsed = "";
-
                     let sKey, tKey;
+                    
                     for (const drug of kpiConfig.drugs) {
                         sKey = headers.find(h => h.includes(drug) && (h.includes('(ไว)') || h.includes('(S)')));
                         tKey = headers.find(h => h.includes(drug) && (h.includes('(ทั้งหมด)') || h.includes('(Total)')));
-                        if (sKey && tKey) {
-                            drugUsed = drug;
-                            break;
-                        }
+                        if (sKey && tKey) { drugUsed = drug; break; }
                     }
 
                     if (sKey && tKey) {
                         const relevantRows = rawData.filter(row => {
-                            const rowTime = row['ปีที่ตรวจ'];
-                            const rowSpec = row['Specimen'];
-                            if (rowTime !== time) return false;
-                            if (selectedSpecimen !== 'All' && rowSpec !== selectedSpecimen) return false;
+                            if (row['ปีที่ตรวจ'] !== time) return false;
+                            if (selectedSpecimen !== 'All' && row['Specimen'] !== selectedSpecimen) return false;
                             return true;
                         });
 
                         relevantRows.forEach(row => {
                             const rawOrgName = row['ชื่อเชื้อ'];
                             if (!rawOrgName) return;
-
                             const orgGroup = ORGANISM_GROUPS.find(g => g.base === kpiConfig.organism);
-                            const isMatch = orgGroup && orgGroup.keywords.some(kw => rawOrgName.toLowerCase().includes(kw));
-
-                            if (isMatch) {
-                                const parseVal = (v) => {
-                                    if(!v) return 0;
-                                    const str = String(v).replace(/,/g, '').trim();
-                                    if(['R','S','I','-','No growth'].includes(str)) return 0;
-                                    return parseFloat(str) || 0;
-                                };
-                                totalS += parseVal(row[sKey]);
-                                totalN += parseVal(row[tKey]);
+                            if (orgGroup && orgGroup.keywords.some(kw => rawOrgName.toLowerCase().includes(kw))) {
+                                totalS += parseNum(row[sKey]);
+                                totalN += parseNum(row[tKey]);
                             }
                         });
                     }
 
-                    // --- 2. Calculate DDD (Yearly) ---
+                    // DDD Calculation for KPI (Yearly)
                     let dddVal = 0;
                     if (kpiConfig.dddIcode) {
-                        // Match Year (handling AD/BE)
                         const tYear = parseInt(time);
-                        
-                        // Filter for rows matching this year AND the specific icode
-                        const relevantDdd = dddRawData.filter(d => {
-                            if (!d.month) return false;
-                            const parts = String(d.month).split('/');
-                            if(parts.length !== 2) return false;
-                            const dYear = parseInt(parts[1]);
-                            
-                            // Check Year Match (Direct or +/- 543)
-                            const isYearMatch = (dYear === tYear) || (Math.abs(dYear - tYear) === 543);
-                            
-                            // Check ICODE match
-                            return String(d.icode) === String(kpiConfig.dddIcode) && isYearMatch;
-                        });
+                        // Filter dddRawData for matching year and icode
+                        let yearUnits = 0;
+                        let yearDaysMap = {}; // Deduplicate days by month
 
-                        // Calculate Yearly Rate
-                        // 1. Get unique patient days for each month in this year
-                        const monthlyDays = {};
                         dddRawData.forEach(d => {
-                             if (!d.month) return;
-                             const parts = String(d.month).split('/');
-                             if (parts.length !== 2) return;
-                             const dYear = parseInt(parts[1]);
-                             if ((dYear === tYear) || (Math.abs(dYear - tYear) === 543)) {
-                                 if (d.total_patient_days > 0) monthlyDays[d.month] = d.total_patient_days;
-                             }
-                        });
-                        const totalYearPatientDays = Object.values(monthlyDays).reduce((a,b) => a+b, 0);
-
-                        // 2. Sum DDD Units for this drug in this year
-                        let totalYearUnits = 0;
-                        relevantDdd.forEach(d => {
-                            if (d.standard_ddd_mg > 0) {
-                                totalYearUnits += (d.qty_ipd * d.strength_mg) / d.standard_ddd_mg;
+                            if (!d.month || String(d.icode) !== String(kpiConfig.dddIcode)) return;
+                            const dateObj = parseMonthYear(d.month);
+                            if (!dateObj) return;
+                            
+                            // Check Year Match (Direct or BE)
+                            if (dateObj.y === tYear || Math.abs(dateObj.y - tYear) === 543) {
+                                // Add Units
+                                if (d.standard_ddd_mg > 0 && d.qty_ipd > 0) {
+                                    yearUnits += (d.qty_ipd * d.strength_mg) / d.standard_ddd_mg;
+                                }
+                                // Track days
+                                const mKey = `${dateObj.m}-${dateObj.y}`;
+                                if (d.total_patient_days > 0) {
+                                     if (!yearDaysMap[mKey] || d.total_patient_days > yearDaysMap[mKey]) {
+                                         yearDaysMap[mKey] = d.total_patient_days;
+                                     }
+                                }
                             }
                         });
 
-                        if (totalYearPatientDays > 0) {
-                            dddVal = parseFloat(((totalYearUnits * 100) / totalYearPatientDays).toFixed(2));
+                        const totalYearDays = Object.values(yearDaysMap).reduce((a,b)=>a+b, 0);
+                        if (totalYearDays > 0) {
+                            dddVal = parseFloat(((yearUnits * 100) / totalYearDays).toFixed(2));
                         }
                     }
 
                     if (totalN > 0 || dddVal > 0) {
                         const pctR = totalN > 0 ? (100 - ((totalS / totalN) * 100)) : null;
-                        
                         chartData.push({ 
                             year: time, 
                             resistance: pctR !== null ? parseFloat(pctR.toFixed(1)) : null, 
@@ -765,6 +720,12 @@
                             alt="Background"
                          />
                     </div>
+                    
+                    {/* Debug Button */}
+                    <button onClick={() => setShowDebug(!showDebug)} className="fixed bottom-4 right-4 z-50 bg-slate-800 p-2 rounded-full border border-slate-600 text-slate-400 hover:text-green-400 transition-colors" title="Toggle Debug Log">
+                        <i data-lucide="bug" className="w-5 h-5"></i>
+                    </button>
+                    <DebugView logs={debugLogs} visible={showDebug} />
 
                     {/* Header */}
                     <header className="glass-panel sticky top-0 z-50 border-b-0 backdrop-blur-xl bg-slate-900/80 relative">
