@@ -29,8 +29,6 @@
         }
         
         .neon-text { text-shadow: 0 0 10px currentColor; }
-        
-        /* Neon Icon Effect */
         .icon-glow { filter: drop-shadow(0 0 8px currentColor); }
         .germ-glow { filter: drop-shadow(0 0 5px currentColor); }
 
@@ -42,14 +40,8 @@
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
-        .ticker-wrap {
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .ticker-content {
-            display: inline-block;
-            animation: ticker 40s linear infinite;
-        }
+        .ticker-wrap { overflow: hidden; white-space: nowrap; }
+        .ticker-content { display: inline-block; animation: ticker 40s linear infinite; }
         .ticker-wrap:hover .ticker-content { animation-play-state: paused; }
 
         /* Custom Scrollbar */
@@ -58,14 +50,10 @@
         ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #818cf8; }
 
-        /* Ward Map Grid */
         .bed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 8px; }
-
-        /* Loader */
         .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Modal Animation */
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
     </style>
@@ -76,7 +64,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const { 
-            ComposedChart, Line, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine 
+            ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine 
         } = window.Recharts || {};
 
         // *** CONFIGURATION ***
@@ -92,67 +80,14 @@
             { base: 'Pseudomonas aeruginosa', keywords: ['aeruginosa'] }
         ];
 
+        // Mapped dddIcode to real ICODES from your CSV
         const KPI_CONFIG = [
-            { 
-                id: 'crab', 
-                title: 'CRAB Trend', 
-                subtitle: 'A. baumannii vs Carbapenem (Imipenem)', 
-                organism: 'Acinetobacter baumannii', 
-                drugs: ['Imipenem', 'Meropenem', 'Doripenem'], 
-                color: '#f472b6', // Pink
-                dddIcode: '1530156', // Meropenem
-                dddName: 'Meropenem Use'
-            },
-            { 
-                id: 'cre-ec', 
-                title: 'CRE (E. coli)', 
-                subtitle: 'E. coli vs Carbapenem (Meropenem)', 
-                organism: 'Escherichia coli', 
-                drugs: ['Meropenem', 'Imipenem', 'Ertapenem'],
-                color: '#c084fc', // Purple
-                dddIcode: '1530156', // Meropenem
-                dddName: 'Meropenem Use'
-            },
-            { 
-                id: 'cre-kp', 
-                title: 'CRE (K. pneumo)', 
-                subtitle: 'K. pneumoniae vs Carbapenem (Meropenem)', 
-                organism: 'Klebsiella pneumoniae', 
-                drugs: ['Meropenem', 'Imipenem', 'Ertapenem'],
-                color: '#818cf8', // Indigo
-                dddIcode: '1530156', // Meropenem
-                dddName: 'Meropenem Use'
-            },
-            { 
-                id: 'mrsa', 
-                title: 'MRSA Trend', 
-                subtitle: 'S. aureus vs Oxacillin (Cefoxitin Screen)', 
-                organism: 'Staphylococcus aureus', 
-                drugs: ['Oxacillin', 'Cefoxitin'],
-                color: '#fbbf24', // Amber
-                dddIcode: '1000106', // Cloxacillin
-                dddName: 'Cloxacillin Use'
-            },
-            { 
-                id: '3gcr', 
-                title: '3GC-R (ESBL Proxy)', 
-                subtitle: 'E. coli vs Ceftriaxone (3rd Gen Ceph)', 
-                organism: 'Escherichia coli', 
-                drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'],
-                color: '#34d399', // Emerald
-                dddIcode: '1000776', // Ceftriaxone
-                dddName: 'Ceftriaxone Use'
-            },
-            { 
-                id: 'vre', 
-                title: 'VRE Trend', 
-                subtitle: 'Enterococcus vs Vancomycin', 
-                organism: 'Enterococcus faecium', 
-                drugs: ['Vancomycin'],
-                color: '#22d3ee', // Cyan
-                dddIcode: '1540012', // Vancomycin
-                dddName: 'Vancomycin Use'
-            },
+            { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin' }, // Note: Using Cloxacillin as proxy for beta-lactams if Oxacillin not in DDD
+            { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone' },
+            { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin' },
         ];
 
         // --- MOCK DATA FOR DEMO WIDGETS ---
@@ -171,23 +106,7 @@
             return { id: i + 1, status };
         });
 
-        const AI_PREDICTION_DATA = [
-            { month: 'Nov', actual: 12, predicted: 11 },
-            { month: 'Dec', actual: 15, predicted: 14 },
-            { month: 'Jan', actual: 10, predicted: 12 },
-            { month: 'Feb', predicted: 18 },
-            { month: 'Mar', predicted: 22 },
-        ];
-
-        const HEATMAP_DATA = [
-            { drug: 'Imipenem', ab: 20, ec: 98, kp: 85, pa: 70 },
-            { drug: 'Meropenem', ab: 22, ec: 99, kp: 88, pa: 72 },
-            { drug: 'Amikacin', ab: 45, ec: 95, kp: 90, pa: 85 },
-            { drug: 'Ceftriaxone', ab: 5, ec: 40, kp: 60, pa: 0 },
-        ];
-
         // --- COMPONENTS ---
-
         const GermIcon = ({ color, className }) => (
             <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`germ-glow ${className}`} style={{ color: color }}>
                 <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill={color} fillOpacity="0.2" />
@@ -201,9 +120,7 @@
 
         const AlertTicker = () => (
             <div className="w-full bg-red-950/40 border-y border-red-500/20 text-red-100 py-2 relative overflow-hidden flex items-center backdrop-blur-sm z-20">
-                <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 ml-4 rounded z-10 shadow-[0_0_10px_rgba(220,38,38,0.5)] absolute left-0 flex items-center gap-1">
-                    <i data-lucide="siren" className="w-3 h-3 animate-pulse"></i> CRITICAL
-                </div>
+                <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 ml-4 rounded z-10 shadow-[0_0_10px_rgba(220,38,38,0.5)] absolute left-0 flex items-center gap-1"><i data-lucide="siren" className="w-3 h-3 animate-pulse"></i> CRITICAL</div>
                 <div className="ticker-wrap w-full">
                     <div className="ticker-content pl-24 text-sm font-light flex items-center">
                         {CRITICAL_ALERTS.map((alert, idx) => (
@@ -422,7 +339,9 @@
                                     <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} dy={10} />
                                     
                                     <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#ffffff" fontSize={10} tickLine={false} axisLine={false} />
+                                    
+                                    {/* Auto-scaling right axis for DDD visibility */}
+                                    <YAxis yAxisId="right" orientation="right" stroke="#ffffff" fontSize={10} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
                                     
                                     <Tooltip 
                                         contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: config.color, color: '#fff', borderRadius: '8px' }}
@@ -433,7 +352,7 @@
                                     <ReferenceLine yAxisId="left" y={50} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} label={{ value: '50% R', fill: '#ef4444', fontSize: 9, opacity: 0.5 }} />
                                     
                                     <Line yAxisId="left" type="monotone" dataKey="resistance" name="% Resistance" stroke={config.color} strokeWidth={3} dot={{ fill: '#0f172a', stroke: config.color, strokeWidth: 2, r: 4 }} activeDot={{ r: 6, fill: '#fff', stroke: config.color }} animationDuration={1500} />
-                                    <Line yAxisId="right" type="monotone" dataKey="ddd" name="DDD/100 bed-days" stroke="#ffffff" strokeWidth={1} dot={false} strokeDasharray="4 4" opacity={0.7} />
+                                    <Line yAxisId="right" type="monotone" dataKey="ddd" name="DDD Use" stroke="#ffffff" strokeWidth={2} dot={false} strokeDasharray="4 4" opacity={0.8} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         ) : (
@@ -449,9 +368,88 @@
             );
         };
 
+        const TotalDddChart = ({ data, drugKeys }) => {
+            const hasData = data && data.length > 0;
+            
+            // Vibrant colors for drugs
+            const colors = [
+                '#f472b6', '#c084fc', '#818cf8', '#22d3ee', '#34d399', '#a3e635', 
+                '#facc15', '#fb923c', '#f87171', '#94a3b8', '#64748b', '#ec4899'
+            ];
+
+            return (
+                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-blue-500/50 relative overflow-hidden">
+                    <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-lg">
+                        <i data-lucide="bar-chart" className="w-5 h-5 text-blue-400 icon-glow"></i> Total Antibiotic Consumption (DDD/100 bed-days)
+                    </h3>
+                    <div className="h-[500px] relative z-10">
+                        {hasData ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 50 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis 
+                                        dataKey="name" 
+                                        stroke="#94a3b8" 
+                                        fontSize={12} 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        angle={-45} 
+                                        textAnchor="end"
+                                        dy={10}
+                                    />
+                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'DDD/100 bed-days', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10, dy: 50 }} />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#60a5fa', color: '#fff', borderRadius: '8px' }}
+                                        labelStyle={{ color: '#cbd5e1' }}
+                                    />
+                                    <Legend 
+                                        wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} 
+                                        layout="horizontal" 
+                                        verticalAlign="bottom" 
+                                        align="center"
+                                    />
+                                    
+                                    {/* Lines for each drug (All drugs > 0) */}
+                                    {drugKeys.map((drug, index) => (
+                                        <Line 
+                                            key={drug} 
+                                            type="monotone" 
+                                            dataKey={drug} 
+                                            name={drug} 
+                                            stroke={colors[index % colors.length]} 
+                                            strokeWidth={1.5} 
+                                            dot={false}
+                                            activeDot={{r: 4}}
+                                            opacity={0.6}
+                                        />
+                                    ))}
+
+                                    {/* Thick White Line for Total */}
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="Total" 
+                                        name="TOTAL (All Abx)" 
+                                        stroke="#ffffff" 
+                                        strokeWidth={4} 
+                                        dot={{r:5, fill:'#fff', stroke:'none'}} 
+                                        activeDot={{r:7, stroke:'rgba(255,255,255,0.5)', strokeWidth:4}} 
+                                        shadow="0 0 15px white"
+                                        style={{ filter: "drop-shadow(0px 0px 5px rgba(255, 255, 255, 0.5))" }}
+                                    />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No Antibiotic Usage Data</div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [rawData, setRawData] = useState([]);
             const [dddRawData, setDddRawData] = useState([]);
+            const [quarterlyChartData, setQuarterlyChartData] = useState({ data: [], keys: [] });
             const [headers, setHeaders] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
@@ -476,14 +474,161 @@
                     if (json.status === 'success') {
                         setRawData(json.amr.data);
                         setHeaders(json.amr.headers);
-                        setDddRawData(json.ddd);
+                        
+                        // Clean numeric fields in DDD data to be safe
+                        const cleanedDdd = (json.ddd || []).map(d => ({
+                            ...d,
+                            qty_ipd: Number(d.qty_ipd) || 0,
+                            strength_mg: Number(d.strength_mg) || 0,
+                            standard_ddd_mg: Number(d.standard_ddd_mg) || 0,
+                            total_patient_days: Number(d.total_patient_days) || 0
+                        }));
+                        setDddRawData(cleanedDdd);
                         
                         const specs = [...new Set(json.amr.data.map(r => r['Specimen']).filter(Boolean))].sort();
                         const times = [...new Set(json.amr.data.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort().reverse();
                         setSpecimenList(specs);
                         setTimeList(times);
+
+                        // Process Quarterly DDD from cleaned data
+                        const qResult = processQuarterlyDdd(cleanedDdd);
+                        setQuarterlyChartData({ data: qResult.data, keys: qResult.drugKeys });
+
                     } else { setError(json.message); }
                 } catch (e) { setError("Connection Failed."); } finally { setLoading(false); }
+            };
+
+            const processQuarterlyDdd = (dddData) => {
+                // Goal: Calculate DDD Rate per Quarter
+                // Formula: (Total DDD Units in Quarter / Total Patient Days in Quarter) * 100
+                // DDD Unit = (Qty * Strength) / Standard_DDD
+
+                // 1. Accumulate Data by Quarter
+                const quarterlyStats = {}; // { "Q1-2024": { patientDays: 0, drugUnits: { "Meropenem": 123, ... } } }
+                
+                // Helper to track unique months processed for patient days to avoid double counting
+                const processedMonths = new Set(); 
+
+                dddData.forEach(r => {
+                    if (!r.month) return;
+                    
+                    // Parse Month/Year
+                    let m, y;
+                    const dateParts = String(r.month).split('/');
+                    if (dateParts.length === 2) {
+                        m = parseInt(dateParts[0]);
+                        y = parseInt(dateParts[1]);
+                    } else {
+                        // Handle Date object if passed
+                        const d = new Date(r.month);
+                        if (!isNaN(d)) {
+                            m = d.getMonth() + 1;
+                            y = d.getFullYear();
+                        }
+                    }
+
+                    if (!m || !y) return;
+
+                    const q = Math.ceil(m / 3);
+                    const qKey = `Q${q}-${y}`;
+                    const mKey = `${m}-${y}`;
+
+                    if (!quarterlyStats[qKey]) {
+                        quarterlyStats[qKey] = { patientDays: 0, drugUnits: {} };
+                    }
+
+                    // 1a. Patient Days (Count once per month per quarter)
+                    // We use a composite key of qKey + mKey to track if we added patient days for this month already
+                    // Note: This relies on the assumption that total_patient_days is repeated for every drug row in that month
+                    // Simpler approach: Create a map of Month -> PatientDays first
+                });
+
+                // Step 1: Map Month -> Patient Days
+                const monthPatientDays = {};
+                dddData.forEach(r => {
+                    if(r.month && r.total_patient_days > 0) {
+                         // Normalize month string
+                         monthPatientDays[r.month] = r.total_patient_days;
+                    }
+                });
+
+                // Step 2: Sum Patient Days per Quarter
+                const quarterPatientDays = {};
+                Object.keys(monthPatientDays).forEach(mStr => {
+                    const parts = mStr.split('/');
+                    if(parts.length === 2) {
+                        const m = parseInt(parts[0]);
+                        const y = parseInt(parts[1]);
+                        const q = Math.ceil(m/3);
+                        const qKey = `Q${q}-${y}`;
+                        quarterPatientDays[qKey] = (quarterPatientDays[qKey] || 0) + monthPatientDays[mStr];
+                    }
+                });
+
+                // Step 3: Sum DDD Units per Quarter per Drug
+                const quarterDrugUnits = {}; // { "Q1-2024": { "Meropenem": 500, "Total": 1000 } }
+
+                dddData.forEach(r => {
+                    if (!r.month || !r.drug_name || r.standard_ddd_mg === 0) return;
+                    
+                    const parts = String(r.month).split('/');
+                    if(parts.length !== 2) return;
+                    
+                    const m = parseInt(parts[0]);
+                    const y = parseInt(parts[1]);
+                    const q = Math.ceil(m/3);
+                    const qKey = `Q${q}-${y}`;
+
+                    // Clean Drug Name: Remove [..] and *
+                    let drugName = r.drug_name.replace(/\[.*?\]/g, '').replace(/^\*/, '').trim();
+                    // Optional: remove strength info if embedded in name to group better
+                    
+                    if (!quarterDrugUnits[qKey]) quarterDrugUnits[qKey] = {};
+                    
+                    const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
+                    
+                    quarterDrugUnits[qKey][drugName] = (quarterDrugUnits[qKey][drugName] || 0) + units;
+                });
+
+                // Step 4: Calculate Final Rates
+                const finalChartData = [];
+                const allDrugs = new Set();
+
+                Object.keys(quarterPatientDays).forEach(qKey => {
+                    const pDays = quarterPatientDays[qKey];
+                    if (pDays === 0) return;
+
+                    const dataObj = { name: qKey, Total: 0 };
+                    const drugs = quarterDrugUnits[qKey] || {};
+                    let totalUnitsInQuarter = 0;
+
+                    Object.keys(drugs).forEach(drug => {
+                        const units = drugs[drug];
+                        if (units > 0) {
+                            const rate = parseFloat(((units * 100) / pDays).toFixed(2));
+                            if (rate > 0) {
+                                dataObj[drug] = rate;
+                                allDrugs.add(drug);
+                                totalUnitsInQuarter += units;
+                            }
+                        }
+                    });
+
+                    // Calculate Total Rate based on Total Units (Weighted properly)
+                    dataObj.Total = parseFloat(((totalUnitsInQuarter * 100) / pDays).toFixed(2));
+                    
+                    finalChartData.push(dataObj);
+                });
+
+                // Sort by Date
+                finalChartData.sort((a, b) => {
+                    const [qA, yA] = a.name.replace('Q', '').split('-');
+                    const [qB, yB] = b.name.replace('Q', '').split('-');
+                    if (yA !== yB) return yA - yB;
+                    return qA - qB;
+                });
+
+                return { data: finalChartData, drugKeys: Array.from(allDrugs).sort() };
             };
 
             const getProcessedData = (kpiConfig) => {
@@ -495,6 +640,7 @@
                 }
 
                 timePoints.forEach(time => {
+                    // --- 1. Calculate Resistance ---
                     let totalS = 0;
                     let totalN = 0;
                     let drugUsed = "";
@@ -538,35 +684,56 @@
                         });
                     }
 
+                    // --- 2. Calculate DDD (Yearly) ---
                     let dddVal = 0;
                     if (kpiConfig.dddIcode) {
+                        // Match Year (handling AD/BE)
+                        const tYear = parseInt(time);
+                        
+                        // Filter for rows matching this year AND the specific icode
                         const relevantDdd = dddRawData.filter(d => {
-                            let dYear = '';
-                            if (typeof d.month === 'string' && d.month.includes('/')) {
-                                dYear = d.month.split('/')[1];
-                            } else if (d.month instanceof Date) {
-                                dYear = d.month.getFullYear().toString();
-                            } else {
-                                dYear = String(d.month).slice(-4); 
-                            }
-                            return String(d.icode) === kpiConfig.dddIcode && dYear === time;
+                            if (!d.month) return false;
+                            const parts = String(d.month).split('/');
+                            if(parts.length !== 2) return false;
+                            const dYear = parseInt(parts[1]);
+                            
+                            // Check Year Match (Direct or +/- 543)
+                            const isYearMatch = (dYear === tYear) || (Math.abs(dYear - tYear) === 543);
+                            
+                            // Check ICODE match
+                            return String(d.icode) === String(kpiConfig.dddIcode) && isYearMatch;
                         });
 
-                        if (relevantDdd.length > 0) {
-                            let numerator = 0;
-                            let denominator = 0;
-                            relevantDdd.forEach(d => {
-                                numerator += (d.qty_ipd * d.strength_mg * 100);
-                                denominator += (d.standard_ddd_mg * d.total_patient_days);
-                            });
-                            if (denominator > 0) {
-                                dddVal = parseFloat((numerator / denominator).toFixed(2));
+                        // Calculate Yearly Rate
+                        // 1. Get unique patient days for each month in this year
+                        const monthlyDays = {};
+                        dddRawData.forEach(d => {
+                             if (!d.month) return;
+                             const parts = String(d.month).split('/');
+                             if (parts.length !== 2) return;
+                             const dYear = parseInt(parts[1]);
+                             if ((dYear === tYear) || (Math.abs(dYear - tYear) === 543)) {
+                                 if (d.total_patient_days > 0) monthlyDays[d.month] = d.total_patient_days;
+                             }
+                        });
+                        const totalYearPatientDays = Object.values(monthlyDays).reduce((a,b) => a+b, 0);
+
+                        // 2. Sum DDD Units for this drug in this year
+                        let totalYearUnits = 0;
+                        relevantDdd.forEach(d => {
+                            if (d.standard_ddd_mg > 0) {
+                                totalYearUnits += (d.qty_ipd * d.strength_mg) / d.standard_ddd_mg;
                             }
+                        });
+
+                        if (totalYearPatientDays > 0) {
+                            dddVal = parseFloat(((totalYearUnits * 100) / totalYearPatientDays).toFixed(2));
                         }
                     }
 
                     if (totalN > 0 || dddVal > 0) {
                         const pctR = totalN > 0 ? (100 - ((totalS / totalN) * 100)) : null;
+                        
                         chartData.push({ 
                             year: time, 
                             resistance: pctR !== null ? parseFloat(pctR.toFixed(1)) : null, 
@@ -689,63 +856,9 @@
                             </div>
                         </div>
 
-                        {/* Zone 3: AI & Heatmap (Demo Data) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* AI Prediction */}
-                            <div className="glass-panel p-5 rounded-2xl border border-purple-500/30 relative overflow-hidden bg-gradient-to-br from-purple-900/20 to-slate-900/50">
-                                <div className="absolute -top-6 -right-6 p-4 opacity-10"><i data-lucide="brain-circuit" className="w-32 h-32 text-purple-400"></i></div>
-                                <h3 className="text-purple-300 font-bold mb-4 text-sm z-10 relative flex items-center gap-2">
-                                    <i data-lucide="sparkles" className="w-4 h-4 text-yellow-300 icon-glow"></i> AI Outbreak Prediction (Demo)
-                                </h3>
-                                <div className="h-48 relative z-10">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={AI_PREDICTION_DATA}>
-                                            <defs>
-                                                <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                                                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.5} />
-                                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#a855f7', color: '#fff', borderRadius: '8px' }} />
-                                            <Area type="monotone" dataKey="predicted" stroke="#a855f7" strokeWidth={2} fill="url(#gradArea)" strokeDasharray="5 5" name="Forecast" />
-                                            <Line type="monotone" dataKey="actual" stroke="#22d3ee" strokeWidth={2} dot={{r:3, fill: '#22d3ee'}} name="Actual" />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Heatmap */}
-                            <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-emerald-500/50">
-                                <h3 className="text-white font-bold mb-3 flex items-center gap-2">
-                                    <i data-lucide="table" className="w-5 h-5 text-emerald-400 icon-glow"></i> Hospital Antibiogram (Demo)
-                                </h3>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-xs text-center border-separate border-spacing-y-1">
-                                        <thead>
-                                            <tr className="text-slate-400">
-                                                <th className="py-2 text-left pl-2 font-light">Drug \ Bug</th>
-                                                <th className="text-pink-400 font-medium">A.bau</th>
-                                                <th className="text-purple-400 font-medium">E.coli</th>
-                                                <th className="text-indigo-400 font-medium">K.pneu</th>
-                                                <th className="text-emerald-400 font-medium">P.aeru</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {HEATMAP_DATA.map((row, i) => (
-                                                <tr key={i} className="hover:bg-white/5 transition-colors">
-                                                    <td className="py-2 text-left pl-2 font-medium text-slate-300 border-b border-slate-800/50">{row.drug}</td>
-                                                    {[row.ab, row.ec, row.kp, row.pa].map((val, idx) => {
-                                                        let bg = val > 70 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (val > 40 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20');
-                                                        return <td key={idx} className={`py-1.5 px-1 rounded border ${bg} font-medium`}>{val}%</td>
-                                                    })}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        {/* Zone 3: Total DDD & AI */}
+                        <div className="grid grid-cols-1 gap-6">
+                            <TotalDddChart data={quarterlyChartData.data} drugKeys={quarterlyChartData.keys} />
                         </div>
 
                     </main>
