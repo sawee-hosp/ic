@@ -16,8 +16,12 @@
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://i.ibb.co/vCWyf6b4/ic-foamboard-60x75cm-500-x-500-px-1.gif" type="image/gif">
 
     <style>
+        /* Theme: Deep Space Purple/Slate */
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         
         .glass-panel { 
@@ -42,7 +46,7 @@
             pointer-events: none;
             z-index: 0;
         }
-
+        
         .neon-text { text-shadow: 0 0 10px currentColor; }
         .icon-glow { filter: drop-shadow(0 0 8px currentColor); }
         .germ-glow { filter: drop-shadow(0 0 5px currentColor); }
@@ -68,6 +72,8 @@
             white-space: nowrap; overflow: hidden; transition: all 0.2s;
         }
         .bed-box:hover { z-index: 10; transform: scale(1.5); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        
+        /* Bed States */
         .bed-active { color: white; border: none !important; }
         .bed-CAUTI { background: #fbbf24; color: #451a03; }
         .bed-VAP { background: #3b82f6; }
@@ -75,10 +81,18 @@
         .bed-SSI { background: #10b981; }
         .bed-MDR { background: #a855f7; }
         .bed-hai-alert { box-shadow: 0 0 0 1px #ef4444, 0 0 6px #ef4444 !important; animation: pulse-red 1s infinite; z-index: 20; }
+        
         @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         
-        .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Modal Animation */
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        
+        .pineapple-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pineapple-btn:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.4)); background: rgba(234, 179, 8, 0.2); }
     </style>
 </head>
 <body>
@@ -86,10 +100,32 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
-        const { ComposedChart, Line, Bar, BarChart, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = window.Recharts || {};
+        const { 
+            ComposedChart, Line, Bar, BarChart, AreaChart, Area, PieChart, Pie, Cell, 
+            XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label 
+        } = window.Recharts || {};
 
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQRd_pMI2YCDkCZEJgj0GYkLSSgjK-DWDGleIksljsf13SIToe6MkgpzKnL9lk7TkkWQ/exec';
         
+        const ORGANISM_GROUPS = [
+            { base: 'Acinetobacter baumannii', keywords: ['baumannii'] },
+            { base: 'Escherichia coli', keywords: ['coli'] },
+            { base: 'Klebsiella pneumoniae', keywords: ['pneumoniae'] },
+            { base: 'Staphylococcus aureus', keywords: ['aureus'] },
+            { base: 'Enterococcus faecium', keywords: ['faecium'] },
+            { base: 'Enterococcus faecalis', keywords: ['faecalis'] },
+            { base: 'Pseudomonas aeruginosa', keywords: ['aeruginosa'] }
+        ];
+
+        const KPI_CONFIG = [
+            { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem' },
+            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin' },
+            { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone' },
+            { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin' },
+        ];
+
         // --- COMPONENTS ---
         const GermIcon = ({ color, className }) => (
             <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`germ-glow ${className}`} style={{ color: color }}><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill={color} fillOpacity="0.2" /><path d="M8.5 8.5a2.5 2.5 0 1 0 2.5 2.5" /><path d="M13 13a3 3 0 1 0 3-3" /><path d="M9 16a4 4 0 1 0 4-4" /><circle cx="15" cy="9" r="1" fill={color} /><circle cx="9" cy="15" r="1" fill={color} /></svg>
@@ -142,7 +178,6 @@
                                             </div>
                                             <div className="text-xs text-slate-400">Bundle: <span className="text-white">{rec.bundle || '-'}</span></div>
                                             <div className="text-xs text-slate-400">Date: {rec.date ? new Date(rec.date).toLocaleDateString() : '-'} {rec.endDate ? ` - ${rec.endDate}` : ''}</div>
-                                            {rec.outcome && <div className="text-xs text-slate-400 mt-1">Outcome: {rec.outcome}</div>}
                                         </li>
                                     ))}
                                 </ul>
@@ -213,7 +248,6 @@
         const HandHygieneSection = ({ data }) => {
             if (!data) return <div className="glass-panel p-6 text-center text-slate-500 card-gradient">Loading Hand Hygiene...</div>;
 
-            // --- 1. Current Month KPI (Pie & Big Number) ---
             const now = new Date();
             const currentMonthName = now.toLocaleString('en-US', { month: 'short', year: 'numeric' });
             
@@ -225,19 +259,16 @@
             const totalCurr = currentMonthData.length;
             const validCurr = currentMonthData.filter(r => r.method !== 0).length;
             const missedCurr = totalCurr - validCurr;
-            const complianceCurr = totalCurr > 0 ? ((validCurr / totalObs) * 100).toFixed(1) : 0; // Typo fix: totalObs -> totalCurr
-
+            
             const pieData = [
                 { name: 'Compliant', value: validCurr },
                 { name: 'Missed', value: missedCurr }
             ];
             const COLORS = ['#10b981', '#ef4444'];
 
-            // --- 2. Trend (6 Months Stacked Bar) ---
             const trendStats = {};
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             
-            // Look back 6 months
             for(let i=5; i>=0; i--) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key = `${months[d.getMonth()]} ${d.getFullYear().toString().substr(-2)}`;
@@ -254,17 +285,14 @@
             });
             const trendData = Object.values(trendStats).sort((a,b) => a.order - b.order);
 
-            // --- 3. Analysis (Steps & Moments) ---
             const validRecords = data.records.filter(r => r.method !== 0);
             
-            // Steps 1-7 (Highest performed)
             const stepCounts = Array(7).fill(0);
             validRecords.forEach(r => {
                 r.steps.forEach((s, idx) => { if(s === 1) stepCounts[idx]++; });
             });
             const stepData = stepCounts.map((val, idx) => ({ name: `S${idx+1}`, value: val }));
 
-            // Moments 1-5 (Highest performed)
             const momentCounts = {};
             validRecords.forEach(r => {
                 if(r.moment) momentCounts[r.moment] = (momentCounts[r.moment] || 0) + 1;
@@ -303,7 +331,6 @@
 
                         {/* Trend & Analysis Section */}
                         <div className="col-span-8 flex flex-col gap-3">
-                            {/* Trend Stacked Bar */}
                             <div className="h-24">
                                 <div className="text-[10px] text-slate-400 mb-1 flex justify-between"><span>6-Month Trend</span><span className="flex gap-2"><span className="text-emerald-500">Correct</span><span className="text-red-500">Missed</span></span></div>
                                 <ResponsiveContainer width="100%" height="100%">
@@ -317,7 +344,6 @@
                                 </ResponsiveContainer>
                             </div>
 
-                            {/* Steps & Moments Mini Charts */}
                             <div className="grid grid-cols-2 gap-2 h-20">
                                 <div>
                                     <div className="text-[9px] text-slate-500 mb-1">Top Steps (1-7)</div>
@@ -385,15 +411,9 @@
             const processedData = useMemo(() => {
                 if (!rawData || rawData.length === 0) return [];
 
-                // Group by Quarter
                 const quarters = {};
                 rawData.forEach(r => {
                     const year = r['ปีที่ตรวจ'];
-                    // Note: AMR Data typically has Year. If Month is not available, we can only group by Year.
-                    // Assuming rawData might have Quarter info or we just group by Year for now based on available data.
-                    // If your data has Month/Date, we can do Quarters. Based on `getAmrData`, it gets display values.
-                    // Let's assume 'ปีที่ตรวจ' is the time unit. If it's just Year (2566, 2567), we show that.
-                    
                     const timeKey = year; // Use Year as key
                     const organism = r['ชื่อเชื้อ'] || "";
                     
@@ -406,7 +426,6 @@
                     }
                 });
 
-                // Sort by time and take last 6 periods
                 return Object.values(quarters).sort((a,b) => a.order - b.order).slice(-6);
             }, [rawData]);
 
@@ -471,6 +490,48 @@
             );
         };
 
+        const AnalyzeModal = ({ isOpen, onClose, data, config }) => {
+            const [analysis, setAnalysis] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                if (isOpen && data && config) analyzeData();
+                else setAnalysis(null);
+            }, [isOpen]);
+
+            const analyzeData = async () => {
+                setLoading(true);
+                setAnalysis(null);
+                try {
+                    const trendData = data.map(d => ({ year: d.year, resistance: d.resistance, n: d.n, ddd: d.ddd || 0 }));
+                    const res = await fetch(GAS_API_URL, {
+                        method: 'POST',
+                        redirect: 'follow',
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: 'analyze_trend', organism: config.organism, drug: config.drugs[0], trendData: trendData })
+                    });
+                    const json = await res.json();
+                    if(json.status === 'success') setAnalysis(json.answer);
+                    else setAnalysis("Error: " + (json.message || "Unknown error"));
+                } catch (e) { setAnalysis("Connection Error."); } finally { setLoading(false); }
+            };
+
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
+                    <div className="glass-panel w-full max-w-lg rounded-2xl overflow-hidden modal-enter border border-slate-600 shadow-2xl shadow-purple-900/20" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                            <div className="flex items-center gap-3"><h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-400">IC SW-1 Analysis</h3></div>
+                            <button onClick={onClose} className="text-slate-400 hover:text-white"><i data-lucide="x" className="w-6 h-6"></i></button>
+                        </div>
+                        <div className="p-6 min-h-[200px] max-h-[70vh] overflow-y-auto bg-slate-900/90">
+                            {loading ? <div className="flex flex-col items-center justify-center h-full py-8"><div className="loader mb-4"></div><p className="text-slate-300 animate-pulse text-sm">กำลังวิเคราะห์ข้อมูล...</p></div> : <div className="prose prose-invert prose-sm max-w-none"><div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 text-slate-200 leading-relaxed whitespace-pre-wrap font-light" dangerouslySetInnerHTML={{__html: analysis}}></div></div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [rawData, setRawData] = useState([]);
             const [dddRawData, setDddRawData] = useState([]);
@@ -481,6 +542,14 @@
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             
+            const [selectedSpecimen, setSelectedSpecimen] = useState('All');
+            const [selectedTime, setSelectedTime] = useState('All');
+            const [specimenList, setSpecimenList] = useState([]);
+            const [timeList, setTimeList] = useState([]);
+            const [modalOpen, setModalOpen] = useState(false);
+            const [modalConfig, setModalConfig] = useState(null);
+            const [modalData, setModalData] = useState(null);
+
             useEffect(() => { if(window.lucide) window.lucide.createIcons(); fetchData(); }, []);
 
             const fetchData = async () => {
@@ -493,6 +562,11 @@
                         setDddRawData(json.ddd);
                         setHhRawData(json.hh);
                         setHaiRawData(json.hai);
+
+                        const specs = [...new Set(json.amr.data.map(r => r['Specimen']).filter(Boolean))].sort();
+                        const times = [...new Set(json.amr.data.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort().reverse();
+                        setSpecimenList(specs);
+                        setTimeList(times);
 
                         const qResult = processQuarterlyDdd(json.ddd);
                         setQuarterlyChartData({ data: qResult.data, keys: qResult.drugKeys });
@@ -543,6 +617,64 @@
                 return { data: finalChartData, drugKeys: Array.from(allDrugs).sort() };
             };
 
+            const getProcessedData = (kpiConfig) => {
+                const chartData = [];
+                let timePoints = [...new Set(rawData.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort();
+                if (selectedTime !== 'All') timePoints = timePoints.filter(t => t === selectedTime);
+                timePoints.forEach(time => {
+                    let totalS = 0; let totalN = 0; let drugUsed = ""; let sKey, tKey;
+                    for (const drug of kpiConfig.drugs) {
+                        sKey = headers.find(h => h.includes(drug) && (h.includes('(ไว)') || h.includes('(S)')));
+                        tKey = headers.find(h => h.includes(drug) && (h.includes('(ทั้งหมด)') || h.includes('(Total)')));
+                        if (sKey && tKey) { drugUsed = drug; break; }
+                    }
+                    if (sKey && tKey) {
+                        const relevantRows = rawData.filter(row => {
+                            if (row['ปีที่ตรวจ'] !== time) return false;
+                            if (selectedSpecimen !== 'All' && row['Specimen'] !== selectedSpecimen) return false;
+                            return true;
+                        });
+                        relevantRows.forEach(row => {
+                            const rawOrgName = row['ชื่อเชื้อ'];
+                            if (!rawOrgName) return;
+                            const orgGroup = ORGANISM_GROUPS.find(g => g.base === kpiConfig.organism);
+                            if (orgGroup && orgGroup.keywords.some(kw => rawOrgName.toLowerCase().includes(kw))) {
+                                const parseVal = (v) => { if(!v) return 0; const str = String(v).replace(/,/g, '').trim(); if(['R','S','I','-','No growth'].includes(str)) return 0; return parseFloat(str) || 0; };
+                                totalS += parseVal(row[sKey]);
+                                totalN += parseVal(row[tKey]);
+                            }
+                        });
+                    }
+                    let dddVal = 0;
+                    if (kpiConfig.dddIcode && dddRawData.length > 0) {
+                        const tYear = parseInt(time);
+                        const matchingRows = dddRawData.filter(d => {
+                            if (!d.month || String(d.icode).trim() !== String(kpiConfig.dddIcode).trim()) return false;
+                            const [m, yStr] = d.month.split('/');
+                            const dYear = parseInt(yStr);
+                            return (dYear === tYear) || (Math.abs(dYear - tYear) === 543);
+                        });
+                        if (matchingRows.length > 0) {
+                            const monthStats = {};
+                            matchingRows.forEach(r => {
+                                if (!monthStats[r.month]) monthStats[r.month] = { pDay: r.total_patient_days, unit: 0 };
+                                if (r.standard_ddd_mg > 0) monthStats[r.month].unit += (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
+                            });
+                            let sumUnits = 0; let sumDays = 0;
+                            Object.values(monthStats).forEach(s => { sumUnits += s.unit; sumDays += s.pDay; });
+                            if (sumDays > 0) dddVal = parseFloat(((sumUnits * 100) / sumDays).toFixed(2));
+                        }
+                    }
+                    if (totalN > 0 || dddVal > 0) {
+                        const pctR = totalN > 0 ? (100 - ((totalS / totalN) * 100)) : null;
+                        chartData.push({ year: time, resistance: pctR !== null ? parseFloat(pctR.toFixed(1)) : null, n: totalN, drugUsed: drugUsed, ddd: dddVal });
+                    }
+                });
+                return chartData;
+            };
+
+            const handleAnalyze = (config, data) => { setModalConfig(config); setModalData(data); setModalOpen(true); };
+
             if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a]"><div className="loader mb-4"></div><p className="text-cyan-400 animate-pulse">Loading...</p></div>;
             if (error) return <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-red-400"><p>{error}</p></div>;
 
@@ -557,6 +689,7 @@
                             <div className="flex items-center gap-4"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live</div>
                         </div>
                     </header>
+                    <AlertTicker alerts={haiRawData.hai_cases.filter(h => h.status === 'แจ้ง ICN')} />
                     <main className="max-w-7xl mx-auto px-4 py-6 space-y-6 relative z-10">
                         {/* Top Row: Hand Hygiene & Bundle & Lab */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -572,96 +705,26 @@
                         <div className="grid grid-cols-1 gap-6"><TotalDddChart data={quarterlyChartData.data} drugKeys={quarterlyChartData.keys} /></div>
 
                         {/* Bottom Row: AMR Charts */}
-                        {/* (You can keep the filter & amr charts if needed, or hide if top row is enough. I will keep them for completeness) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-1 space-y-4">
+                                <div className="glass-panel p-5 rounded-2xl border-l-4 border-indigo-500">
+                                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="filter" className="w-4 h-4 text-indigo-400"></i> Filters</h3>
+                                    <div className="mb-4">
+                                        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Specimen</label>
+                                        <div className="relative"><select value={selectedSpecimen} onChange={(e) => setSelectedSpecimen(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none focus:outline-none focus:border-indigo-500 text-sm"><option value="All">All Specimens</option>{specimenList.map(s => <option key={s} value={s}>{s}</option>)}</select><i data-lucide="chevron-down" className="absolute right-3 top-2.5 w-4 h-4 text-slate-500 pointer-events-none"></i></div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Time Period</label>
+                                        <div className="relative"><select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none focus:outline-none focus:border-indigo-500 text-sm"><option value="All">All History</option>{timeList.map(t => <option key={t} value={t}>{t}</option>)}</select><i data-lucide="calendar" className="absolute right-3 top-2.5 w-4 h-4 text-slate-500 pointer-events-none"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {KPI_CONFIG.map(config => <AmrChartWidget key={config.id} config={config} data={getProcessedData(config)} onAnalyze={handleAnalyze} />)}
+                            </div>
+                        </div>
                     </main>
-                </div>
-            );
-        };
-        
-        // --- MISSING COMPONENT DEFINITION ---
-        // (Re-adding BundleHaiSurveillance as it was requested to be renamed and modified)
-        const BedHistoryModal = ({ bedId, history, onClose }) => {
-            if (!bedId) return null;
-            return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-                    <div className="glass-panel w-full max-w-md rounded-2xl overflow-hidden modal-enter border border-slate-600" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-slate-700 bg-slate-900/50 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white">Bed History: {bedId}</h3>
-                            <button onClick={onClose}><i data-lucide="x" className="w-5 h-5 text-slate-400 hover:text-white"></i></button>
-                        </div>
-                        <div className="p-4 max-h-[60vh] overflow-y-auto bg-slate-900/80">
-                            {history.length === 0 ? <p className="text-slate-500 text-center">No history found.</p> : (
-                                <ul className="space-y-3">
-                                    {history.map((rec, idx) => (
-                                        <li key={idx} className={`p-3 rounded-lg border ${rec.status === 'Active' ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-slate-800/50 border-slate-700'}`}>
-                                            <div className="flex justify-between mb-1">
-                                                <span className="font-bold text-sm text-slate-200">HN: {rec.hn}</span>
-                                                <span className={`text-[10px] px-2 rounded-full ${rec.status === 'Active' ? 'bg-emerald-500 text-black' : 'bg-slate-600 text-slate-300'}`}>{rec.status}</span>
-                                            </div>
-                                            <div className="text-xs text-slate-400">Bundle: <span className="text-white">{rec.bundle || '-'}</span></div>
-                                            <div className="text-xs text-slate-400">Date: {rec.date ? new Date(rec.date).toLocaleDateString() : '-'} {rec.endDate ? ` - ${rec.endDate}` : ''}</div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const BundleHaiSurveillance = ({ activeCases, haiCases }) => {
-            const [selectedBed, setSelectedBed] = useState(null);
-            
-            const maleBeds = [...Array.from({length:25},(_,i)=>`M${i+1}`), ...Array.from({length:6},(_,i)=>`P${i+7}`), ...Array.from({length:10},(_,i)=>`SM${i+1}`)];
-            const femaleBeds = [...Array.from({length:25},(_,i)=>`F${i+1}`), ...Array.from({length:6},(_,i)=>`P${i+1}`), ...Array.from({length:10},(_,i)=>`SF${i+1}`)];
-            const lrBeds = Array.from({length:5},(_,i)=>`LR${i+1}`);
-            const erBeds = Array.from({length:5},(_,i)=>`ER${i+1}`);
-
-            const getBedStatus = (bedId) => {
-                const active = activeCases.find(c => c.bed === bedId && c.status === 'Active');
-                const hai = haiCases.find(h => h.bed === bedId && h.status === 'แจ้ง ICN');
-                let classes = "bed-box";
-                if (active) {
-                    classes += " bed-active";
-                    if (active.bundle.includes('CAUTI')) classes += " bed-CAUTI";
-                    else if (active.bundle.includes('VAP')) classes += " bed-VAP";
-                    else if (active.bundle.includes('PVC')) classes += " bed-PVC";
-                    else if (active.bundle.includes('SSI')) classes += " bed-SSI";
-                    else if (active.bundle.includes('MDR')) classes += " bed-MDR";
-                    else classes += " bg-indigo-500";
-                }
-                if (hai) classes += " bed-hai-alert";
-                return { classes };
-            };
-
-            const getBedHistory = (bedId) => activeCases.filter(c => c.bed === bedId).sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-purple-500/50 h-full flex flex-col card-gradient">
-                    <div className="flex justify-between items-center mb-4 z-10 relative">
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                            <i data-lucide="activity" className="w-5 h-5 text-purple-400 icon-glow"></i> Bundle & HAI Surveillance
-                        </h3>
-                        <div className="text-[9px] text-slate-400 flex gap-2">
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>CAUTI</span>
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>VAP</span>
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]"></div>HAI</span>
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto pr-1 z-10 relative">
-                         <div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">Male Ward</span></div>
-                         <div className="bed-grid-container mb-3">{maleBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div>
-                         
-                         <div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">Female Ward</span></div>
-                         <div className="bed-grid-container mb-3">{femaleBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div>
-                         
-                         <div className="grid grid-cols-2 gap-4">
-                             <div><div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">LR</span></div><div className="grid grid-cols-5 gap-1">{lrBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div></div>
-                             <div><div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">ER</span></div><div className="grid grid-cols-5 gap-1">{erBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div></div>
-                         </div>
-                    </div>
-                    {selectedBed && <BedHistoryModal bedId={selectedBed} history={getBedHistory(selectedBed)} onClose={() => setSelectedBed(null)} />}
+                    <AnalyzeModal isOpen={modalOpen} onClose={() => setModalOpen(false)} config={modalConfig} data={modalData} />
                 </div>
             );
         };
