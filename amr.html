@@ -81,11 +81,11 @@
         ];
 
         const KPI_CONFIG = [
-            { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Carbapenem (Imipenem)', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem Use' },
-            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Carbapenem (Meropenem)', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem Use' },
-            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Carbapenem (Meropenem)', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem Use' },
-            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin (ek Cloxacillin)', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin Use' },
-            { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone (3rd Gen Ceph)', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone Use' },
+            { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem Use' },
+            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem Use' },
+            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem Use' },
+            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin (Cefoxitin)', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin Use' },
+            { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone Use' },
             { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin Use' },
         ];
 
@@ -356,6 +356,8 @@
                                     <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} dy={10} />
                                     
                                     <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} domain={[0, 100]} />
+                                    
+                                    {/* Auto-scaling right axis for DDD visibility */}
                                     <YAxis yAxisId="right" orientation="right" stroke="#ffffff" fontSize={10} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
                                     
                                     <Tooltip 
@@ -479,8 +481,6 @@
 
             const processQuarterlyDdd = (dddData) => {
                 // 1. Group Monthly Patient Days (Distinct per month)
-                // We assume patient days are repeated for every drug in the same month file.
-                // So we just need to capture it once per month.
                 const monthlyPatientDays = {};
                 dddData.forEach(r => {
                     if(r.month && r.total_patient_days > 0) {
@@ -513,10 +513,7 @@
                     
                     if(r.standard_ddd_mg > 0 && r.qty_ipd > 0) {
                         const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
-                        
-                        // Clean drug name
-                        const drugName = r.drug_name.replace(/\*|\[.*?\]/g, '').trim();
-                        
+                        const drugName = r.drug_name.replace(/\*|\[.*?\]/g, '').trim(); 
                         quarterlyDrugDDD[qKey][drugName] = (quarterlyDrugDDD[qKey][drugName] || 0) + units;
                         quarterlyDrugDDD[qKey].Total += units;
                     }
@@ -537,14 +534,12 @@
                     
                     return dataObj;
                 }).filter(x => x).sort((a, b) => {
-                    // Sort by Year then Quarter
                     const [qA, yA] = a.name.split('-');
                     const [qB, yB] = b.name.split('-');
                     if (yA !== yB) return yA - yB;
                     return qA.localeCompare(qB);
                 });
 
-                // Extract all unique drug names for lines
                 const allDrugs = new Set();
                 finalChartData.forEach(d => Object.keys(d).forEach(k => {
                     if(k !== 'name' && k !== 'Total') allDrugs.add(k);

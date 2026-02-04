@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประกาศผล - บุคคลต้นแบบ 2025</title>
+    
+    <!-- React Libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .bg-pattern-heart {
+            background-color: #fff5f7;
+            background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffccd5' fill-opacity='0.4'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6 2.686-6 6 0 2.21 1.79 4 4 4 3.314 0 6-2.686 6-6zm-4-2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2zm30 0c0-2.21-1.79-4-4-4-3.314 0-6 2.686-6 6 0 2.21 1.79 4 4 4 3.314 0 6-2.686 6-6zm-4-2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .animate-pop { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .blur-text { filter: blur(8px); cursor: pointer; transition: filter 0.3s; }
+        .blur-text:hover, .blur-text.revealed { filter: blur(0); }
+    </style>
+
+    <!-- Error Handler Script -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            alert("เกิดข้อผิดพลาด:\n" + message + "\nLine: " + lineno);
+        };
+    </script>
+</head>
+<body class="bg-pattern-heart min-h-screen text-gray-700">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // *** ใส่ URL เดิมของคุณที่นี่ ***
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAlIL1gekP4kNJmvcpq5wWfMSzQBSG805exfEL6ccZ_vID6A7nfR4Eeyfv-GLOAjRu/exec"; 
+
+        // ตรวจสอบว่า React โหลดหรือไม่
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+            document.body.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error: React Libraries failed to load. Please check your internet connection.</div>';
+            throw new Error("React not loaded");
+        }
+
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Inline Icons (SVG) เพื่อแก้ปัญหา Library Error ---
+        const Icons = {
+            Trophy: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21 1.18.54 2.03 2.03 2.03 3.79"/><path d="M12 2v8"/><path d="M12 12a4 4 0 0 1 4-4H8a4 4 0 0 1 4 4z"/></svg>,
+            Gift: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>,
+            Eye: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+            EyeOff: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7c.44 0 .87-.03 1.28-.09"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
+            User: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Sparkles: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M7 5h4"/><path d="M3 5h4"/></svg>,
+            Lock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            RefreshCw: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        };
+
+        const Icon = ({ name, size = 24, className }) => {
+            const Component = Icons[name];
+            return Component ? <Component width={size} height={size} className={className} /> : null;
+        };
+
+        const TopRankCard = ({ rank, name, score, isRevealed, onToggle }) => {
+            const rankColors = [
+                "bg-yellow-100 border-yellow-300 text-yellow-700", // 1
+                "bg-gray-100 border-gray-300 text-gray-600",       // 2
+                "bg-orange-100 border-orange-300 text-orange-700", // 3
+                "bg-pink-50 border-pink-200 text-pink-600",        // 4
+                "bg-pink-50 border-pink-200 text-pink-600"         // 5
+            ];
+            
+            const colorClass = rankColors[rank - 1] || "bg-white border-gray-100";
+
+            return (
+                <div className={`relative flex items-center p-4 rounded-2xl border-2 ${colorClass} shadow-sm mb-4 animate-pop`}>
+                    <div className="flex-shrink-0 mr-4 flex flex-col items-center justify-center w-16">
+                        <span className={`font-black ${rank === 1 ? 'text-4xl' : 'text-2xl'}`}>#{rank}</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <div className="flex items-center gap-3">
+                            <div className={`font-bold truncate transition-all duration-500 ${isRevealed ? 'text-gray-800' : 'blur-md select-none text-gray-400'} ${rank === 1 ? 'text-2xl' : 'text-xl'}`}>
+                                {isRevealed ? name : "รายชื่อถูกซ่อน"}
+                            </div>
+                            <button onClick={onToggle} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                                {isRevealed ? <Icon name="EyeOff" size={20} className="text-gray-400" /> : <Icon name="Eye" size={20} className="text-pink-500 animate-pulse" />}
+                            </button>
+                        </div>
+                        <div className="text-sm opacity-70 mt-1 font-medium">คะแนนโหวต</div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                        <div className={`font-black ${rank === 1 ? 'text-3xl' : 'text-2xl'}`}>{score}</div>
+                        <div className="text-xs">Votes</div>
+                    </div>
+                    {rank === 1 && <div className="absolute -top-4 -right-2 text-yellow-400 drop-shadow-md rotate-12"><Icon name="Trophy" size={48} /></div>}
+                </div>
+            );
+        };
+
+        const LuckyWheel = ({ candidates }) => {
+            const [winners, setWinners] = useState([]);
+            const [isSpinning, setIsSpinning] = useState(false);
+            const [displayNames, setDisplayNames] = useState(Array(10).fill("???"));
+
+            const handleSpin = () => {
+                if (isSpinning || candidates.length === 0) return;
+                setIsSpinning(true);
+                setWinners([]);
+
+                // Animation Phase
+                let duration = 3000;
+                let interval = 50;
+                let startTime = Date.now();
+
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < duration) {
+                        const tempNames = Array(10).fill(null).map(() => candidates[Math.floor(Math.random() * candidates.length)]);
+                        setDisplayNames(tempNames);
+                        requestAnimationFrame(() => setTimeout(animate, interval));
+                    } else {
+                        const finalWinners = [];
+                        const pool = [...candidates];
+                        for (let i = 0; i < 10; i++) {
+                            if (pool.length === 0) break;
+                            const idx = Math.floor(Math.random() * pool.length);
+                            finalWinners.push(pool[idx]);
+                            pool.splice(idx, 1); 
+                        }
+                        setWinners(finalWinners);
+                        setDisplayNames(finalWinners);
+                        setIsSpinning(false);
+                        try {
+                            if (typeof confetti === 'function') {
+                                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+                            }
+                        } catch(e) { console.warn("Confetti not loaded"); }
+                    }
+                };
+                animate();
+            };
+
+            return (
+                <div className="text-center py-8">
+                    <h2 className="text-3xl font-bold text-pink-600 mb-8 flex items-center justify-center gap-3">
+                        <div className="animate-bounce"><Icon name="Gift" /></div> ลุ้นรางวัล Voter (10 รางวัล)
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-4xl mx-auto">
+                        {displayNames.map((name, i) => (
+                            <div key={i} className={`p-4 rounded-xl border-2 flex items-center gap-4 transition-all duration-300 ${winners.length > 0 ? 'bg-white border-green-200 shadow-md scale-105' : 'bg-pink-50 border-pink-100 opacity-70'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${winners.length > 0 ? 'bg-green-500' : 'bg-pink-300'}`}>
+                                    {i + 1}
+                                </div>
+                                <div className="font-bold text-lg truncate w-full text-left">
+                                    {name}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={handleSpin} 
+                        disabled={isSpinning}
+                        className={`px-12 py-4 rounded-full text-2xl font-bold text-white shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3 mx-auto
+                            ${isSpinning ? 'bg-gray-400 cursor-wait' : 'bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700'}
+                        `}
+                    >
+                        {isSpinning ? <div className="animate-spin"><Icon name="RefreshCw" /></div> : <Icon name="Sparkles" />}
+                        {isSpinning ? 'กำลังสุ่ม...' : 'กดเพื่อสุ่มรายชื่อ'}
+                    </button>
+                    <p className="mt-4 text-gray-400 text-sm">จากรายชื่อ Voter ทั้งหมด {candidates.length} คน</p>
+                </div>
+            );
+        };
+
+        const ResultDashboard = ({ votes, luckyPool }) => {
+            const [activeTab, setActiveTab] = useState('votes');
+            const [revealedRanks, setRevealedRanks] = useState({});
+
+            const rankedCandidates = useMemo(() => {
+                const counts = {};
+                votes.forEach(v => counts[v] = (counts[v] || 0) + 1);
+                return Object.entries(counts)
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count);
+            }, [votes]);
+
+            const totalVotes = votes.length;
+
+            const toggleReveal = (rank) => {
+                setRevealedRanks(prev => ({ ...prev, [rank]: !prev[rank] }));
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto p-6">
+                    <header className="text-center mb-10">
+                        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 mb-2">
+                            สรุปผลโหวตบุคคลต้นแบบ 2025
+                        </h1>
+                        <p className="text-gray-500">โรงพยาบาลสวี (Sawi Hospital)</p>
+                    </header>
+
+                    {/* Tabs */}
+                    <div className="flex justify-center gap-4 mb-8">
+                        <button 
+                            onClick={() => setActiveTab('votes')}
+                            className={`px-8 py-3 rounded-full font-bold transition-all text-lg flex items-center gap-2 ${activeTab === 'votes' ? 'bg-pink-500 text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Icon name="Trophy" size={20} /> ผลคะแนนโหวต
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('lucky')}
+                            className={`px-8 py-3 rounded-full font-bold transition-all text-lg flex items-center gap-2 ${activeTab === 'lucky' ? 'bg-purple-500 text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                        >
+                            <Icon name="Gift" size={20} /> จับรางวัลผู้โชคดี
+                        </button>
+                    </div>
+
+                    <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-8 border border-pink-100 min-h-[500px]">
+                        {activeTab === 'votes' && (
+                            <div className="animate-in">
+                                <div className="flex justify-between items-end mb-6 border-b pb-4">
+                                    <h2 className="text-2xl font-bold text-gray-800">🏆 อันดับสูงสุด</h2>
+                                    <div className="text-right">
+                                        <p className="text-sm text-gray-500">จำนวนโหวตทั้งหมด</p>
+                                        <p className="text-3xl font-black text-pink-600">{totalVotes}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-400 mb-4 uppercase tracking-wider">Top 5 Leaders</h3>
+                                        {rankedCandidates.slice(0, 5).map((c, i) => (
+                                            <TopRankCard 
+                                                key={c.name} 
+                                                rank={i + 1} 
+                                                name={c.name} 
+                                                score={c.count} 
+                                                isRevealed={revealedRanks[i+1]}
+                                                onToggle={() => toggleReveal(i+1)}
+                                            />
+                                        ))}
+                                        {rankedCandidates.length === 0 && <div className="text-center py-10 text-gray-400">ยังไม่มีข้อมูลการโหวต</div>}
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-400 mb-4 uppercase tracking-wider">รายชื่ออื่นๆ (เรียงตามคะแนน)</h3>
+                                        <div className="bg-gray-50 rounded-2xl p-4 h-[500px] overflow-y-auto custom-scrollbar">
+                                            {rankedCandidates.slice(5).map((c, i) => (
+                                                <div key={c.name} className="flex items-center justify-between p-3 border-b border-gray-100 last:border-0 hover:bg-white rounded-lg transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full text-xs font-bold text-gray-500">#{i + 6}</span>
+                                                        <span className="text-gray-700 font-medium">{c.name}</span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-300">Hidden Score</span> 
+                                                </div>
+                                            ))}
+                                            {rankedCandidates.length <= 5 && <div className="text-center text-gray-400 mt-10">แสดงรายชื่อครบถ้วนแล้ว</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'lucky' && (
+                            <div className="animate-in">
+                                <LuckyWheel candidates={luckyPool} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getResultPageData&password=38311`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            setData(json);
+                        } else {
+                            alert("เกิดข้อผิดพลาด: " + json.message);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + e.message);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchData();
+            }, []);
+
+            return (
+                <div>
+                    {loading && (
+                        <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
+                            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-500"></div>
+                        </div>
+                    )}
+                    {data && <ResultDashboard votes={data.votes} luckyPool={data.luckyPool} />}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
