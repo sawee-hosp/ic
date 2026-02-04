@@ -33,6 +33,11 @@
             42% { transform: scale(1.1); }
             70% { transform: scale(1); }
         }
+        /* Custom Scrollbar for suggestions */
+        .suggestion-list::-webkit-scrollbar { width: 6px; }
+        .suggestion-list::-webkit-scrollbar-track { background: #f1f1f1; }
+        .suggestion-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .suggestion-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-blue-50">
@@ -43,16 +48,13 @@
         // 1. ตั้งค่า Config (Configuration)
         // ==========================================
 
-        // URL Google Apps Script ที่คุณให้มา
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAlIL1gekP4kNJmvcpq5wWfMSzQBSG805exfEL6ccZ_vID6A7nfR4Eeyfv-GLOAjRu/exec"; 
-        
-        // LIFF ID
         const LIFF_ID = "2008690634-qeZq6pVP";
 
         const { useState, useEffect, useMemo } = React;
 
         // ==========================================
-        // 2. Icons & UI Components
+        // 2. Icons
         // ==========================================
         const Heart = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
         const User = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
@@ -135,11 +137,15 @@
         const IdentifyPage = ({ names, onConfirm, loading }) => {
             const [inputName, setInputName] = useState('');
             const [suggestions, setSuggestions] = useState([]);
+            const [hasSearched, setHasSearched] = useState(false);
 
             const handleSearch = (e) => {
                 const value = e.target.value;
                 setInputName(value);
+                setHasSearched(value.length > 0);
+
                 if (value.length > 0 && names.length > 0) {
+                    // กรองชื่อที่มีคำที่พิมพ์ (substring match)
                     const filtered = names.filter(name => name.includes(value));
                     setSuggestions(filtered);
                 } else {
@@ -149,19 +155,22 @@
 
             const selectName = (name) => {
                 setInputName(name);
-                setSuggestions([]);
+                setSuggestions([]); // ปิด suggestion เมื่อเลือกแล้ว
+                setHasSearched(false); // รีเซ็ตสถานะการค้นหาเพื่อซ่อนคำเตือน (เพราะเลือกแล้ว)
             };
+
+            // เช็คว่าชื่อที่พิมพ์ตรงกับฐานข้อมูลเป๊ะๆ หรือยัง (ใช้สำหรับ Enable ปุ่ม)
+            const isValidName = names.includes(inputName);
 
             return (
                 <div className="flex flex-col items-center min-h-screen bg-blue-50 p-6 pt-20">
-                    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+                    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 pb-12">
                         <div className="text-center mb-6">
                             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-8 h-8 text-blue-600" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-800">คุณชื่ออะไรครับ?</h2>
                             
-                            {/* Privacy Message */}
                             <div className="mt-3 bg-green-50 p-3 rounded-xl border border-green-100 inline-block">
                                 <p className="text-green-700 text-sm font-medium flex items-start gap-2 text-left">
                                     <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -176,31 +185,33 @@
                             <div className="relative mb-6">
                                 <input
                                     type="text"
-                                    className="block w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg transition-all outline-none"
+                                    className={`block w-full px-4 py-4 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-blue-500 text-lg transition-all outline-none ${isValidName ? 'border-green-500 bg-green-50 ring-green-500' : 'border-gray-200'}`}
                                     placeholder="พิมพ์ชื่อของคุณ..."
                                     value={inputName}
                                     onChange={handleSearch}
                                 />
-                                
-                                {/* Suggestions List */}
+                                {isValidName && <CheckCircle className="absolute right-4 top-4 w-6 h-6 text-green-600 animate-in" />}
+
+                                {/* Suggestion List - แสดงทันทีที่มี suggestion */}
                                 {suggestions.length > 0 && (
-                                    <ul className="absolute z-10 w-full bg-white border border-gray-100 rounded-b-xl shadow-xl max-h-60 overflow-y-auto mt-1">
+                                    <ul className="suggestion-list absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-2xl max-h-60 overflow-y-auto mt-2 top-full">
                                         {suggestions.map((name, index) => (
-                                            <li key={index} onClick={() => selectName(name)} className="px-5 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-50 last:border-0 text-gray-700">
+                                            <li key={index} onClick={() => selectName(name)} className="px-5 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 text-gray-700 text-left">
+                                                {/* ไฮไลท์คำที่ตรงกับ input (Optional) */}
                                                 {name}
                                             </li>
                                         ))}
                                     </ul>
                                 )}
 
-                                {/* Not Found Warning */}
-                                {inputName.length > 0 && suggestions.length === 0 && (
-                                    <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-lg animate-in">
-                                        <p className="text-red-600 text-sm text-center font-bold">
-                                            ⚠️ ไม่พบชื่อนี้ในระบบ
+                                {/* Warning - แสดงเมื่อพิมพ์แล้วแต่ไม่เจอชื่อเลย */}
+                                {hasSearched && suggestions.length === 0 && !isValidName && (
+                                    <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-xl animate-in text-center shadow-sm">
+                                        <p className="text-red-700 font-bold flex items-center justify-center gap-2 mb-1">
+                                            <span className="text-xl">⚠️</span> ไม่พบชื่อนี้ในระบบ
                                         </p>
-                                        <p className="text-red-500 text-xs text-center mt-1">
-                                            ถ้าไม่เจอชื่อ โปรดแจ้งผู้จัดงานทันที
+                                        <p className="text-red-600 text-sm">
+                                            ถ้ามั่นใจว่าสะกดถูกแล้ว<br/>โปรดแจ้งผู้จัดงานทันทีครับ
                                         </p>
                                     </div>
                                 )}
@@ -209,8 +220,11 @@
 
                         <button
                             onClick={() => onConfirm(inputName)}
-                            disabled={!inputName || loading || suggestions.length === 0 && !names.includes(inputName)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition shadow-lg shadow-blue-200"
+                            disabled={!isValidName || loading}
+                            className={`w-full font-bold py-4 px-6 rounded-xl transition shadow-lg 
+                                ${isValidName 
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 cursor-pointer transform hover:scale-[1.02]' 
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                         >
                             ยืนยันตัวตน
                         </button>
@@ -415,7 +429,6 @@
             const [lineProfile, setLineProfile] = useState(null);
             const [liffError, setLiffError] = useState(null);
 
-            // Fetch Names from Google Script (Initial Load)
             useEffect(() => {
                 const fetchCandidates = async () => {
                     if (!GOOGLE_SCRIPT_URL) {
@@ -437,31 +450,26 @@
                 fetchCandidates();
             }, []);
 
-            // Init LIFF
             useEffect(() => {
                 const initLiff = async () => {
                     try {
                         await liff.init({ liffId: LIFF_ID });
                         setIsLiffReady(true);
                         
-                        // Check if logged in
                         if (liff.isLoggedIn()) {
                             const profile = await liff.getProfile();
                             setLineProfile(profile);
-                        } else {
-                            // liff.login(); // Auto login if needed, or wait for user action
                         }
                     } catch (err) {
                         console.error("LIFF Init Failed", err);
                         setLiffError(err.toString());
-                        // Fallback for testing on browser without LIFF
                         setIsLiffReady(true); 
                     }
                 };
                 initLiff();
             }, []);
 
-            const checkVotingTime = () => true; // แก้ไขถ้าต้องการล็อกเวลา
+            const checkVotingTime = () => true; 
 
             const handleStart = () => {
                 if (!checkVotingTime()) {
@@ -474,7 +482,7 @@
                 }
 
                 if (!liff.isLoggedIn() && !liffError) {
-                    liff.login(); // บังคับ Login
+                    liff.login(); 
                     return;
                 }
                 
@@ -483,11 +491,9 @@
 
             const handleConfirmIdentity = async (name) => {
                 if (!candidatesList.includes(name)) {
-                    alert("ไม่พบรายชื่อในระบบ Voter (ลองตรวจสอบคำสะกด)");
+                    alert("ไม่พบรายชื่อในระบบ Voter");
                     return;
                 }
-                // ข้ามการเช็คว่าโหวตหรือยังที่ฝั่ง Client เพราะเราจะเช็คที่ Server (GAS) ตอนกดโหวตเลยทีเดียว
-                // เพื่อความรวดเร็วและปลอดภัยกว่า
                 setCurrentUser(name);
                 setView('voting');
             };
@@ -496,8 +502,6 @@
                 if (!currentUser) return;
                 
                 try {
-                    // ส่งข้อมูลไปบันทึกที่ Google Apps Script โดยตรง
-                    // ใช้ text/plain เพื่อเลี่ยง CORS Preflight ที่ซับซ้อนของ GAS Web App
                     const payload = {
                         action: 'vote',
                         voter: currentUser,
