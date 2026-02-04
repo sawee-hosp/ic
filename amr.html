@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SW-1 Smart IC Dashboard</title>
+    <link rel="icon" type="image/gif" href="https://i.ibb.co/vCWyf6b4/ic-foamboard-60x75cm-500-x-500-px-1.gif">
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,47 +13,84 @@
     <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
-    
-    <!-- Favicon -->
-    <link rel="icon" href="https://i.ibb.co/vCWyf6b4/ic-foamboard-60x75cm-500-x-500-px-1.gif" type="image/gif">
 
     <style>
         /* Theme: Deep Space Purple/Slate */
         body { font-family: 'Kanit', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; }
         
         .glass-panel { 
-            background: rgba(30, 41, 59, 0.6); 
             backdrop-filter: blur(16px); 
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
         }
-        
-        /* Ambient Gradient at bottom-right of cards */
-        .card-gradient::after {
-            content: '';
-            position: absolute;
-            bottom: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-        }
-        
+
+        /* --- Custom Gradients for Each Card --- */
+        .grad-hh { background: radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+        .grad-bed { background: radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+        .grad-lab { background: radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+        .grad-mdr { background: radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+        .grad-amr { background: radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+        .grad-ddd { background: radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.15), rgba(30, 41, 59, 0.8) 70%); }
+
         .neon-text { text-shadow: 0 0 10px currentColor; }
         .icon-glow { filter: drop-shadow(0 0 8px currentColor); }
         .germ-glow { filter: drop-shadow(0 0 5px currentColor); }
+
+        .pineapple-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pineapple-btn:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.4)); background: rgba(234, 179, 8, 0.2); }
+
+        /* Bed Grid System - Compact Version */
+        .bed-grid-container {
+            display: grid;
+            grid-template-columns: repeat(15, minmax(0, 1fr)); 
+            gap: 2px;
+        }
         
-        @keyframes handPulse { 0%, 100% { filter: drop-shadow(0 0 5px #4ade80); } 50% { filter: drop-shadow(0 0 15px #22c55e); transform: scale(1.05); } }
-        .hand-glow { animation: handPulse 3s infinite ease-in-out; color: #4ade80; }
+        .bed-box {
+            font-size: 8px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 2px; cursor: pointer;
+            border: 1px solid rgba(148, 163, 184, 0.2); 
+            background: rgba(30, 41, 59, 0.6); color: #94a3b8;
+            height: 18px; white-space: nowrap; overflow: hidden;
+            transition: all 0.2s;
+        }
+        .bed-box:hover { transform: scale(1.5); z-index: 50; border-color: rgba(255,255,255,0.9); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+
+        /* Bundle Colors */
+        .bed-active { color: white; border: none !important; box-shadow: 0 1px 2px rgba(0,0,0,0.5); text-shadow: 0 1px 1px rgba(0,0,0,0.8); }
+        .bed-CAUTI { background: #fbbf24; color: #451a03; }
+        .bed-VAP { background: #3b82f6; }
+        .bed-PVC { background: #ef4444; }
+        .bed-SSI { background: #10b981; }
+        .bed-MDR { background: #a855f7; }
+        .bed-Unknown { background: #64748b; }
+
+        .bed-hai-alert { 
+            box-shadow: 0 0 0 2px #ef4444, 0 0 8px #ef4444 !important;
+            animation: pulse-red 1.5s infinite; 
+            z-index: 20;
+        }
+        @keyframes pulse-red { 
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #ef4444, 0 0 8px #ef4444; } 
+            50% { transform: scale(1.1); box-shadow: 0 0 0 4px #ef4444, 0 0 15px #ef4444; } 
+        }
+
+        .hand-glow-green {
+            filter: drop-shadow(0 0 10px #34d399);
+            animation: hand-pulse 2s infinite ease-in-out;
+        }
+        @keyframes hand-pulse {
+            0%, 100% { filter: drop-shadow(0 0 8px #34d399); opacity: 0.9; }
+            50% { filter: drop-shadow(0 0 15px #34d399); opacity: 1; transform: scale(1.05); }
+        }
 
         @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
         .ticker-wrap { overflow: hidden; white-space: nowrap; }
@@ -63,36 +101,10 @@
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 4px; }
         
-        /* Compact Bed Grid */
-        .bed-grid-container { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 3px; }
-        .bed-box {
-            font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center;
-            border-radius: 2px; cursor: pointer; border: 1px solid rgba(71, 85, 105, 0.5); 
-            background: rgba(30, 41, 59, 0.8); color: #64748b; height: 18px; /* Reduced Size */
-            white-space: nowrap; overflow: hidden; transition: all 0.2s;
-        }
-        .bed-box:hover { z-index: 10; transform: scale(1.5); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        
-        /* Bed States */
-        .bed-active { color: white; border: none !important; }
-        .bed-CAUTI { background: #fbbf24; color: #451a03; }
-        .bed-VAP { background: #3b82f6; }
-        .bed-PVC { background: #ef4444; }
-        .bed-SSI { background: #10b981; }
-        .bed-MDR { background: #a855f7; }
-        .bed-hai-alert { box-shadow: 0 0 0 1px #ef4444, 0 0 6px #ef4444 !important; animation: pulse-red 1s infinite; z-index: 20; }
-        
-        @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        
-        .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Modal Animation */
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
-        
-        .pineapple-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .pineapple-btn:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.4)); background: rgba(234, 179, 8, 0.2); }
+        .loader { border: 3px solid rgba(255, 255, 255, 0.1); border-left-color: #22d3ee; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -101,12 +113,12 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         const { 
-            ComposedChart, Line, Bar, BarChart, AreaChart, Area, PieChart, Pie, Cell, 
-            XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label 
+            ComposedChart, Line, LineChart, Bar, BarChart, AreaChart, Area, PieChart, Pie, Cell, LabelList,
+            XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Sector
         } = window.Recharts || {};
 
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQRd_pMI2YCDkCZEJgj0GYkLSSgjK-DWDGleIksljsf13SIToe6MkgpzKnL9lk7TkkWQ/exec';
-        
+
         const ORGANISM_GROUPS = [
             { base: 'Acinetobacter baumannii', keywords: ['baumannii'] },
             { base: 'Escherichia coli', keywords: ['coli'] },
@@ -118,69 +130,72 @@
         ];
 
         const KPI_CONFIG = [
-            { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem' },
-            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem' },
-            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem' },
-            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin' },
-            { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone' },
-            { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin' },
+            { id: 'crab', title: 'CRAB Situation', subtitle: 'A. baumannii', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6' },
+            { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc' },
+            { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8' },
+            { id: 'mrsa', title: 'MRSA Situation', subtitle: 'S. aureus', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24' },
+            { id: '3gcr', title: '3GC-R (ESBL)', subtitle: 'E. coli', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399' },
+            { id: 'vre', title: 'VRE Situation', subtitle: 'Enterococcus', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee' },
         ];
 
-        // --- COMPONENTS ---
         const GermIcon = ({ color, className }) => (
-            <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`germ-glow ${className}`} style={{ color: color }}><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill={color} fillOpacity="0.2" /><path d="M8.5 8.5a2.5 2.5 0 1 0 2.5 2.5" /><path d="M13 13a3 3 0 1 0 3-3" /><path d="M9 16a4 4 0 1 0 4-4" /><circle cx="15" cy="9" r="1" fill={color} /><circle cx="9" cy="15" r="1" fill={color} /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`germ-glow ${className}`} style={{ color: color }}>
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill={color} fillOpacity="0.2" />
+                <path d="M8.5 8.5a2.5 2.5 0 1 0 2.5 2.5" />
+                <path d="M13 13a3 3 0 1 0 3-3" />
+                <path d="M9 16a4 4 0 1 0 4-4" />
+                <circle cx="15" cy="9" r="1" fill={color} />
+                <circle cx="9" cy="15" r="1" fill={color} />
+            </svg>
         );
 
-        const GlowingHandIcon = () => (
-            <div className="relative flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 hand-glow relative z-10"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><div className="absolute w-full h-full bg-green-500/20 rounded-full blur-xl animate-pulse"></div></div>
-        );
-
-        const AlertTicker = ({ alerts }) => {
-            if (!alerts || alerts.length === 0) return null;
-            return (
-                <div className="w-full bg-red-950/40 border-y border-red-500/20 text-red-100 py-2 relative overflow-hidden flex items-center backdrop-blur-sm z-20">
-                    <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 ml-4 rounded z-10 shadow-[0_0_10px_rgba(220,38,38,0.5)] absolute left-0 flex items-center gap-1"><i data-lucide="siren" className="w-3 h-3 animate-pulse"></i> CRITICAL</div>
-                    <div className="ticker-wrap w-full">
-                        <div className="ticker-content pl-24 text-sm font-light flex items-center">
-                            {alerts.map((alert, idx) => (
-                                <span key={idx} className="mr-12 inline-flex items-center gap-2">
-                                    <span className="bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30 text-xs font-mono text-red-300">{new Date(alert.date).toLocaleDateString()}</span>
-                                    <span className="font-semibold text-red-200">{alert.ward}</span> 
-                                    <span className="text-slate-400">|</span>
-                                    <span>Bed {alert.bed}</span>
-                                    <i data-lucide="arrow-right" className="w-3 h-3 text-red-500"></i>
-                                    <b className="text-red-100 underline decoration-red-500/50 decoration-dotted">{alert.haiType}</b>
-                                </span>
-                            ))}
-                        </div>
+        const AlertTicker = ({ alerts }) => (
+            <div className="w-full bg-red-950/40 border-y border-red-500/20 text-red-100 py-2 relative overflow-hidden flex items-center backdrop-blur-sm z-20">
+                <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 ml-4 rounded z-10 shadow-[0_0_10px_rgba(220,38,38,0.5)] absolute left-0 flex items-center gap-1">
+                    <i data-lucide="siren" className="w-3 h-3 animate-pulse"></i> ACTIVE HAI
+                </div>
+                <div className="ticker-wrap w-full">
+                    <div className="ticker-content pl-28 text-sm font-light flex items-center">
+                        {alerts && alerts.length > 0 ? alerts.map((alert, idx) => (
+                            <span key={idx} className="mr-12 inline-flex items-center gap-2">
+                                <span className="font-semibold text-red-200">{alert.ward}</span> 
+                                <span className="text-slate-400">|</span>
+                                <span className="font-mono bg-red-500/20 px-1 rounded">{alert.bed}</span>
+                                <i data-lucide="arrow-right" className="w-3 h-3 text-red-500"></i>
+                                <b className="text-red-100 underline decoration-red-500/50 decoration-dotted">{alert.type}</b>
+                            </span>
+                        )) : <span className="ml-4 text-emerald-400 flex items-center gap-2"><i data-lucide="check-circle" className="w-4 h-4"></i> No Active HAI Cases Reported</span>}
                     </div>
                 </div>
-            );
-        };
+            </div>
+        );
 
-        const BedHistoryModal = ({ bedId, history, onClose }) => {
-            if (!bedId) return null;
+        const BedModal = ({ isOpen, onClose, data, loading }) => {
+            if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onClose}>
-                    <div className="glass-panel w-full max-w-md rounded-2xl overflow-hidden modal-enter border border-slate-600" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-slate-700 bg-slate-900/50 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white">Bed History: {bedId}</h3>
-                            <button onClick={onClose}><i data-lucide="x" className="w-5 h-5 text-slate-400 hover:text-white"></i></button>
+                    <div className="glass-panel w-full max-w-2xl rounded-2xl overflow-hidden modal-enter border border-slate-600 shadow-2xl grad-bed" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="bed-double" className="w-5 h-5 text-indigo-400"></i>
+                                {data?.title || 'Bed History'}
+                            </h3>
+                            <button onClick={onClose}><i data-lucide="x" className="w-6 h-6 text-slate-400"></i></button>
                         </div>
-                        <div className="p-4 max-h-[60vh] overflow-y-auto bg-slate-900/80">
-                            {history.length === 0 ? <p className="text-slate-500 text-center">No history found.</p> : (
-                                <ul className="space-y-3">
-                                    {history.map((rec, idx) => (
-                                        <li key={idx} className={`p-3 rounded-lg border ${rec.status === 'Active' ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-slate-800/50 border-slate-700'}`}>
-                                            <div className="flex justify-between mb-1">
-                                                <span className="font-bold text-sm text-slate-200">HN: {rec.hn}</span>
-                                                <span className={`text-[10px] px-2 rounded-full ${rec.status === 'Active' ? 'bg-emerald-500 text-black' : 'bg-slate-600 text-slate-300'}`}>{rec.status}</span>
-                                            </div>
-                                            <div className="text-xs text-slate-400">Bundle: <span className="text-white">{rec.bundle || '-'}</span></div>
-                                            <div className="text-xs text-slate-400">Date: {rec.date ? new Date(rec.date).toLocaleDateString() : '-'} {rec.endDate ? ` - ${rec.endDate}` : ''}</div>
-                                        </li>
-                                    ))}
-                                </ul>
+                        <div className="p-6 max-h-[60vh] overflow-y-auto bg-slate-900/90">
+                            {loading ? <div className="text-center py-8 text-indigo-300 animate-pulse">Loading History...</div> : (
+                                <table className="w-full text-sm text-left text-slate-300">
+                                    <thead className="text-xs text-slate-400 uppercase bg-slate-800"><tr><th className="px-4 py-2">Date</th><th className="px-4 py-2">HN</th><th className="px-4 py-2">Bundle</th><th className="px-4 py-2">Outcome</th></tr></thead>
+                                    <tbody>
+                                        {data?.history?.map((row, i) => (
+                                            <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50">
+                                                <td className="px-4 py-2 font-mono text-indigo-300">{row.startDate}</td><td className="px-4 py-2">{row.hn}</td>
+                                                <td className="px-4 py-2"><span className={`px-2 py-0.5 rounded text-[10px] ${row.bundle === 'CAUTI' ? 'bg-yellow-900/50 text-yellow-200' : 'bg-blue-900/50 text-blue-200'}`}>{row.bundle}</span></td>
+                                                <td className="px-4 py-2 text-slate-400">{row.status === 'Active' ? <span className="text-emerald-400">Admitted</span> : row.outcome}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             )}
                         </div>
                     </div>
@@ -188,274 +203,188 @@
             );
         };
 
-        const BundleHaiSurveillance = ({ activeCases, haiCases }) => {
-            const [selectedBed, setSelectedBed] = useState(null);
-            
-            // Reduced size bed IDs
-            const maleBeds = [...Array.from({length:25},(_,i)=>`M${i+1}`), ...Array.from({length:6},(_,i)=>`P${i+7}`), ...Array.from({length:10},(_,i)=>`SM${i+1}`)];
-            const femaleBeds = [...Array.from({length:25},(_,i)=>`F${i+1}`), ...Array.from({length:6},(_,i)=>`P${i+1}`), ...Array.from({length:10},(_,i)=>`SF${i+1}`)];
-            const lrBeds = Array.from({length:5},(_,i)=>`LR${i+1}`);
-            const erBeds = Array.from({length:5},(_,i)=>`ER${i+1}`);
-
-            const getBedStatus = (bedId) => {
-                const active = activeCases.find(c => c.bed === bedId && c.status === 'Active');
-                const hai = haiCases.find(h => h.bed === bedId && h.status === 'แจ้ง ICN');
-                let classes = "bed-box";
-                if (active) {
-                    classes += " bed-active";
-                    if (active.bundle.includes('CAUTI')) classes += " bed-CAUTI";
-                    else if (active.bundle.includes('VAP')) classes += " bed-VAP";
-                    else if (active.bundle.includes('PVC')) classes += " bed-PVC";
-                    else if (active.bundle.includes('SSI')) classes += " bed-SSI";
-                    else if (active.bundle.includes('MDR')) classes += " bed-MDR";
-                    else classes += " bg-indigo-500";
-                }
-                if (hai) classes += " bed-hai-alert";
-                return { classes };
-            };
-
-            const getBedHistory = (bedId) => activeCases.filter(c => c.bed === bedId).sort((a,b) => new Date(b.date) - new Date(a.date));
-
+        const BedGrid = ({ bedData, onBedClick }) => {
+            const genBeds = (prefix, start, end) => Array.from({length: end-start+1}, (_, i) => `${prefix}${start+i}`);
+            const wards = [
+                { name: "Ward Male", beds: [...genBeds('M',1,25), ...genBeds('P',7,12), ...genBeds('SM',1,10)] },
+                { name: "Ward Female", beds: [...genBeds('F',1,25), ...genBeds('P',1,6), ...genBeds('SF',1,10)] },
+                { name: "Critical", beds: [...genBeds('LR',1,5), ...genBeds('ER',1,5)] }
+            ];
             return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-purple-500/50 h-full flex flex-col card-gradient">
+                <div className="glass-panel grad-bed p-5 rounded-2xl border-t-2 border-t-indigo-500/50 h-full">
                     <div className="flex justify-between items-center mb-4 z-10 relative">
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                            <i data-lucide="activity" className="w-5 h-5 text-purple-400 icon-glow"></i> Bundle & HAI Surveillance
-                        </h3>
-                        <div className="text-[9px] text-slate-400 flex gap-2">
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>CAUTI</span>
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>VAP</span>
-                             <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]"></div>HAI</span>
-                        </div>
+                        <h3 className="text-white font-bold flex items-center gap-2"><i data-lucide="layout-grid" className="w-5 h-5 text-indigo-400 icon-glow"></i> Bundle & HAI Surveillance</h3>
+                        <div className="flex gap-2 text-[9px] flex-wrap justify-end"><span className="px-1.5 py-0.5 rounded bg-[#fbbf24] text-[#451a03]">CAUTI</span><span className="px-1.5 py-0.5 rounded bg-[#3b82f6] text-white">VAP</span><span className="px-1.5 py-0.5 rounded bg-[#ef4444] text-white">PVC</span></div>
                     </div>
-                    <div className="flex-1 overflow-y-auto pr-1 z-10 relative">
-                         <div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">Male Ward</span></div>
-                         <div className="bed-grid-container mb-3">{maleBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div>
-                         
-                         <div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">Female Ward</span></div>
-                         <div className="bed-grid-container mb-3">{femaleBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div>
-                         
-                         <div className="grid grid-cols-2 gap-4">
-                             <div><div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">LR</span></div><div className="grid grid-cols-5 gap-1">{lrBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div></div>
-                             <div><div className="mb-1"><span className="text-[9px] text-slate-500 uppercase font-bold">ER</span></div><div className="grid grid-cols-5 gap-1">{erBeds.map(id => <div key={id} className={getBedStatus(id).classes} onClick={() => setSelectedBed(id)}>{id}</div>)}</div></div>
-                         </div>
+                    <div className="space-y-3 z-10 relative">
+                        {wards.map((ward, idx) => (
+                            <div key={idx}>
+                                <div className="text-[10px] text-slate-400 mb-1 font-medium ml-1 flex items-center gap-1"><div className="w-1 h-3 bg-slate-600 rounded-full"></div> {ward.name}</div>
+                                <div className="bed-grid-container">
+                                    {ward.beds.map(bedId => {
+                                        const key = Object.keys(bedData?.bedMap || {}).find(k => k.endsWith(`-${bedId}`));
+                                        const status = key ? bedData.bedMap[key] : null;
+                                        const isActive = status?.status === 'Active';
+                                        return <div key={bedId} className={`bed-box ${isActive ? `bed-active bed-${status.bundle}` : ''} ${status?.isHai ? 'bed-hai-alert' : ''}`} onClick={() => onBedClick(bedId, status?.ward || ward.name)}>{bedId}</div>;
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    {selectedBed && <BedHistoryModal bedId={selectedBed} history={getBedHistory(selectedBed)} onClose={() => setSelectedBed(null)} />}
                 </div>
             );
         };
 
-        const HandHygieneSection = ({ data }) => {
-            if (!data) return <div className="glass-panel p-6 text-center text-slate-500 card-gradient">Loading Hand Hygiene...</div>;
-
-            const now = new Date();
-            const currentMonthName = now.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-            
-            const currentMonthData = data.records.filter(r => {
-                const d = new Date(r.ts);
-                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-            });
-
-            const totalCurr = currentMonthData.length;
-            const validCurr = currentMonthData.filter(r => r.method !== 0).length;
-            const missedCurr = totalCurr - validCurr;
-            
-            const pieData = [
-                { name: 'Compliant', value: validCurr },
-                { name: 'Missed', value: missedCurr }
-            ];
-            const COLORS = ['#10b981', '#ef4444'];
-
-            const trendStats = {};
-            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            
-            for(let i=5; i>=0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = `${months[d.getMonth()]} ${d.getFullYear().toString().substr(-2)}`;
-                trendStats[key] = { name: key, correct: 0, missed: 0, order: d.getTime() };
-            }
-
-            data.records.forEach(r => {
-                const d = new Date(r.ts);
-                const key = `${months[d.getMonth()]} ${d.getFullYear().toString().substr(-2)}`;
-                if(trendStats[key]) {
-                    if(r.method !== 0) trendStats[key].correct++;
-                    else trendStats[key].missed++;
-                }
-            });
-            const trendData = Object.values(trendStats).sort((a,b) => a.order - b.order);
-
-            const validRecords = data.records.filter(r => r.method !== 0);
-            
-            const stepCounts = Array(7).fill(0);
-            validRecords.forEach(r => {
-                r.steps.forEach((s, idx) => { if(s === 1) stepCounts[idx]++; });
-            });
-            const stepData = stepCounts.map((val, idx) => ({ name: `S${idx+1}`, value: val }));
-
-            const momentCounts = {};
-            validRecords.forEach(r => {
-                if(r.moment) momentCounts[r.moment] = (momentCounts[r.moment] || 0) + 1;
-            });
-            const momentData = [1,2,3,4,5].map(m => ({ name: `M${m}`, value: momentCounts[m] || 0 }));
+        const HandHygieneWidget = ({ data }) => {
+            if (!data) return <div className="glass-panel grad-hh h-full flex items-center justify-center text-slate-500">No Hand Hygiene Data</div>;
+            const compliance = parseFloat(data.kpi.compliance);
+            const pieData = [{ name: 'Compliant', value: compliance, fill: '#34d399' }, { name: 'Non-Compliant', value: 100 - compliance, fill: '#334155' }];
+            const trendData = data.trend.map(t => ({ name: t.name, Correct: t.Correct, Missed: t.Missed }));
 
             return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-emerald-500/50 card-gradient h-full">
-                    <div className="flex items-center gap-3 mb-4">
-                         <div className="p-2 bg-emerald-900/30 rounded-lg border border-emerald-500/30"><GlowingHandIcon /></div>
-                         <div>
-                            <h3 className="text-lg font-bold text-white leading-tight">Hand Hygiene</h3>
-                            <p className="text-xs text-slate-400">Compliance & Quality</p>
+                <div className="glass-panel grad-hh p-5 rounded-2xl border-t-4 border-emerald-500 relative overflow-hidden group h-full flex flex-col">
+                    <div className="flex items-center justify-between mb-2 z-10 relative">
+                        <h3 className="text-emerald-400 font-bold text-lg flex items-center gap-2"><i data-lucide="hand-metal" className="w-5 h-5"></i> Hand Hygiene</h3>
+                         <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-emerald-300 animate-pulse">Live</span>
+                            <div className="bg-emerald-900/20 p-2 rounded-full border border-emerald-500/30"><i data-lucide="hand" className="w-6 h-6 text-emerald-400 hand-glow-green"></i></div>
                          </div>
                     </div>
-
-                    <div className="grid grid-cols-12 gap-4">
-                        {/* KPI Section */}
-                        <div className="col-span-4 flex flex-col items-center justify-center border-r border-slate-700/50 pr-2">
-                             <div className="text-xs text-slate-400 mb-1">{currentMonthName} (Current)</div>
-                             <div className="text-4xl font-bold text-emerald-400 neon-text">{validCurr}</div>
-                             <div className="text-[10px] text-slate-500 mb-2">Clean Hands</div>
-                             <div className="w-24 h-24 relative">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={pieData} innerRadius={25} outerRadius={35} paddingAngle={5} dataKey="value" stroke="none">
-                                            {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index]} />)}
-                                        </Pie>
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
-                                    {totalCurr > 0 ? Math.round((validCurr/totalCurr)*100) : 0}%
-                                </div>
+                    <div className="grid grid-cols-2 gap-4 flex-1 z-10 relative">
+                        <div className="flex flex-col items-center justify-center bg-slate-900/40 rounded-xl p-2 relative">
+                            <div className="text-[10px] text-slate-400 absolute top-2 left-2">{data.kpi.monthName}</div>
+                            <div className="relative w-24 h-24">
+                                <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} innerRadius={35} outerRadius={45} startAngle={90} endAngle={-270} dataKey="value" stroke="none" /></PieChart></ResponsiveContainer>
+                                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-emerald-400">{compliance}%</div>
+                            </div>
+                            <div className="text-center mt-[-10px]"><div className="text-3xl font-bold text-white neon-text">{data.kpi.total}</div><div className="text-[9px] text-emerald-300 opacity-80">Total</div></div>
+                        </div>
+                        <div className="flex flex-col bg-slate-900/40 rounded-xl p-2 justify-between">
+                             <div className="text-[10px] text-slate-400 text-center">Trend (6 Mo)</div>
+                             <div className="h-20"><ResponsiveContainer width="100%" height="100%"><BarChart data={trendData} barSize={8}><XAxis dataKey="name" fontSize={8} tick={false} axisLine={false}/><Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#0f172a', fontSize: '9px'}} /><Bar dataKey="Correct" stackId="a" fill="#34d399" radius={[0,0,0,0]} /><Bar dataKey="Missed" stackId="a" fill="#ef4444" radius={[2,2,0,0]} /></BarChart></ResponsiveContainer></div>
+                             <div className="space-y-1">
+                                <div className="flex justify-between text-[9px] border-b border-slate-700 pb-1"><span>Top Loc:</span> <span className="text-white truncate max-w-[60px]">{data.kpi.topLoc.name}</span></div>
+                                <div className="flex justify-between text-[9px]"><span>Top HCW:</span> <span className="text-white truncate max-w-[60px]">{data.kpi.topHCW.name}</span></div>
                              </div>
                         </div>
-
-                        {/* Trend & Analysis Section */}
-                        <div className="col-span-8 flex flex-col gap-3">
-                            <div className="h-24">
-                                <div className="text-[10px] text-slate-400 mb-1 flex justify-between"><span>6-Month Trend</span><span className="flex gap-2"><span className="text-emerald-500">Correct</span><span className="text-red-500">Missed</span></span></div>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={trendData} margin={{top:0, bottom:0}}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.5} />
-                                        <XAxis dataKey="name" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} interval={0} />
-                                        <Tooltip contentStyle={{backgroundColor:'#1e293b', borderColor:'#475569', fontSize:'10px'}} />
-                                        <Bar dataKey="correct" stackId="a" fill="#10b981" radius={[0,0,2,2]} />
-                                        <Bar dataKey="missed" stackId="a" fill="#ef4444" radius={[2,2,0,0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 h-20">
-                                <div>
-                                    <div className="text-[9px] text-slate-500 mb-1">Top Steps (1-7)</div>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={stepData}>
-                                            <Bar dataKey="value" fill="#3b82f6" radius={[2,2,0,0]} />
-                                            <XAxis dataKey="name" stroke="#64748b" fontSize={8} tickLine={false} axisLine={false} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] text-slate-500 mb-1">Top Moments (1-5)</div>
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={momentData}>
-                                            <Bar dataKey="value" fill="#f59e0b" radius={[2,2,0,0]} />
-                                            <XAxis dataKey="name" stroke="#64748b" fontSize={8} tickLine={false} axisLine={false} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
+                        <div className="col-span-2 grid grid-cols-2 gap-2 h-28">
+                             <div className="bg-slate-900/40 rounded-xl p-2 flex flex-col"><div className="text-[9px] text-slate-400 mb-1">Missed Steps</div><div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={data.analysis.steps} layout="vertical" barSize={6}><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={20} tick={{fontSize: 8, fill: '#94a3b8'}} /><Bar dataKey="value" fill="#fb7185" radius={[0,2,2,0]} ><LabelList dataKey="value" position="right" fontSize={8} fill="#fff" /></Bar></BarChart></ResponsiveContainer></div></div>
+                             <div className="bg-slate-900/40 rounded-xl p-2 flex flex-col"><div className="text-[9px] text-slate-400 mb-1">Missed Moments</div><div className="flex-1 min-h-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={data.analysis.moment} layout="vertical" barSize={6}><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={20} tick={{fontSize: 8, fill: '#94a3b8'}} /><Bar dataKey="value" fill="#fb7185" radius={[0,2,2,0]} ><LabelList dataKey="value" position="right" fontSize={8} fill="#fff" /></Bar></BarChart></ResponsiveContainer></div></div>
                         </div>
                     </div>
                 </div>
             );
         };
-
-        const LabCultureWidget = ({ data }) => {
-            const processedData = useMemo(() => {
-                if(!data || data.length === 0) return [];
-                const counts = {};
-                data.forEach(r => {
-                    const spec = r['Specimen'];
-                    if(spec) counts[spec] = (counts[spec] || 0) + 1;
-                });
-                return Object.keys(counts).map(k => ({ name: k, value: counts[k] }))
-                             .sort((a,b) => b.value - a.value).slice(0, 5); // Top 5
-            }, [data]);
-
-            const COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'];
-
+        
+        const LabCultureWidget = ({ rawData }) => {
+            const data = useMemo(() => {
+                if(!rawData || rawData.length === 0) return [];
+                const maxYear = _.max(rawData.map(r => r['ปีที่ตรวจ']));
+                const filtered = rawData.filter(r => r['ปีที่ตรวจ'] == maxYear);
+                const grouped = _.groupBy(filtered, 'Specimen');
+                return Object.keys(grouped).map(spec => ({ name: spec || 'Unknown', total: grouped[spec].length })).sort((a,b) => b.total - a.total);
+            }, [rawData]);
+            const pieData = data.map((d, i) => ({ name: d.name, value: d.total, fill: ['#818cf8', '#34d399', '#f472b6', '#fbbf24', '#22d3ee'][i % 5] }));
             return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-indigo-500/50 card-gradient h-full">
-                    <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-sm">
-                        <i data-lucide="flask-conical" className="w-4 h-4 text-indigo-400 icon-glow"></i> Lab Culture (Top Specimens)
-                    </h3>
-                    <div className="h-48 relative">
+                 <div className="glass-panel grad-lab p-5 rounded-2xl border-t-2 border-t-cyan-500/50 flex flex-col relative h-full">
+                    <div className="flex justify-between items-center mb-4 z-10 relative">
+                        <h3 className="text-white font-bold flex items-center gap-2"><i data-lucide="flask-conical" className="w-5 h-5 text-cyan-400 icon-glow"></i> Lab Culture</h3>
+                        <span className="text-[10px] text-slate-400">Latest Year</span>
+                    </div>
+                    <div className="flex-1 z-10 relative min-h-[150px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                                <Pie data={processedData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={5} dataKey="value" stroke="none">
-                                    {processedData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip contentStyle={{backgroundColor:'#1e293b', borderColor:'#6366f1', color:'#fff', fontSize:'12px'}} />
-                                <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize:'10px', color:'#cbd5e1'}} />
+                                <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value" label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: '#475569', strokeWidth: 1 }} style={{ fontSize: '10px', fill: '#cbd5e1' }}>{pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(0,0,0,0.5)" />)}</Pie>
+                                <Tooltip contentStyle={{backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px'}} itemStyle={{color: '#fff'}} />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <span className="text-xs text-indigo-300 font-bold opacity-80">1 Year</span>
-                        </div>
                     </div>
-                </div>
+                 </div>
             );
         };
 
-        const AmrStackedTrendWidget = ({ rawData }) => {
-            const processedData = useMemo(() => {
-                if (!rawData || rawData.length === 0) return [];
+        const MdrSummaryWidget = ({ rawData }) => {
+            const chartData = useMemo(() => {
+                if(!rawData) return [];
+                const grouped = _.groupBy(rawData, 'ปีที่ตรวจ');
+                return Object.keys(grouped).sort().map(year => {
+                    const rows = grouped[year];
+                    let resistant = 0, susceptible = 0;
+                    rows.forEach(r => { const name = r['ชื่อเชื้อ'] || ''; if (name.includes('(') && name.includes(')')) resistant++; else susceptible++; });
+                    return { name: year, Resistant: resistant, Susceptible: susceptible };
+                }).slice(-6);
+            }, [rawData]);
 
-                const quarters = {};
-                rawData.forEach(r => {
-                    const year = r['ปีที่ตรวจ'];
-                    const timeKey = year; // Use Year as key
-                    const organism = r['ชื่อเชื้อ'] || "";
-                    
-                    if (!quarters[timeKey]) quarters[timeKey] = { name: timeKey, MDR: 0, Normal: 0, order: parseInt(timeKey) || 0 };
-                    
-                    if (organism.includes('(') && organism.includes(')')) {
-                        quarters[timeKey].MDR++;
-                    } else {
-                        quarters[timeKey].Normal++;
-                    }
-                });
-
-                return Object.values(quarters).sort((a,b) => a.order - b.order).slice(-6);
+            const top5Data = useMemo(() => {
+                if(!rawData || rawData.length === 0) return [];
+                const maxYear = _.max(rawData.map(r => r['ปีที่ตรวจ']));
+                const latestRows = rawData.filter(r => r['ปีที่ตรวจ'] == maxYear);
+                const resistantCounts = _.countBy(latestRows.filter(r => (r['ชื่อเชื้อ']||'').includes('(')), 'ชื่อเชื้อ');
+                return Object.entries(resistantCounts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count).slice(0, 5);
             }, [rawData]);
 
             return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-pink-500/50 card-gradient">
-                    <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-sm">
-                        <i data-lucide="bar-chart-2" className="w-4 h-4 text-pink-400 icon-glow"></i> MDR vs Normal Ratio
-                    </h3>
-                    <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={processedData} margin={{top:10, right:10, left:-20, bottom:0}}>
-                                <defs>
-                                    <linearGradient id="gradMDR" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#ec4899" stopOpacity={1}/>
-                                        <stop offset="100%" stopColor="#be185d" stopOpacity={0.8}/>
-                                    </linearGradient>
-                                    <linearGradient id="gradNormal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
-                                        <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.8}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor:'#1e293b', borderColor:'#ec4899', color:'#fff', fontSize:'12px'}} />
-                                <Legend iconType="circle" wrapperStyle={{fontSize:'10px', paddingTop:'10px'}} />
-                                <Bar dataKey="MDR" stackId="a" fill="url(#gradMDR)" name="Resistant (MDR)" radius={[4,4,0,0]} />
-                                <Bar dataKey="Normal" stackId="a" fill="url(#gradNormal)" name="Susceptible" radius={[0,0,4,4]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                    <div className="glass-panel grad-mdr p-5 rounded-2xl relative flex flex-col">
+                        <h3 className="text-white font-bold mb-4 text-sm z-10 relative">MDR vs Non-MDR Trends</h3>
+                        <div className="flex-1 z-10 relative min-h-[220px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData} margin={{bottom: 20}}>
+                                    <defs><linearGradient id="colorRes" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f472b6" stopOpacity={0.9}/><stop offset="95%" stopColor="#be185d" stopOpacity={0.9}/></linearGradient><linearGradient id="colorSus" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#34d399" stopOpacity={0.9}/><stop offset="95%" stopColor="#059669" stopOpacity={0.9}/></linearGradient></defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} dy={5} />
+                                    <Tooltip contentStyle={{backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '10px'}} />
+                                    <Legend verticalAlign="top" iconSize={8} wrapperStyle={{ fontSize: '10px' }}/>
+                                    <Bar dataKey="Resistant" stackId="a" fill="url(#colorRes)" radius={[0,0,0,0]}><LabelList dataKey="Resistant" position="center" fill="#fff" fontSize={9} /></Bar>
+                                    <Bar dataKey="Susceptible" stackId="a" fill="url(#colorSus)" radius={[4,4,0,0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                    <div className="glass-panel grad-mdr p-5 rounded-2xl relative flex flex-col">
+                        <h3 className="text-white font-bold mb-4 text-sm z-10 relative">Top 5 MDR Pathogens (Latest)</h3>
+                         <div className="flex-1 z-10 relative min-h-[220px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={top5Data} layout="vertical" margin={{left: 10, right: 30}}>
+                                    <defs><linearGradient id="colorTop5" x1="0" y1="0" x2="1" y2="0"><stop offset="5%" stopColor="#818cf8" stopOpacity={0.9}/><stop offset="95%" stopColor="#4338ca" stopOpacity={0.9}/></linearGradient></defs>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 9, fill: '#cbd5e1'}} />
+                                    <Tooltip contentStyle={{backgroundColor: '#0f172a', borderColor: '#334155', fontSize: '10px'}} />
+                                    <Bar dataKey="count" fill="url(#colorTop5)" radius={[0,4,4,0]} barSize={20}><LabelList dataKey="count" position="right" fill="#fff" fontSize={10} /></Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AmrLineChartWidget = ({ config, data, onAnalyze }) => {
+            const chartData = data && data.length > 0 ? data.map(d => ({ year: d.year, Resistant: Math.round(d.n * (d.resistance / 100)), Susceptible: Math.round(d.n * (1 - d.resistance / 100)), pct: d.resistance })) : [];
+            const lastPoint = chartData.length > 0 ? chartData[chartData.length - 1] : null;
+            return (
+                <div className="glass-panel grad-amr rounded-2xl p-5 flex flex-col h-[350px] relative overflow-hidden group transition-all hover:border-slate-500/30">
+                    <div className="flex justify-between items-start mb-4 z-10 relative">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700"><GermIcon color={config.color} className="w-8 h-8" /></div>
+                            <div><h3 className="font-bold text-lg text-slate-100 leading-tight">{config.title}</h3><p className="text-xs text-slate-400">{config.subtitle}</p></div>
+                        </div>
+                        {lastPoint && <div className="text-right"><div className="text-2xl font-bold neon-text leading-none" style={{color: config.color}}>{lastPoint.pct}% R</div></div>}
+                    </div>
+                    <div className="flex-grow w-full z-10 relative">
+                        {chartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} dy={10} />
+                                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: config.color, color: '#fff', borderRadius: '8px' }} labelStyle={{ color: '#cbd5e1', marginBottom: '4px' }} />
+                                    <Legend verticalAlign="top" height={36} iconSize={8} wrapperStyle={{ fontSize: '10px' }}/>
+                                    <Line type="monotone" dataKey="Resistant" name="Resistant (N)" stroke={config.color} strokeWidth={3} dot={{r:3}} activeDot={{r:5}} />
+                                    <Line type="monotone" dataKey="Susceptible" name="Susceptible (N)" stroke="#34d399" strokeWidth={3} dot={{r:3}} activeDot={{r:5}} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs">No Data</div>}
                     </div>
                 </div>
             );
@@ -463,115 +392,121 @@
 
         const TotalDddChart = ({ data, drugKeys }) => {
             const hasData = data && data.length > 0;
-            const colors = [ '#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#f87171', '#c084fc', '#818cf8', '#2dd4bf', '#fb923c', '#a3e635', '#22d3ee' ];
+            const colors = ['#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#f87171', '#c084fc', '#818cf8', '#2dd4bf', '#fb923c', '#a3e635', '#22d3ee'];
             return (
-                <div className="glass-panel p-5 rounded-2xl border-t-2 border-t-blue-500/50 card-gradient h-full">
-                    <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-lg"><i data-lucide="bar-chart" className="w-5 h-5 text-blue-400 icon-glow"></i> Total Antibiotic Consumption (Quarterly)</h3>
-                    <div className="h-64 relative z-10">
+                <div className="glass-panel grad-ddd p-5 rounded-2xl border-t-2 border-t-blue-500/50 relative overflow-hidden">
+                    <h3 className="text-white font-bold mb-4 flex items-center gap-2 text-lg z-10 relative"><i data-lucide="bar-chart" className="w-5 h-5 text-blue-400 icon-glow"></i> Total Antibiotic Consumption</h3>
+                    <div className="h-96 relative z-10">
                         {hasData ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                     <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'DDD/100 bed-days', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }} />
+                                    <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} label={{ value: 'Drugs (DDD/100)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }} domain={['auto', 'auto']} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#ffffff" fontSize={10} tickLine={false} axisLine={false} label={{ value: 'Total (DDD/100)', angle: 90, position: 'insideRight', fill: '#fff', fontSize: 10 }} />
                                     <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#60a5fa', color: '#fff', borderRadius: '8px' }} />
                                     <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} iconType="circle" />
-                                    {drugKeys.map((drug, index) => (
-                                        <Line key={drug} type="monotone" dataKey={drug} name={drug} stroke={colors[index % colors.length]} strokeWidth={1.5} dot={false} activeDot={{r: 4}} opacity={0.7} />
-                                    ))}
-                                    <Line type="monotone" dataKey="Total" name="TOTAL Usage" stroke="#ffffff" strokeWidth={4} dot={{r:4, fill:'#fff'}} activeDot={{r:6}} shadow="0 0 10px white" />
+                                    {drugKeys.map((drug, index) => <Line yAxisId="left" key={drug} type="monotone" dataKey={drug} name={drug} stroke={colors[index % colors.length]} strokeWidth={1.5} dot={false} activeDot={{r: 4}} opacity={0.8} />)}
+                                    <Line yAxisId="right" type="monotone" dataKey="Total" name="TOTAL Usage" stroke="#ffffff" strokeWidth={4} dot={{r:4, fill:'#fff'}} activeDot={{r:6}} shadow="0 0 10px white" />
                                 </ComposedChart>
                             </ResponsiveContainer>
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No Antibiotic Usage Data</div>
-                        )}
+                        ) : <div className="flex items-center justify-center h-full text-slate-500 text-sm">No Antibiotic Usage Data</div>}
                     </div>
                 </div>
             );
         };
 
         const App = () => {
+            const [loading, setLoading] = useState(true);
             const [rawData, setRawData] = useState([]);
             const [dddRawData, setDddRawData] = useState([]);
-            const [hhRawData, setHhRawData] = useState(null); 
-            const [haiRawData, setHaiRawData] = useState({ active_cases: [], hai_cases: [] });
             const [quarterlyChartData, setQuarterlyChartData] = useState({ data: [], keys: [] });
             const [headers, setHeaders] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
+            const [dashboardData, setDashboardData] = useState({ bedData: {}, mdrData: {}, hhData: null });
             
             const [selectedSpecimen, setSelectedSpecimen] = useState('All');
             const [selectedTime, setSelectedTime] = useState('All');
             const [specimenList, setSpecimenList] = useState([]);
             const [timeList, setTimeList] = useState([]);
-            const [modalOpen, setModalOpen] = useState(false);
-            const [modalConfig, setModalConfig] = useState(null);
-            const [modalData, setModalData] = useState(null);
 
-            useEffect(() => { if(window.lucide) window.lucide.createIcons(); fetchData(); }, []);
+            const [bedModalOpen, setBedModalOpen] = useState(false);
+            const [bedModalData, setBedModalData] = useState(null);
+            const [bedLoading, setBedLoading] = useState(false);
 
-            const fetchData = async () => {
+            useEffect(() => { 
+                if(window.lucide) window.lucide.createIcons(); 
+                initData(); 
+                
+                // Auto Refresh HH Data every 5 minutes
+                const interval = setInterval(() => {
+                    refreshDashboardData();
+                }, 300000); 
+                return () => clearInterval(interval);
+            }, []);
+
+            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [dashboardData, rawData]);
+
+            const initData = async () => {
                 try {
-                    const response = await fetch(`${GAS_API_URL}?action=api_data`);
-                    const json = await response.json();
-                    if (json.status === 'success') {
-                        setRawData(json.amr.data);
-                        setHeaders(json.amr.headers);
-                        setDddRawData(json.ddd);
-                        setHhRawData(json.hh);
-                        setHaiRawData(json.hai);
-
-                        const specs = [...new Set(json.amr.data.map(r => r['Specimen']).filter(Boolean))].sort();
-                        const times = [...new Set(json.amr.data.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort().reverse();
+                    const amrRes = await fetch(`${GAS_API_URL}?action=api_data`);
+                    const amrJson = await amrRes.json();
+                    if(amrJson.status === 'success') {
+                        setRawData(amrJson.amr.data);
+                        setHeaders(amrJson.amr.headers);
+                        setDddRawData(amrJson.ddd);
+                        const specs = [...new Set(amrJson.amr.data.map(r => r['Specimen']).filter(Boolean))].sort();
+                        const times = [...new Set(amrJson.amr.data.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort().reverse();
                         setSpecimenList(specs);
                         setTimeList(times);
-
-                        const qResult = processQuarterlyDdd(json.ddd);
+                        const qResult = processQuarterlyDdd(amrJson.ddd);
                         setQuarterlyChartData({ data: qResult.data, keys: qResult.drugKeys });
-                    } else { setError(json.message); }
-                } catch (e) { setError("Connection Failed. " + e.message); } finally { setLoading(false); }
+                    }
+                    await refreshDashboardData();
+                } catch(e) { console.error(e); } finally { setLoading(false); }
+            };
+
+            const refreshDashboardData = async () => {
+                try {
+                    const dashRes = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_data' }) });
+                    const dashJson = await dashRes.json();
+                    if(dashJson.status === 'success') setDashboardData(dashJson);
+                } catch(e) { console.error("Refresh failed", e); }
             };
 
             const processQuarterlyDdd = (dddData) => {
-                const monthlyData = {};
-                dddData.forEach(r => {
-                    if (!r.month) return;
-                    if (!monthlyData[r.month]) monthlyData[r.month] = { patientDays: r.total_patient_days || 0, drugs: {} };
-                    if (r.standard_ddd_mg > 0 && r.qty_ipd > 0) {
-                        const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
-                        const drugName = r.drug_name.replace(/\*|\[.*?\]/g, '').trim();
-                        monthlyData[r.month].drugs[drugName] = (monthlyData[r.month].drugs[drugName] || 0) + units;
-                    }
-                });
-                const qData = {};
-                Object.keys(monthlyData).forEach(mStr => {
+                const monthlyPatientDays = {};
+                dddData.forEach(r => { if(r.month && r.total_patient_days > 0) monthlyPatientDays[r.month] = r.total_patient_days; });
+                const quarterlyPatientDays = {}; 
+                Object.keys(monthlyPatientDays).forEach(mStr => {
                     const [m, y] = mStr.split('/');
-                    if(m && y) {
-                        const q = Math.ceil(parseInt(m)/3);
-                        const qKey = `Q${q}-${y}`;
-                        if (!qData[qKey]) qData[qKey] = { patientDays: 0, drugs: {} };
-                        qData[qKey].patientDays += monthlyData[mStr].patientDays;
-                        Object.keys(monthlyData[mStr].drugs).forEach(drug => {
-                            qData[qKey].drugs[drug] = (qData[qKey].drugs[drug] || 0) + monthlyData[mStr].drugs[drug];
-                        });
+                    if(m && y) quarterlyPatientDays[`Q${Math.ceil(parseInt(m)/3)}-${y}`] = (quarterlyPatientDays[`Q${Math.ceil(parseInt(m)/3)}-${y}`] || 0) + monthlyPatientDays[mStr];
+                });
+                const quarterlyDrugDDD = {}; 
+                dddData.forEach(r => {
+                    if(!r.month || !r.drug_name) return;
+                    const [m, y] = r.month.split('/'); if(!m || !y) return;
+                    const qKey = `Q${Math.ceil(parseInt(m)/3)}-${y}`;
+                    if(!quarterlyDrugDDD[qKey]) quarterlyDrugDDD[qKey] = { Total: 0 };
+                    if(r.standard_ddd_mg > 0 && r.qty_ipd > 0) {
+                        const units = (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
+                        const drugName = r.drug_name.replace(/\*|\[.*?\]/g, '').trim(); 
+                        quarterlyDrugDDD[qKey][drugName] = (quarterlyDrugDDD[qKey][drugName] || 0) + units;
+                        quarterlyDrugDDD[qKey].Total += units;
                     }
                 });
-                const finalChartData = Object.keys(qData).map(qKey => {
-                    const d = qData[qKey];
-                    if (d.patientDays === 0) return null;
-                    const item = { name: qKey, Total: 0 };
-                    Object.keys(d.drugs).forEach(drug => {
-                        const val = (d.drugs[drug] * 100) / d.patientDays;
-                        if (val > 0) { item[drug] = parseFloat(val.toFixed(2)); item.Total += item[drug]; }
+                const finalChartData = Object.keys(quarterlyPatientDays).map(qKey => {
+                    const pDays = quarterlyPatientDays[qKey];
+                    if(pDays === 0) return null;
+                    const dataObj = { name: qKey };
+                    const drugs = quarterlyDrugDDD[qKey] || { Total: 0 };
+                    Object.keys(drugs).forEach(drug => {
+                        const val = parseFloat(((drugs[drug] * 100) / pDays).toFixed(2));
+                        if (val > 0) dataObj[drug] = val;
                     });
-                    item.Total = parseFloat(item.Total.toFixed(2));
-                    return item;
-                }).filter(x => x && x.Total > 0).sort((a, b) => {
-                    const [qA, yA] = a.name.split('-'); const [qB, yB] = b.name.split('-');
-                    if (yA !== yB) return yA - yB; return qA.localeCompare(qB);
-                });
+                    return dataObj;
+                }).filter(x => x).sort((a, b) => a.name.localeCompare(b.name));
                 const allDrugs = new Set();
-                finalChartData.forEach(d => Object.keys(d).forEach(k => { if (k !== 'name' && k !== 'Total') allDrugs.add(k); }));
+                finalChartData.forEach(d => Object.keys(d).forEach(k => { if(k !== 'name' && k !== 'Total') allDrugs.add(k); }));
                 return { data: finalChartData, drugKeys: Array.from(allDrugs).sort() };
             };
 
@@ -580,113 +515,97 @@
                 let timePoints = [...new Set(rawData.map(r => r['ปีที่ตรวจ']).filter(Boolean))].sort();
                 if (selectedTime !== 'All') timePoints = timePoints.filter(t => t === selectedTime);
                 timePoints.forEach(time => {
-                    let totalS = 0; let totalN = 0; let drugUsed = ""; let sKey, tKey;
+                    let totalS = 0, totalN = 0, drugUsed = "";
+                    let sKey, tKey;
                     for (const drug of kpiConfig.drugs) {
                         sKey = headers.find(h => h.includes(drug) && (h.includes('(ไว)') || h.includes('(S)')));
                         tKey = headers.find(h => h.includes(drug) && (h.includes('(ทั้งหมด)') || h.includes('(Total)')));
                         if (sKey && tKey) { drugUsed = drug; break; }
                     }
                     if (sKey && tKey) {
-                        const relevantRows = rawData.filter(row => {
-                            if (row['ปีที่ตรวจ'] !== time) return false;
-                            if (selectedSpecimen !== 'All' && row['Specimen'] !== selectedSpecimen) return false;
-                            return true;
-                        });
+                        const relevantRows = rawData.filter(row => row['ปีที่ตรวจ'] === time && (selectedSpecimen === 'All' || row['Specimen'] === selectedSpecimen));
                         relevantRows.forEach(row => {
                             const rawOrgName = row['ชื่อเชื้อ'];
                             if (!rawOrgName) return;
                             const orgGroup = ORGANISM_GROUPS.find(g => g.base === kpiConfig.organism);
                             if (orgGroup && orgGroup.keywords.some(kw => rawOrgName.toLowerCase().includes(kw))) {
-                                const parseVal = (v) => { if(!v) return 0; const str = String(v).replace(/,/g, '').trim(); if(['R','S','I','-','No growth'].includes(str)) return 0; return parseFloat(str) || 0; };
+                                const parseVal = (v) => { if(!v) return 0; const str = String(v).replace(/,/g, '').trim(); return (['R','S','I','-','No growth'].includes(str)) ? 0 : (parseFloat(str) || 0); };
                                 totalS += parseVal(row[sKey]);
                                 totalN += parseVal(row[tKey]);
                             }
                         });
                     }
-                    let dddVal = 0;
-                    if (kpiConfig.dddIcode && dddRawData.length > 0) {
-                        const tYear = parseInt(time);
-                        const matchingRows = dddRawData.filter(d => {
-                            if (!d.month || String(d.icode).trim() !== String(kpiConfig.dddIcode).trim()) return false;
-                            const [m, yStr] = d.month.split('/');
-                            const dYear = parseInt(yStr);
-                            return (dYear === tYear) || (Math.abs(dYear - tYear) === 543);
-                        });
-                        if (matchingRows.length > 0) {
-                            const monthStats = {};
-                            matchingRows.forEach(r => {
-                                if (!monthStats[r.month]) monthStats[r.month] = { pDay: r.total_patient_days, unit: 0 };
-                                if (r.standard_ddd_mg > 0) monthStats[r.month].unit += (r.qty_ipd * r.strength_mg) / r.standard_ddd_mg;
-                            });
-                            let sumUnits = 0; let sumDays = 0;
-                            Object.values(monthStats).forEach(s => { sumUnits += s.unit; sumDays += s.pDay; });
-                            if (sumDays > 0) dddVal = parseFloat(((sumUnits * 100) / sumDays).toFixed(2));
-                        }
-                    }
-                    if (totalN > 0 || dddVal > 0) {
-                        const pctR = totalN > 0 ? (100 - ((totalS / totalN) * 100)) : null;
-                        chartData.push({ year: time, resistance: pctR !== null ? parseFloat(pctR.toFixed(1)) : null, n: totalN, drugUsed: drugUsed, ddd: dddVal });
+                    const dddVal = 0; 
+                    if (totalN > 0) {
+                        const pctR = (100 - ((totalS / totalN) * 100));
+                        chartData.push({ year: time, resistance: pctR, n: totalN, drugUsed, ddd: dddVal });
                     }
                 });
                 return chartData;
             };
 
-            const handleAnalyze = (config, data) => { setModalConfig(config); setModalData(data); setModalOpen(true); };
+            const handleBedClick = async (bed, ward) => {
+                setBedModalOpen(true); setBedLoading(true); setBedModalData({ title: `${ward} - Bed ${bed}` });
+                try {
+                    const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'get_bed_history', bed, ward }) });
+                    const json = await res.json();
+                    setBedModalData(prev => ({ ...prev, history: json.history }));
+                } catch(e) { console.error(e); } finally { setBedLoading(false); }
+            };
 
-            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f172a]"><div className="loader mb-4"></div><p className="text-cyan-400 animate-pulse">Loading...</p></div>;
-            if (error) return <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-red-400"><p>{error}</p></div>;
+            if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="loader"></div></div>;
 
             return (
                 <div className="min-h-screen pb-10 relative">
-                    <div className="fixed inset-0 z-[-1] flex items-center justify-center overflow-hidden bg-[#0f172a]"><img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-full h-full object-cover opacity-10 pointer-events-none" /></div>
-                    <header className="glass-panel sticky top-0 z-50 border-b-0 backdrop-blur-xl bg-slate-900/80 relative">
-                        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                     <header className="glass-panel sticky top-0 z-50 border-b-0 backdrop-blur-xl bg-slate-900/80">
+                        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center z-50 relative">
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">SW-1 Smart IC</h1>
+                                <img src="https://i.ibb.co/vCWyf6b4/ic-foamboard-60x75cm-500-x-500-px-1.gif" className="h-10 w-auto rounded-lg" />
+                                <div><h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">SW-1 Smart Dashboard</h1><p className="text-[10px] text-slate-400 uppercase tracking-widest">Infection Control Unit</p></div>
                             </div>
-                            <div className="flex items-center gap-4"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live</div>
+                            <div className="text-right"><div className="text-xs text-indigo-300 font-mono">{new Date().toLocaleDateString('th-TH')}</div><div className="text-[10px] text-emerald-500 flex items-center justify-end gap-1"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> Live</div></div>
                         </div>
                     </header>
-                    <AlertTicker alerts={haiRawData.hai_cases.filter(h => h.status === 'แจ้ง ICN')} />
+
+                    <AlertTicker alerts={dashboardData.bedData?.alerts} />
+
                     <main className="max-w-7xl mx-auto px-4 py-6 space-y-6 relative z-10">
-                        {/* Top Row: Hand Hygiene & Bundle & Lab */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <HandHygieneSection data={hhRawData} meta={hhRawData ? hhRawData.locations : {}} />
-                            <BundleHaiSurveillance activeCases={haiRawData.active_cases} haiCases={haiRawData.hai_cases} />
-                            <div className="grid grid-rows-2 gap-6">
-                                <LabCultureWidget data={rawData} />
-                                <AmrStackedTrendWidget rawData={rawData} />
+                        
+                        {/* Zone 1: Operation Monitoring */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[450px]">
+                            <div className="lg:col-span-5 h-full"><HandHygieneWidget data={dashboardData.hhData} /></div>
+                            <div className="lg:col-span-7 flex flex-col gap-6 h-full">
+                                <div className="flex-1"><BedGrid bedData={dashboardData.bedData} onBedClick={handleBedClick} /></div>
+                                <div className="h-48"><LabCultureWidget rawData={rawData} /></div>
                             </div>
                         </div>
 
-                        {/* Middle Row: Total DDD */}
-                        <div className="grid grid-cols-1 gap-6"><TotalDddChart data={quarterlyChartData.data} drugKeys={quarterlyChartData.keys} /></div>
+                        {/* Zone 2: MDR Summary Charts */}
+                        <div className="h-[350px]"><MdrSummaryWidget rawData={rawData} /></div>
 
-                        {/* Bottom Row: AMR Charts */}
+                        {/* Zone 3: AMR Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                             <div className="lg:col-span-1 space-y-4">
                                 <div className="glass-panel p-5 rounded-2xl border-l-4 border-indigo-500">
                                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2"><i data-lucide="filter" className="w-4 h-4 text-indigo-400"></i> Filters</h3>
-                                    <div className="mb-4">
-                                        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Specimen</label>
-                                        <div className="relative"><select value={selectedSpecimen} onChange={(e) => setSelectedSpecimen(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none focus:outline-none focus:border-indigo-500 text-sm"><option value="All">All Specimens</option>{specimenList.map(s => <option key={s} value={s}>{s}</option>)}</select><i data-lucide="chevron-down" className="absolute right-3 top-2.5 w-4 h-4 text-slate-500 pointer-events-none"></i></div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Time Period</label>
-                                        <div className="relative"><select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none focus:outline-none focus:border-indigo-500 text-sm"><option value="All">All History</option>{timeList.map(t => <option key={t} value={t}>{t}</option>)}</select><i data-lucide="calendar" className="absolute right-3 top-2.5 w-4 h-4 text-slate-500 pointer-events-none"></i></div>
-                                    </div>
+                                    <div className="mb-4"><label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Specimen</label><div className="relative"><select value={selectedSpecimen} onChange={(e) => setSelectedSpecimen(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none text-sm"><option value="All">All Specimens</option>{specimenList.map(s => <option key={s} value={s}>{s}</option>)}</select></div></div>
+                                    <div><label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Time Period</label><div className="relative"><select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg py-2 pl-3 pr-8 appearance-none text-sm"><option value="All">All History</option>{timeList.map(t => <option key={t} value={t}>{t}</option>)}</select></div></div>
                                 </div>
+                                <div className="glass-panel p-4 rounded-xl flex items-center justify-between border-t-2 border-t-blue-500/30"><div><p className="text-slate-400 text-xs uppercase tracking-wider">Total Isolates</p><h4 className="text-2xl font-bold mt-1 text-white">{rawData.length}</h4></div><i data-lucide="database" className="w-6 h-6 text-blue-400 opacity-50"></i></div>
                             </div>
                             <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {KPI_CONFIG.map(config => <AmrChartWidget key={config.id} config={config} data={getProcessedData(config)} onAnalyze={handleAnalyze} />)}
+                                {KPI_CONFIG.map(config => <AmrLineChartWidget key={config.id} config={config} data={getProcessedData(config)} onAnalyze={()=>{}} />)}
                             </div>
                         </div>
+
+                        {/* Zone 4: Total DDD */}
+                        <div className="grid grid-cols-1 gap-6"><TotalDddChart data={quarterlyChartData.data} drugKeys={quarterlyChartData.keys} /></div>
                     </main>
-                    <AnalyzeModal isOpen={modalOpen} onClose={() => setModalOpen(false)} config={modalConfig} data={modalData} />
+
+                    <BedModal isOpen={bedModalOpen} onClose={() => setBedModalOpen(false)} loading={bedLoading} data={bedModalData} />
                 </div>
             );
         };
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
