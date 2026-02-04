@@ -63,11 +63,14 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+        // FIXED: Added Area, AreaChart, Pie, PieChart, Cell to destructuring
         const { 
-            ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine 
+            ComposedChart, Line, Bar, AreaChart, Area, PieChart, Pie, Cell,
+            XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label 
         } = window.Recharts || {};
 
         // *** CONFIGURATION ***
+        // TODO: Replace with your actual deployed Web App URL
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzQRd_pMI2YCDkCZEJgj0GYkLSSgjK-DWDGleIksljsf13SIToe6MkgpzKnL9lk7TkkWQ/exec';
         
         const ORGANISM_GROUPS = [
@@ -84,7 +87,7 @@
             { id: 'crab', title: 'CRAB Trend', subtitle: 'A. baumannii vs Imipenem', organism: 'Acinetobacter baumannii', drugs: ['Imipenem', 'Meropenem', 'Doripenem'], color: '#f472b6', dddIcode: '1530156', dddName: 'Meropenem Use' },
             { id: 'cre-ec', title: 'CRE (E. coli)', subtitle: 'E. coli vs Meropenem', organism: 'Escherichia coli', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#c084fc', dddIcode: '1530156', dddName: 'Meropenem Use' },
             { id: 'cre-kp', title: 'CRE (K. pneumo)', subtitle: 'K. pneumoniae vs Meropenem', organism: 'Klebsiella pneumoniae', drugs: ['Meropenem', 'Imipenem', 'Ertapenem'], color: '#818cf8', dddIcode: '1530156', dddName: 'Meropenem Use' },
-            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin (Cefoxitin)', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin Use' },
+            { id: 'mrsa', title: 'MRSA Trend', subtitle: 'S. aureus vs Oxacillin (ek Cloxacillin)', organism: 'Staphylococcus aureus', drugs: ['Oxacillin', 'Cefoxitin'], color: '#fbbf24', dddIcode: '1000106', dddName: 'Cloxacillin Use' },
             { id: '3gcr', title: '3GC-R (ESBL Proxy)', subtitle: 'E. coli vs Ceftriaxone', organism: 'Escherichia coli', drugs: ['Ceftriaxone', 'Cefotaxime', 'Ceftazidime'], color: '#34d399', dddIcode: '1000776', dddName: 'Ceftriaxone Use' },
             { id: 'vre', title: 'VRE Trend', subtitle: 'Enterococcus vs Vancomycin', organism: 'Enterococcus faecium', drugs: ['Vancomycin'], color: '#22d3ee', dddIcode: '1540012', dddName: 'Vancomycin Use' },
         ];
@@ -471,7 +474,6 @@
                         setSpecimenList(specs);
                         setTimeList(times);
 
-                        // Process Quarterly DDD from loaded data
                         const qResult = processQuarterlyDdd(json.ddd);
                         setQuarterlyChartData({ data: qResult.data, keys: qResult.drugKeys });
 
