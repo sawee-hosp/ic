@@ -41,7 +41,10 @@
         .glass-input:read-only { opacity: 0.7; cursor: default; }
 
         .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; font-weight: 600; padding: 0.6rem; border-radius: 0.5rem; width: 100%; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); }
+
+        .btn-secondary { background: rgba(51, 65, 85, 0.5); color: #cbd5e1; font-weight: 500; padding: 0.6rem; border-radius: 0.5rem; width: 100%; border: 1px solid rgba(255, 255, 255, 0.05); }
         
         .badge { padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 4px; white-space: nowrap; height: 20px; display: inline-flex; align-items: center; letter-spacing: 0.5px; }
         .bg-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -66,6 +69,14 @@
         const LIFF_ID = "2008690634-Mr6OanUA"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzG8WjNpWdC-JwFFIrRRJ2w7_sHdKx3D3ZIykPqwFuaWmvrPpOOJCv7CVYAGOY7tk60/exec";
         const LOGO_URL = "https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png";
+
+        // --- Network PCU List ---
+        const PCU_OPTIONS = [
+            "รพ.สต.เขาค่าย", "รพ.สต.เขาทะลุ", "รพ.สต.ครน", "รพ.สต.ด่านสวี",
+            "รพ.สต.ท่าหิน", "รพ.สต.ทุ่งระยะ", "รพ.สต.นาสัก", "รพ.สต.บ้านแก่งกระทั่ง",
+            "รพ.สต.บ้านคลองน้อย", "รพ.สต.บ้านควนสามัคคี", "รพ.สต.บ้านดอนทราย", "รพ.สต.บ้านไทยพัฒนา",
+            "รพ.สต.บ้านน้ำฉา", "รพ.สต.ปากแพรก", "รพ.สต.วิสัยใต้", "รพ.สต.สวี", "สสอ.สวี"
+        ];
 
         // --- Utils ---
         const callGAS = async (action, payload = {}) => {
@@ -112,10 +123,8 @@
 
             useEffect(() => {
                 const init = async () => {
-                    try {
-                        const cb = await callGAS('getCodebook');
-                        setCodebook(cb || {});
-                    } catch(e) { console.error("Codebook Error", e); }
+                    const [cbRes] = await Promise.allSettled([callGAS('getCodebook')]);
+                    setCodebook(cbRes.status === 'fulfilled' ? cbRes.value : {});
                     
                     try {
                         await liff.init({ liffId: LIFF_ID });
@@ -189,13 +198,21 @@
         // --- 1. Login Page ---
         const LoginPage = ({ onLogin, onLiff }) => {
             const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
-            const attemptLogin = () => {
+            
+            const isValid = useMemo(() => {
                 let count = 0;
                 if(c.loginname.trim()) count++;
                 if(c.HN.trim()) count++;
                 if(c.cid.trim()) count++;
-                if (count < 2) return alert("กรุณากรอกข้อมูลยืนยันตัวตนอย่างน้อย 2 ช่อง");
-                onLogin(c);
+                // Login conditions: 2 fields OR just CID (13 digits)
+                return (count >= 2) || (c.cid.trim().length === 13);
+            }, [c]);
+
+            const attemptLogin = () => {
+                if(!isValid) return alert("กรุณากรอกข้อมูลตามเงื่อนไข");
+                // Clean CID before sending (remove dashes/spaces if user typed them)
+                const cleanCriteria = { ...c, cid: c.cid.replace(/[^0-9]/g, '') };
+                onLogin(cleanCriteria);
             };
 
             return (
@@ -205,7 +222,7 @@
                             <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
                             <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">IC SW-1 <span style={{color:'gray'}} className="font-normal text-xl">(สวีวรรณ)</span></h1>
+                        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">IC SW-1 <span style={{color:'#94a3b8'}} className="font-normal text-xl">(สวีวรรณ)</span></h1>
                         <h2 className="text-lg text-indigo-300 font-medium mb-2 tracking-wide">Digital Health Book</h2>
                         <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">สมุดบันทึกสุขภาพบุคลากร<br/>งานป้องกันและควบคุมการติดเชื้อในโรงพยาบาลสวี</p>
 
@@ -216,7 +233,7 @@
                                 <input className="glass-input text-center" placeholder="รหัส HN" value={c.HN} onChange={e=>setC({...c, HN:e.target.value})} />
                                 <input className="glass-input text-center" placeholder="เลขบัตรประชาชน (CID)" maxLength="13" value={c.cid} onChange={e=>setC({...c, cid:e.target.value})} />
                             </div>
-                            <button onClick={attemptLogin} className="btn-primary mt-2 shadow-lg shadow-indigo-500/30">เข้าสู่ระบบ</button>
+                            <button onClick={attemptLogin} disabled={!isValid} className={`btn-primary mt-2 shadow-lg shadow-indigo-500/30 w-full transition-all ${!isValid ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>เข้าสู่ระบบ</button>
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-slate-700/50">
@@ -229,37 +246,43 @@
             );
         };
 
-        // --- 2. Update Profile (Robust Data Mapping) ---
+        // --- 2. Update Profile ---
         const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
             const [data, setData] = useState({});
-            
+            const [orgType, setOrgType] = useState('hospital'); 
+
             useEffect(() => { 
                 if(user) {
                     const u = user; 
-                    // Robust mapping: try multiple casing variants for each field
-                    const getVal = (keys) => {
-                        for(const k of keys) if(u[k] !== undefined) return u[k];
-                        return '';
-                    };
                     const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
-
                     const mapped = {
-                        ...u,
-                        loginname: getVal(['loginname', 'LoginName', 'Login']),
-                        HN: getVal(['HN', 'hn']),
-                        cid: getVal(['cid', 'CID', 'id_card']),
-                        Title: getVal(['Title', 'title']),
-                        Name: getVal(['Name', 'name']),
-                        nickname: getVal(['nickname', 'NickName', 'Nick']),
-                        Gender: getVal(['Gender', 'gender', 'sex']),
-                        dob: getVal(['dob', 'birthdate', 'birth_date']),
-                        Age: getVal(['Age', 'age']),
-                        Dept: getVal(['Dept', 'dept', 'department']),
-                        Job: getVal(['Job', 'job', 'position']),
-                        Right: getVal(['Right', 'right']) || 'SW Staff',
-                        phone: cleanPhone(getVal(['phone', 'Phone', 'Tel', 'tel'])),
-                        email: getVal(['email', 'Email'])
+                        loginname: u.loginname || u.LoginName || '',
+                        HN: u.HN || u.hn || '',
+                        cid: u.cid || u.CID || '',
+                        Title: u.Title || u.title || 'นาย',
+                        Name: u.Name || u.name || '',
+                        nickname: u.nickname || u.NickName || '',
+                        Gender: u.Gender || u.gender || u.sex || 'ชาย',
+                        dob: u.dob || u.birthdate || '',
+                        Age: u.Age || u.age || '',
+                        Dept: u.Dept || u.dept || u.department || '',
+                        Job: u.Job || u.job || '',
+                        Right: u.Right || u.right || 'SW Staff',
+                        phone: cleanPhone(u.phone || u.Tel),
+                        email: u.email || u.Email || '',
+                        pictureProfile: u.pictureProfile || u.pictureprofile || ''
                     };
+                    
+                    if (!mapped.Age && mapped.dob) {
+                        const d = new Date(mapped.dob);
+                        if(!isNaN(d.getTime())) {
+                            mapped.Age = new Date().getFullYear() - d.getFullYear();
+                        }
+                    }
+
+                    if (PCU_OPTIONS.includes(mapped.Dept)) setOrgType('network');
+                    else setOrgType('hospital');
+                    
                     setData(mapped); 
                 }
             }, [user]);
@@ -272,6 +295,10 @@
                     h('Age', age > 0 ? age : 0);
                 }
             };
+
+            const deptOptions = orgType === 'hospital' 
+                ? (codebook['department'] || [])
+                : PCU_OPTIONS.map(name => ({ code: name, label: name }));
 
             return (
                 <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
@@ -312,11 +339,25 @@
                                 <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
                                 <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-[10px] text-slate-400 block mb-1">แผนก</label><Select val={data.Dept} options={codebook['department']} onChange={v=>h('Dept',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                            
+                            <div className="pt-2 border-t border-slate-700/50">
+                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
+                                <div className="flex bg-slate-800 rounded p-1 mb-2">
+                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-[10px] text-slate-400 block mb-1">
+                                            {orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}
+                                        </label>
+                                        <Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} />
+                                    </div>
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+
+                            <div className="grid grid-cols-2 gap-2 pt-2">
                                 <div><label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน</label><select className="glass-input" value={data.Right} onChange={e=>h('Right',e.target.value)}><option>SW Staff</option><option>ICN</option><option>ICWN</option></select></div>
                                 <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
                             </div>
@@ -393,12 +434,11 @@
                         visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', 
                         pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', 
                         bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', 
-                        has_chronic:'', family_history_flag:'', cxr_flag:'', smoking:'', alcohol:'' 
+                        has_chronic:'', family_history_flag:'', cxr_flag:'', smoking:'', alcohol:'', helmet:'', belt:''
                     };
                     try {
                         const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
                         if (h) {
-                            // If timestamp/visit_date exists from DB, format it YYYY-MM-DD
                             if(h.timestamp || h.visit_date) {
                                 let d = new Date(h.visit_date || h.timestamp);
                                 if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
@@ -455,15 +495,12 @@
                 try {
                     await callGAS('saveHealthData', { payload: { ...data, bmi, cvrisk_score: cvRisk } });
                     alert('บันทึกสำเร็จ');
-                    // Refresh data after save (optional, to confirm it saved)
                     setIsNewYear(false);
                 } catch { alert('บันทึกผิดพลาด'); }
                 setLoading(false);
             };
 
-            const openChart = (field, title) => setModal({ open: true, field, title });
-            
-            // Fixed Vaccine Logic
+            const openChart = (field, title, val) => setModal({ open: true, field, title, value: val });
             const isVaccineValid = useMemo(() => {
                 if (!vaccine?.found || !vaccine?.date) return false;
                 const vacDate = String(vaccine.date);
@@ -493,10 +530,7 @@
                             <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r shadow-lg animate-bounce-slow">
                                 <div className="flex items-start">
                                     <div className="flex-shrink-0"><Icon name="alert-circle" className="h-5 w-5 text-amber-400" /></div>
-                                    <div className="ml-3">
-                                        <p className="text-sm text-amber-200">ยังไม่มีข้อมูลปีปัจจุบัน</p>
-                                        <p className="text-xs text-amber-400/80 mt-1">กรุณาระบุวันที่รับการตรวจสุขภาพประจำปี และกรอกข้อมูล card ที่เหลือ ก่อนกดส่ง</p>
-                                    </div>
+                                    <div className="ml-3"><p className="text-sm text-amber-200">ยังไม่มีข้อมูลปีปัจจุบัน</p><p className="text-xs text-amber-400/80 mt-1">กรุณาระบุวันที่รับการตรวจสุขภาพประจำปี และกรอกข้อมูล card ที่เหลือ ก่อนกดส่ง</p></div>
                                 </div>
                             </div>
                         )}
@@ -507,17 +541,17 @@
                                 <input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} />
                             </div>
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                                <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก')} />
+                                <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} />
                                 <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
-                                <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ')} />
+                                <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} />
                             </div>
                             <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50">
                                 <span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>
                                 {flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว')} />
-                                <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร')} />
+                                <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} />
+                                <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} />
                             </div>
                             <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
                                 <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
@@ -525,7 +559,7 @@
                                     <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
                                     <span className="text-slate-500">/</span>
                                     <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
-                                    <button onClick={()=>openChart('bp_systolic','ความดันโลหิต')} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
+                                    <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
                                 </div>
                                 {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
                                 <div className="clear-both"></div>
@@ -536,27 +570,27 @@
                             <div className="space-y-4">
                                 <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct')} />
-                                        <Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb')} />
+                                        <Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} />
+                                        <Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} />
                                     </div>
                                 </div>
                                 <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล')} />
-                                        <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol')} />
-                                        <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride')} />
-                                        <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL')} />
-                                        <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL')} /></div>
+                                        <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} />
+                                        <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} />
+                                        <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} />
+                                        <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} />
+                                        <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} /></div>
                                     </div>
                                 </div>
                                 <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN')} />
-                                        <Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine')} />
-                                        <Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT')} />
-                                        <Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT')} />
+                                        <Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} />
+                                        <Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} />
+                                        <Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} />
+                                        <Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} />
                                         <Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} />
-                                        <Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid')} />
+                                        <Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} />
                                     </div>
                                 </div>
                             </div>
@@ -613,12 +647,13 @@
                         </Card>
                     </div>
 
-                    {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} year={selYear} onClose={()=>setModal(null)} />}
+                    {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
                 </div>
             );
         };
 
         // --- Helper UI Components ---
+        // Change type to text for flexibility
         const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
             <div>
                 <div className="flex justify-between items-end mb-1">
@@ -626,7 +661,7 @@
                     {onChart && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
                 </div>
                 <div className="relative">
-                    <input type="number" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} readOnly={readonly} />
+                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} readOnly={readonly} />
                     {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
                 </div>
             </div>
@@ -639,15 +674,19 @@
             </div>
         );
 
-        const Select = ({ label, val, options, onChange }) => (
-            <div>
-                {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
-                <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)}>
-                    <option value="">- เลือก -</option>
-                    {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
-                </select>
-            </div>
-        );
+        const Select = ({ label, val, options, onChange }) => {
+            const found = options?.find(o => o.code == val);
+            return (
+                <div>
+                    {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
+                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)}>
+                        <option value="">- เลือก -</option>
+                        {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
+                        {val && !found && <option value={val}>{val}</option>}
+                    </select>
+                </div>
+            );
+        };
 
         const RadioBtn = ({ name, val, setVal, opts }) => (
             <div className="flex bg-slate-800 rounded p-0.5 w-full">
@@ -673,10 +712,11 @@
         );
 
         // --- Chart Modal & Logic (Frequency Line) ---
-        const ChartModal = ({ hn, field, title, year, onClose }) => {
+        const ChartModal = ({ hn, field, title, value, year, onClose }) => {
             const canvasRef = useRef(null);
             const [mode, setMode] = useState('self');
             const [loading, setLoading] = useState(true);
+            const [stats, setStats] = useState(null);
 
             useEffect(() => {
                 const draw = async () => {
@@ -684,6 +724,7 @@
                     try {
                         let config = {};
                         if (mode === 'self') {
+                            setStats(null);
                             const res = await callGAS('getSelfTrend', { hn, field });
                             config = { 
                                 type: 'line', 
@@ -692,54 +733,80 @@
                         } else {
                             const res = await callGAS('getDistribution', { field, year, hn });
                             const vals = res.values || [];
-                            const userVal = res.userVal || 0;
+                            const userVal = parseFloat(value) || res.userVal || 0;
                             
-                            // Frequency Line Chart
+                            // Stats
+                            const n = vals.length;
+                            const sortedVals = [...vals].sort((a,b) => a - b);
+                            const rank = sortedVals.findIndex(v => v >= userVal) + 1 || n;
+                            setStats({ n, rank });
+
+                            // Frequency Line Chart (Linear Scale)
                             const bins = 10;
+                            // Ensure min/max covers userVal and adds buffer
                             const min = Math.min(...vals, userVal);
                             const max = Math.max(...vals, userVal);
-                            const step = (max - min) / bins || 1;
+                            // Add 10% buffer
+                            const buffer = (max - min) * 0.1 || 1;
+                            const rangeMin = Math.floor(min - buffer);
+                            const rangeMax = Math.ceil(max + buffer);
                             
-                            const labels = [];
-                            const dataCounts = new Array(bins).fill(0);
+                            const step = (rangeMax - rangeMin) / bins;
+                            
+                            const curveData = [];
+                            
                             for(let i=0; i<bins; i++) {
-                                const start = min + (i*step);
-                                labels.push(start.toFixed(1));
+                                const start = rangeMin + (i*step);
+                                const end = start + step;
+                                const mid = start + (step/2);
+                                // Count values in bin
+                                const count = vals.filter(v => v >= start && v < end).length;
+                                curveData.push({ x: mid, y: count });
                             }
-                            vals.forEach(v => {
-                                let idx = Math.floor((v - min) / step);
-                                if (idx >= bins) idx = bins - 1;
-                                dataCounts[idx]++;
-                            });
-
-                            // Identify user x index approximation
-                            const userIdx = (userVal - min) / step;
+                            
+                            // Close the area at the bottom
+                            if(curveData.length > 0) {
+                                curveData.unshift({ x: rangeMin, y: 0 });
+                                curveData.push({ x: rangeMax, y: 0 });
+                            }
 
                             config = { 
                                 type: 'line', 
                                 data: { 
-                                    labels: labels, 
                                     datasets: [
-                                        { label: 'การกระจายตัวของกลุ่ม', data: dataCounts, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59,130,246,0.1)', pointRadius: 0 },
+                                        { 
+                                            label: 'กลุ่ม', 
+                                            data: curveData, 
+                                            borderColor: '#6366f1', 
+                                            backgroundColor: 'rgba(99, 102, 241, 0.2)', 
+                                            fill: true,
+                                            tension: 0.4,
+                                            pointRadius: 0
+                                        },
+                                        { 
+                                            type: 'scatter',
+                                            label: 'คุณ', 
+                                            data: [{x: userVal, y: 0}], 
+                                            backgroundColor: '#f43f5e', 
+                                            pointRadius: 8, 
+                                            borderColor: 'white', 
+                                            borderWidth: 2,
+                                            order: 0
+                                        }
                                     ] 
                                 },
                                 options: { 
-                                    scales: { x: { grid:{color:'#334155'}, ticks:{color:'#94a3b8'} }, y: { display:false } },
-                                    plugins: { 
-                                        annotation: { 
-                                            annotations: { 
-                                                point1: { 
-                                                    type: 'point', 
-                                                    xValue: userIdx, 
-                                                    yValue: 0, // Plot on x-axis
-                                                    backgroundColor: '#f43f5e', 
-                                                    radius: 8,
-                                                    borderWidth: 2,
-                                                    borderColor: 'white'
-                                                } 
-                                            } 
-                                        } 
-                                    }
+                                    scales: { 
+                                        x: { 
+                                            type: 'linear', 
+                                            grid:{color:'#334155'}, 
+                                            ticks:{color:'#94a3b8'},
+                                            min: rangeMin,
+                                            max: rangeMax
+                                        }, 
+                                        y: { display:false, beginAtZero: true } 
+                                    },
+                                    plugins: { legend: { display: false } }
                                 }
                             };
                         }
@@ -747,7 +814,7 @@
                         if (canvasRef.current) {
                             const chart = Chart.getChart(canvasRef.current);
                             if (chart) chart.destroy();
-                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid:{color:'#1e293b'} }, x: { grid:{color:'#1e293b'} } } } });
+                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false } });
                         }
                     } catch(e) {}
                     setLoading(false);
@@ -759,13 +826,20 @@
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in" onClick={onClose}>
                     <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-5 border border-slate-700 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
                         <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white"><Icon name="x" size={20} /></button>
-                        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
+                        <h3 className="text-white font-bold mb-1 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
+                        <p className="text-xs text-slate-400 mb-4 ml-7">ค่าของคุณ: <span className="text-white font-bold">{value || '-'}</span></p>
+                        
                         <div className="flex bg-slate-900 rounded p-1 mb-4">
                             <button onClick={()=>setMode('self')} className={`flex-1 text-xs py-2 rounded ${mode==='self'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบตัวเอง</button>
                             <button onClick={()=>setMode('others')} className={`flex-1 text-xs py-2 rounded ${mode==='others'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบกลุ่ม</button>
                         </div>
                         <div className="h-56 relative">{loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">สร้างกราฟ...</div>}<canvas ref={canvasRef}></canvas></div>
-                        {mode === 'others' && <p className="text-[10px] text-slate-500 text-center mt-3">* จุดสีแดงคือตำแหน่งของคุณ</p>}
+                        {mode === 'others' && (
+                            <div className="mt-3 text-center">
+                                <p className="text-[10px] text-slate-500">* จุดสีแดงคือตำแหน่งของคุณในกลุ่ม</p>
+                                {stats && <p className="text-xs text-slate-300 mt-1">จำนวนข้อมูล (n) = <span className="font-bold text-white">{stats.n}</span> | ลำดับที่ <span className="font-bold text-white">{stats.rank}</span> (จากน้อยไปมาก)</p>}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
