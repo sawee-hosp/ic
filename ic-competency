@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IC SW-1 COMPETENCY</title>
+    
+    <link rel="icon" href="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #0f0505; color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; font-size: 14px; }
+        
+        /* Red/Dark Theme Overlay */
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, hsla(0, 50%, 10%, 1) 0, transparent 50%), 
+                radial-gradient(at 50% 100%, hsla(350, 60%, 20%, 1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(0, 40%, 15%, 1) 0, transparent 50%);
+            background-size: 150% 150%;
+            animation: pulse-bg 15s ease infinite;
+        }
+        @keyframes pulse-bg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        .glass-panel { background: rgba(30, 10, 10, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 100, 100, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); }
+        .glass-input { background: rgba(50, 20, 20, 0.5); border: 1px solid rgba(255, 100, 100, 0.2); color: white; width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.375rem; transition: all 0.2s; font-size: 0.9rem; height: 40px; }
+        .glass-input:focus { outline: none; border-color: #ef4444; background: rgba(50, 20, 20, 0.8); box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+
+        .btn-primary { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; font-weight: 600; padding: 0.7rem; border-radius: 0.5rem; width: 100%; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary:active { transform: scale(0.97); }
+
+        .btn-secondary { background: rgba(60, 20, 20, 0.5); color: #fecaca; border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.6rem; border-radius: 0.5rem; width: 100%; text-align: center;}
+
+        .card-course { transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+        .card-course:hover { transform: translateY(-3px); border-color: #ef4444; box-shadow: 0 10px 20px rgba(220,38,38,0.15); }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const LIFF_ID = "2008690634-Mr6OanUA";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxcaKazZplOEhi5uxD12arRrDBFxmSM3mek0zUKheEE8fYPgUAsCa1aFL8qF4ybokG8Ig/exec";
+
+        // --- COMPONENTS ---
+
+        const Icon = ({ name, className, size=20 }) => {
+            return <i data-lucide={name} className={className} style={{ width: size, height: size, display: 'inline-block' }}></i>;
+        };
+
+        const Loading = () => (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+                <div className="w-12 h-12 border-4 border-red-900 border-t-red-500 rounded-full animate-spin mb-4"></div>
+                <p className="text-red-200 tracking-widest text-xs uppercase">Loading System...</p>
+            </div>
+        );
+
+        // --- PAGES ---
+
+        const LoginPage = ({ onLogin, onLiff }) => {
+            const [id, setId] = useState('');
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in">
+                    <div className="w-full max-w-sm text-center">
+                        <div className="w-28 h-28 mx-auto mb-6 relative">
+                             <div className="absolute inset-0 bg-red-600 blur-3xl opacity-20 rounded-full"></div>
+                             <img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" className="w-full h-full object-contain relative z-10 drop-shadow-2xl" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">IC SW-1 COMPETENCY</h1>
+                        <p className="text-red-300 text-sm mb-8 font-light">ระบบประเมินสมรรถนะการป้องกันการติดเชื้อ</p>
+
+                        <div className="glass-panel p-6 rounded-2xl space-y-4 border-t border-red-500/20">
+                            <label className="text-xs text-red-200 block mb-1">เข้าสู่ระบบด้วยชื่อผู้ใช้งาน หรือ HN</label>
+                            <input className="glass-input text-center" placeholder="Login Name / HN" value={id} onChange={e=>setId(e.target.value)} />
+                            <button onClick={()=>onLogin(id)} disabled={!id} className="btn-primary shadow-lg shadow-red-900/40">เข้าสู่ระบบ</button>
+                            
+                            <div className="relative py-2">
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
+                                <div className="relative flex justify-center text-xs"><span className="px-2 bg-[#1e0a0a] text-slate-500">หรือ</span></div>
+                            </div>
+                            
+                            <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95"><Icon name="message-circle" /> Login with LINE</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Dashboard = ({ user, onLogout }) => {
+            const [stats, setStats] = useState(null);
+            const [courses, setCourses] = useState([]);
+            const [userGroup, setUserGroup] = useState(user.Right || '');
+            const [loading, setLoading] = useState(false);
+
+            const groupOptions = [
+                { id: 'กลุ่มวิชาชีพสัมผัสผู้ป่วย', code: 'G1', label: 'G1: วิชาชีพสัมผัสผู้ป่วย (Clinical)' },
+                { id: 'กลุ่มสนับสนุนทางการแพทย์', code: 'G2', label: 'G2: สนับสนุนการแพทย์ (Support)' },
+                { id: 'กลุ่มงานโภชนาการ', code: 'G3', label: 'G3: โภชนาการ (Food)' },
+                { id: 'กลุ่มงานทั่วไป', code: 'G4', label: 'G4: งานทั่วไป (General)' }
+            ];
+
+            useEffect(() => {
+                const fetchData = async () => {
+                    setLoading(true);
+                    try {
+                        // 1. Get IC Day Stats
+                        const resStats = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: 'getICDayStats', userId: user.userId }) }).then(r=>r.json());
+                        setStats(resStats);
+
+                        // 2. Get Courses
+                        const resCourses = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: 'getCourses' }) }).then(r=>r.json());
+                        setCourses(resCourses);
+                    } catch(e) { console.error(e); }
+                    setLoading(false);
+                };
+                fetchData();
+                setTimeout(() => lucide.createIcons(), 1000);
+            }, []);
+
+            const handleUpdateGroup = async (newGroup) => {
+                setUserGroup(newGroup);
+                // Call API Update
+                await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: 'updateUserGroup', userId: user.userId, groupName: newGroup }) });
+            };
+
+            // Calculate progress bars
+            const progressPre = stats ? Math.min(100, (stats.exams.pre / 20) * 100) : 0; // Assuming full score 20
+            const progressPost = stats ? Math.min(100, (stats.exams.post / 20) * 100) : 0;
+
+            // Filter Courses
+            const myGroupCode = groupOptions.find(g => g.id === userGroup)?.code || '';
+            const filteredCourses = useMemo(() => {
+                if (!myGroupCode) return [];
+                return courses.filter(c => {
+                    const target = c.target_group || '';
+                    if (target.includes('ALL')) return true;
+                    if (target.includes(myGroupCode)) return true;
+                    return false;
+                });
+            }, [courses, myGroupCode]);
+
+            const getCoverImage = (id) => {
+                const seed = id.charCodeAt(0) % 5;
+                const colors = ['7f1d1d', '991b1b', 'b91c1c', 'be123c', '881337'];
+                return `https://placehold.co/400x200/${colors[seed]}/ffffff?text=${id}`;
+            };
+
+            if (loading) return <Loading />;
+
+            return (
+                <div className="pb-20 fade-in">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-red-900 to-black p-5 pb-8 rounded-b-3xl shadow-2xl border-b border-red-500/30">
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-12 h-12 rounded-full border-2 border-red-400 shadow-lg object-cover" />
+                                <div>
+                                    <h2 className="text-white font-bold text-lg">{user.Name}</h2>
+                                    <p className="text-red-300 text-xs">{user.Dept}</p>
+                                </div>
+                            </div>
+                            <button onClick={onLogout} className="bg-black/30 p-2 rounded-full text-red-300 hover:text-white transition"><Icon name="log-out" size={18} /></button>
+                        </div>
+                    </div>
+
+                    <div className="px-4 -mt-6 space-y-6">
+                        
+                        {/* Section 1: IC Day Summary */}
+                        <div className="glass-panel p-5 rounded-2xl border-t-4 border-red-600">
+                            <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2"><Icon name="award" /> ผลการอบรม IC Day 2025</h3>
+                            
+                            {/* Stamps */}
+                            <div className="grid grid-cols-6 gap-2 mb-4">
+                                {[1,2,3,4,5,6].map(m => (
+                                    <div key={m} className={`aspect-square rounded-lg flex items-center justify-center border ${stats?.missions[`m${m}`] ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/10 border-red-900/50 text-red-900/50'}`}>
+                                        <Icon name={stats?.missions[`m${m}`] ? 'check' : 'circle'} size={16} />
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Exam Scores */}
+                            <div className="space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
+                                <div>
+                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Pre-Test</span><span className="text-white">{stats?.exams.pre || 0} คะแนน</span></div>
+                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-500" style={{width:`${progressPre}%`}}></div></div>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Post-Test ({stats?.exams.duration} วิ)</span><span className="text-red-400 font-bold">{stats?.exams.post || 0} คะแนน</span></div>
+                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-red-600" style={{width:`${progressPost}%`}}></div></div>
+                                </div>
+                            </div>
+
+                            {/* Certificate */}
+                            {stats?.missions.total >= 6 ? (
+                                <a href={stats.missions.certUrl} target="_blank" className="mt-4 btn-primary bg-gradient-to-r from-yellow-600 to-yellow-800 border border-yellow-500/50 text-yellow-100">
+                                    <Icon name="file-badge" /> ดาวน์โหลดเกียรติบัตร
+                                </a>
+                            ) : (
+                                <button disabled className="mt-4 w-full py-3 rounded-lg bg-slate-800 text-slate-500 text-xs text-center cursor-not-allowed">
+                                    สะสมแสตมป์ให้ครบเพื่อรับเกียรติบัตร
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Section 2: Group Selection */}
+                        <div className="glass-panel p-5 rounded-2xl">
+                             <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider mb-3 flex items-center gap-2"><Icon name="users" /> ระบุกลุ่มวิชาชีพ</h3>
+                             <p className="text-xs text-slate-400 mb-3">โปรดระบุกลุ่มงานเพื่อแสดงหลักสูตรที่เหมาะสม</p>
+                             <select className="glass-input text-sm" value={userGroup} onChange={(e) => handleUpdateGroup(e.target.value)}>
+                                <option value="">-- เลือกกลุ่มงาน --</option>
+                                {groupOptions.map((g, i) => <option key={i} value={g.id}>{g.label}</option>)}
+                             </select>
+                        </div>
+
+                        {/* Section 3: Courses */}
+                        {myGroupCode && (
+                            <div>
+                                <h3 className="text-white font-bold text-lg mb-4 pl-1 border-l-4 border-red-600 leading-none">หลักสูตรเรียนรู้เพิ่มเติม <span className="text-xs font-normal text-slate-500 block mt-1">สำหรับ {groupOptions.find(g=>g.id===userGroup).label}</span></h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {filteredCourses.map((c, i) => (
+                                        <div key={i} className="card-course glass-panel rounded-xl overflow-hidden relative group">
+                                            <div className="h-24 bg-slate-800 relative">
+                                                <img src={getCoverImage(c.course_id)} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition" />
+                                                <div className="absolute top-2 right-2 bg-black/70 backdrop-blur px-2 py-1 rounded text-[10px] text-white border border-white/10">{c.category}</div>
+                                            </div>
+                                            <div className="p-4">
+                                                <h4 className="text-white font-bold text-sm mb-1 line-clamp-1">{c.course_name_th}</h4>
+                                                <p className="text-slate-400 text-xs mb-3 line-clamp-2 h-8">{c.description}</p>
+                                                <div className="flex justify-between items-center mt-2 border-t border-white/5 pt-2">
+                                                    <span className="text-[10px] text-red-400 bg-red-900/20 px-2 py-0.5 rounded">ต่ออายุ: {c.renewal_months} เดือน</span>
+                                                    <button className="text-xs text-white hover:text-red-400 flex items-center gap-1 transition">เริ่มเรียน <Icon name="arrow-right" size={14} /></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredCourses.length === 0 && <p className="text-center text-slate-500 text-xs">ไม่พบหลักสูตรสำหรับกลุ่มนี้</p>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(false);
+            
+            useEffect(() => {
+                const init = async () => {
+                    setLoading(true);
+                    try {
+                        if (LIFF_ID) await liff.init({ liffId: LIFF_ID });
+                    } catch(e) { console.warn("LIFF Error", e); }
+                    
+                    const saved = localStorage.getItem('ic_comp_user');
+                    if (saved) setUser(JSON.parse(saved));
+                    setLoading(false);
+                };
+                init();
+                setTimeout(() => lucide.createIcons(), 500);
+            }, []);
+
+            const handleLogin = async (id, isLiff = false) => {
+                setLoading(true);
+                
+                // Construct criteria based on login type
+                const criteria = isLiff 
+                    ? { userId: id } 
+                    : { loginname: id, HN: id }; // Send both for manual login logic
+
+                try {
+                    const res = await fetch(GAS_URL, { 
+                        method: "POST", 
+                        body: JSON.stringify({ action: 'loginUser', criteria: criteria }) 
+                    }).then(r => r.json());
+                    
+                    if (res.found) {
+                        setUser(res.data);
+                        localStorage.setItem('ic_comp_user', JSON.stringify(res.data));
+                    } else {
+                        alert(res.message || 'ไม่พบข้อมูลในระบบ หรือชื่อผู้ใช้งานไม่ถูกต้อง');
+                    }
+                } catch(e) { 
+                    alert('Login Error: เชื่อมต่อระบบไม่ได้'); 
+                }
+                setLoading(false);
+            };
+
+            const handleLiffLogin = async () => {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    setLoading(true);
+                    try {
+                        const profile = await liff.getProfile();
+                        handleLogin(profile.userId, true);
+                    } catch (e) {
+                        setLoading(false);
+                        alert("LIFF Error: " + e.message);
+                    }
+                }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                localStorage.removeItem('ic_comp_user');
+                if (liff.isLoggedIn()) liff.logout();
+            };
+
+            if (loading) return <Loading />;
+
+            return user ? <Dashboard user={user} onLogout={handleLogout} /> : <LoginPage onLogin={(id) => handleLogin(id, false)} onLiff={handleLiffLogin} />;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
