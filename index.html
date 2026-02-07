@@ -3,98 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ลงทะเบียนสมาชิก SW-1</title>
+    <title>IC SW-1 (สวีวรรณ)</title>
     
-    <!-- Favicon -->
-    <link rel="icon" href="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" type="image/png">
-
-    <!-- Libraries -->
+    <link rel="icon" href="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- LIFF SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            font-family: 'Google Sans', 'Sarabun', sans-serif; 
-            background: #0f172a; 
-            color: #f8fafc; 
-            -webkit-tap-highlight-color: transparent; 
-            overflow-x: hidden;
-            font-size: 16px;
-        }
-
-        .bg-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url('https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png');
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 150%;
-            opacity: 0.04;
-            pointer-events: none;
-            z-index: -1;
-            mix-blend-mode: luminosity;
-        }
-
-        .glass-panel { 
-            background: rgba(30, 41, 59, 0.85); 
-            backdrop-filter: blur(16px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .glass-input { 
-            background: rgba(15, 23, 42, 0.6); 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            color: white; 
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-top: 0.25rem;
-            appearance: none; /* for select */
-        }
-        .glass-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+        body { font-family: 'Sarabun', sans-serif; background: #0f172a; color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; font-size: 14px; }
         
-        .btn-primary { 
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
-            color: white; 
-            font-weight: bold; 
-            padding: 1rem; 
-            border-radius: 0.75rem; 
-            width: 100%; 
-            box-shadow: 0 4px 15px -1px rgba(99, 102, 241, 0.5); 
-            transition: all 0.2s;
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: 150% 150%;
+            animation: aurora 15s ease infinite;
         }
-        .btn-primary:active { transform: scale(0.98); }
+        .bg-overlay::after {
+            content: ""; position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.4;
+        }
+        @keyframes aurora { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
-        .btn-secondary { 
-            background: rgba(30, 41, 59, 0.6); 
-            color: #94a3b8; 
-            font-weight: bold; 
-            padding: 1rem; 
-            border-radius: 0.75rem; 
-            width: 100%; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.2s;
-        }
-        .btn-secondary:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.8); }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .glass-input { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.375rem; transition: all 0.2s; font-size: 0.9rem; height: 38px; }
+        .glass-input:focus { outline: none; border-color: #818cf8; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        .glass-input:read-only { opacity: 0.7; cursor: default; }
 
-        /* Preloader Animation */
-        @keyframes pulse-logo {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-        .animate-logo { animation: pulse-logo 2s infinite ease-in-out; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; font-weight: 600; padding: 0.6rem; border-radius: 0.5rem; width: 100%; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary:active { transform: scale(0.97); }
+        
+        .badge { padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 4px; white-space: nowrap; height: 20px; display: inline-flex; align-items: center; letter-spacing: 0.5px; }
+        .bg-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .bg-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .bg-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .tab-btn { position: relative; padding: 0.6rem 1.2rem; color: #94a3b8; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { color: white; font-weight: 600; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: #6366f1; border-radius: 3px 3px 0 0; box-shadow: 0 -2px 10px rgba(99, 102, 241, 0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -102,218 +62,743 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
         const LIFF_ID = "2008690634-Mr6OanUA"; 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzG8WjNpWdC-JwFFIrRRJ2w7_sHdKx3D3ZIykPqwFuaWmvrPpOOJCv7CVYAGOY7tk60/exec";
+        const LOGO_URL = "https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png";
 
-        const DEPT_OPTIONS = [
-            "กลุ่มงานบริหารทั่วไป", "กลุ่มงานการแพทย์", "กลุ่มงานทันตกรรม", "กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค",
-            "กลุ่มงานเทคนิคการแพทย์", "กลุ่มรังสีวิทยา", "กลุ่มงานเวชกรรมฟื้นฟู", "กลุ่มงานประกันสุขภาพและสารสนเทศทางการแพทย์",
-            "กลุ่มงานบริการด้านปฐมภูมิและองค์รวม", "กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก", "กลุ่มงานจิตเวชและยาเสพติด",
-            "งานการพยาบาลผู้ป่วยอุบัติเหตุและฉุกเฉิน (ER)", "งานการพยาบาลผู้ป่วยนอก (OPD)", "งานการพยาบาลผู้ป่วยใน (IPD)",
-            "ตึกผู้ป่วยในชาย (Wardชาย)", "ตึกผู้ป่วยในหญิง (Wardหญิง)", "กลุ่มงานการพยาบาลผู้คลอด (LR)",
-            "งานฝากครรภ์ (ANC)", "คลินิกพิเศษ", "งานจ่ายกลางและซักฟอก", "กลุ่มงานอื่นๆ", "รพ.สต."
-        ];
+        // --- Utils ---
+        const callGAS = async (action, payload = {}) => {
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action, ...payload })
+                });
+                return await res.json();
+            } catch (error) {
+                console.error("API Error:", error);
+                throw error;
+            }
+        };
 
-        const JOB_OPTIONS = [
-            "คนสวน", "เจ้าหน้าที่บันทึกข้อมูล", "เจ้าหน้าที่โรงครัว", "เจ้าพนักงานการเงินและบัญชี",
-            "เจ้าพนักงานเภสัชกรรม", "เจ้าพนักงานวิทยาศาสตร์การแพทย์", "เจ้าพนักงานเวชกิจฉุกเฉิน",
-            "เจ้าพนักงานทันตสาธารณสุข", "เจ้าพนักงานธุรการ", "เจ้าพนักงานพัสดุ",
-            "เจ้าพนักงานรังสีการแพทย์", "เจ้าพนักงานเวชสถิติ", "เจ้าพนักงานสาธารณสุข",
-            "เจ้าพนักงานโสตทัศนศึกษา", "นักกายภาพบำบัด", "นักจัดการงานทั่วไป", "นักโภชนาการ",
-            "นักเทคนิคการแพทย์", "นักวิชาการคอมพิวเตอร์", "นักวิชาการพัสดุ", "นักวิชาการสาธารณสุข",
-            "นักวิทยาศาสตร์การแพทย์", "นักวิชาการการเงินและบัญชี", "นักสาธารณสุข", "นายช่างเทคนิค",
-            "นายแพทย์", "พนักงานขับรถยนต์", "พนักงานการเงินและบัญชี", "พนักงานบริการ",
-            "พนักงานช่วยเหลือคนไข้", "พนักงานธุรการ", "พนักงานประจำตึก", "พนักงานประจำห้องยา",
-            "ผู้ช่วยช่างทั่วไป", "เภสัชกร", "แพทย์แผนไทย", "ทันตแพทย์", "พยาบาลวิชาชีพ",
-            "ลูกมือช่าง", "อื่นๆ"
-        ];
+        const Icon = ({ name, className, size=24 }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if(ref.current) {
+                    ref.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    i.className = className || '';
+                    ref.current.appendChild(i);
+                    lucide.createIcons({ root: ref.current, attrs: { width: size, height: size } });
+                }
+            }, [name, className, size]);
+            return <span ref={ref} className="inline-flex items-center justify-center"></span>;
+        };
 
-        const Preloader = () => (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]">
-                <img src="https://i.ibb.co/2Y3GCPpC/Gemini-Generated-Image-eka4oweka4oweka4-1-removebg-preview.png" className="w-32 h-32 animate-logo mb-6 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
-                    <div className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce delay-150"></div>
-                </div>
-                <p className="mt-4 text-slate-400 text-sm tracking-wider">กำลังโหลดข้อมูลสมาชิก...</p>
+        const Loading = ({ text }) => (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md">
+                <img src={LOGO_URL} className="w-20 h-20 mb-4 animate-pulse" />
+                <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
+                <p className="text-indigo-200 text-xs tracking-wider">{text}</p>
             </div>
         );
 
+        // --- Main App ---
         const App = () => {
-            const [loading, setLoading] = useState(true);
-            const [isRegistered, setIsRegistered] = useState(false);
-            const [profile, setProfile] = useState(null);
-            const [formData, setFormData] = useState({
-                userId: '', DisplayName: '', pictureProfile: '',
-                Title: 'นาย', Name: '', Dept: DEPT_OPTIONS[0], Job: JOB_OPTIONS[0], Gender: 'ชาย', Age: '', HN: ''
-            });
+            const [page, setPage] = useState('loading'); 
+            const [user, setUser] = useState(null);
+            const [codebook, setCodebook] = useState({});
 
             useEffect(() => {
                 const init = async () => {
-                    const minLoad = new Promise(resolve => setTimeout(resolve, 1500));
+                    try {
+                        const cb = await callGAS('getCodebook');
+                        setCodebook(cb || {});
+                    } catch(e) { console.error("Codebook Error", e); }
                     
                     try {
-                        if (window.liff) {
-                            await window.liff.init({ liffId: LIFF_ID });
-                            if (!window.liff.isLoggedIn()) {
-                                window.liff.login({ redirectUri: window.location.href });
-                                return;
-                            }
-                            const p = await window.liff.getProfile();
-                            setProfile(p);
-                            
-                            const res = await fetch(GAS_URL, {
-                                method: "POST",
-                                body: JSON.stringify({ action: 'checkRegistration', userId: p.userId })
-                            }).then(r => r.json());
-
-                            if (res.isRegistered) {
-                                setIsRegistered(true);
-                                // Ensure Dept and Job are in the lists, otherwise default to first option or keep value
-                                setFormData(res.data); 
-                            } else {
-                                setIsRegistered(false);
-                                setFormData(prev => ({
-                                    ...prev,
-                                    userId: p.userId,
-                                    DisplayName: p.displayName,
-                                    pictureProfile: p.pictureUrl,
-                                    Dept: DEPT_OPTIONS[0],
-                                    Job: JOB_OPTIONS[0]
-                                }));
-                            }
+                        await liff.init({ liffId: LIFF_ID });
+                        if (liff.isLoggedIn()) {
+                            const p = await liff.getProfile();
+                            handleLoginProcess({ userId: p.userId }, p);
+                        } else {
+                            setPage('login');
                         }
                     } catch (e) {
-                        console.error(e);
-                        // Dev Mock for testing outside LIFF
-                        // setFormData(prev => ({ ...prev, userId: 'dev', DisplayName: 'DevUser' }));
-                        // setIsRegistered(false);
+                        setPage('login');
                     }
-                    
-                    await minLoad;
-                    setLoading(false);
                 };
                 init();
             }, []);
 
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
+            const handleLoginProcess = async (criteria, lineProfile = null) => {
+                setPage('loading');
                 try {
-                    await fetch(GAS_URL, {
-                        method: "POST",
-                        body: JSON.stringify({ action: 'saveRegistration', payload: formData })
-                    }).then(r => r.json());
-                    
-                    alert("บันทึกข้อมูลเรียบร้อย");
-                    setIsRegistered(true); // Update state to show registered view if desired, or stay editable
-                    setLoading(false);
-                    // Stay on page, do not redirect
-                } catch (err) {
-                    alert("บันทึกไม่สำเร็จ: " + err);
-                    setLoading(false);
+                    const res = await callGAS('loginUser', { criteria });
+                    if (res.found) {
+                        let userData = res.data;
+                        if (lineProfile) {
+                            userData = { ...userData, pictureProfile: lineProfile.pictureUrl };
+                        }
+                        setUser(userData);
+                        setPage('form'); 
+                    } else if (lineProfile) {
+                        setUser({ 
+                            userId: lineProfile.userId, DisplayName: lineProfile.displayName, pictureProfile: lineProfile.pictureUrl,
+                            Title: 'นาย', Gender: 'ชาย', Right: 'SW Staff',
+                            loginname: '', HN: '', cid: '', Name: '', Age: '', dob: '', nickname: '', phone: '', email: ''
+                        });
+                        setPage('form');
+                    } else {
+                        alert('ไม่พบข้อมูลในระบบ หรือข้อมูลยืนยันตัวตนไม่ถูกต้อง');
+                        setPage('login');
+                    }
+                } catch (e) {
+                    alert('เชื่อมต่อไม่ได้ กรุณาลองใหม่');
+                    setPage('login');
                 }
             };
 
-            const closeWindow = () => {
-                if (window.liff) {
-                    window.liff.closeWindow();
-                } else {
-                    window.close();
+            const handleUpdateUser = async (formData) => {
+                setPage('loading');
+                try {
+                    const res = await callGAS('saveRegistration', { payload: formData, isEdit: true });
+                    if (res.success) {
+                        setUser(formData);
+                        setPage('mainMenu');
+                    } else {
+                        alert('บันทึกไม่สำเร็จ: ' + res.error);
+                        setPage('form');
+                    }
+                } catch (e) {
+                    alert('Network Error');
+                    setPage('form');
                 }
             };
 
-            if (loading) return <Preloader />;
+            if (page === 'loading') return <Loading text="Loading..." />;
+            if (page === 'login') return <LoginPage onLogin={c => handleLoginProcess(c)} onLiff={() => liff.login()} />;
+            if (page === 'form') return <DataForm user={user} codebook={codebook} onSubmit={handleUpdateUser} onSkip={() => setPage('mainMenu')} />;
+            if (page === 'mainMenu') return <MainMenu user={user} onSelect={setPage} />;
+            if (page === 'healthBook') return <HealthBook user={user} codebook={codebook} onBack={() => setPage('mainMenu')} />;
+            
+            return null;
+        };
+
+        // --- 1. Login Page ---
+        const LoginPage = ({ onLogin, onLiff }) => {
+            const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
+            const attemptLogin = () => {
+                let count = 0;
+                if(c.loginname.trim()) count++;
+                if(c.HN.trim()) count++;
+                if(c.cid.trim()) count++;
+                if (count < 2) return alert("กรุณากรอกข้อมูลยืนยันตัวตนอย่างน้อย 2 ช่อง");
+                onLogin(c);
+            };
 
             return (
-                <div className="max-w-md mx-auto min-h-screen relative pb-10 p-6">
-                     <div className="text-center mb-8 pt-4">
-                        <div className="relative w-28 h-28 mx-auto mb-4 group">
-                            <div className="absolute inset-0 bg-indigo-500 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                            <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-indigo-500/30 shadow-2xl bg-[#1e293b]">
-                                {profile?.pictureUrl ? 
-                                    <img src={profile.pictureUrl} className="w-full h-full object-cover"/> : 
-                                    <div className="w-full h-full flex items-center justify-center text-slate-500">IMG</div>
-                                }
-                            </div>
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in relative overflow-hidden">
+                    <div className="w-full max-w-sm text-center z-10">
+                        <div className="mb-6 relative inline-block">
+                            <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
+                            <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-1">{isRegistered ? 'ข้อมูลสมาชิก' : 'ลงทะเบียนสมาชิกใหม่'}</h1>
-                        <p className="text-slate-400 text-sm">SW-1 Smart Hospital</p>
+                        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">IC SW-1 <span style={{color:'gray'}} className="font-normal text-xl">(สวีวรรณ)</span></h1>
+                        <h2 className="text-lg text-indigo-300 font-medium mb-2 tracking-wide">Digital Health Book</h2>
+                        <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">สมุดบันทึกสุขภาพบุคลากร<br/>งานป้องกันและควบคุมการติดเชื้อในโรงพยาบาลสวี</p>
+
+                        <div className="glass-panel p-6 rounded-2xl space-y-4 text-left border-t border-white/10">
+                            <label className="text-xs text-indigo-200 block text-center font-medium bg-indigo-500/10 py-2 rounded border border-indigo-500/20">กรุณากรอกข้อมูลยืนยันตัวตนอย่างน้อย 2 ช่องด้านล่าง</label>
+                            <div className="space-y-2">
+                                <input className="glass-input text-center" placeholder="HosXP Login Name" value={c.loginname} onChange={e=>setC({...c, loginname:e.target.value})} />
+                                <input className="glass-input text-center" placeholder="รหัส HN" value={c.HN} onChange={e=>setC({...c, HN:e.target.value})} />
+                                <input className="glass-input text-center" placeholder="เลขบัตรประชาชน (CID)" maxLength="13" value={c.cid} onChange={e=>setC({...c, cid:e.target.value})} />
+                            </div>
+                            <button onClick={attemptLogin} className="btn-primary mt-2 shadow-lg shadow-indigo-500/30">เข้าสู่ระบบ</button>
+                        </div>
+
+                        <div className="mt-8 pt-6 border-t border-slate-700/50">
+                            <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20">
+                                เข้าสู่ระบบด้วย LINE
+                            </button>
+                        </div>
                     </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="glass-panel p-6 rounded-2xl space-y-4">
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="col-span-1">
-                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">คำนำหน้า</label>
-                                    <select className="glass-input text-black" value={formData.Title} onChange={e => setFormData({...formData, Title: e.target.value})}>
-                                        <option>นาย</option>
-                                        <option>นาง</option>
-                                        <option>นางสาว</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ชื่อ-สกุล</label>
-                                    <input required type="text" className="glass-input" value={formData.Name} onChange={e => setFormData({...formData, Name: e.target.value})} placeholder="สมชาย ใจดี" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">เพศ</label>
-                                    <select className="glass-input text-black" value={formData.Gender} onChange={e => setFormData({...formData, Gender: e.target.value})}>
-                                        <option>ชาย</option>
-                                        <option>หญิง</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">อายุ</label>
-                                    <input required type="number" className="glass-input" value={formData.Age} onChange={e => setFormData({...formData, Age: e.target.value})} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">หน่วยงาน (Dept)</label>
-                                <select required className="glass-input text-black" value={formData.Dept} onChange={e => setFormData({...formData, Dept: e.target.value})}>
-                                    <option value="" disabled>-- เลือกหน่วยงาน --</option>
-                                    {DEPT_OPTIONS.map((dept, i) => <option key={i} value={dept}>{dept}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-indigo-300 uppercase mb-1 block">ตำแหน่ง (Job)</label>
-                                <select required className="glass-input text-black" value={formData.Job} onChange={e => setFormData({...formData, Job: e.target.value})}>
-                                    <option value="" disabled>-- เลือกตำแหน่ง --</option>
-                                    {JOB_OPTIONS.map((job, i) => <option key={i} value={job}>{job}</option>)}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-2">
-                                    หมายเลข HN <span className="text-[10px] font-normal text-red-400 bg-red-900/20 px-1.5 py-0.5 rounded border border-red-500/30">แก้ไขได้</span>
-                                </label>
-                                <input required type="text" className="glass-input text-center font-bold text-xl tracking-widest text-emerald-400 border-emerald-500/30 bg-emerald-900/10 focus:border-emerald-500" value={formData.HN} onChange={e => setFormData({...formData, HN: e.target.value})} />
-                            </div>
-                        </div>
-
-                        <div className="pt-4 space-y-3">
-                            <button type="submit" className="btn-primary shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-                                {isRegistered ? 'บันทึกการแก้ไข' : 'ลงทะเบียนเข้าใช้งาน'}
-                            </button>
-                            
-                            <button type="button" onClick={closeWindow} className="btn-secondary text-slate-400 border-slate-700 hover:bg-slate-800">
-                                ปิดหน้าต่าง
-                            </button>
-                        </div>
-                    </form>
                 </div>
             );
         };
 
+        // --- 2. Update Profile (Robust Data Mapping) ---
+        const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
+            const [data, setData] = useState({});
+            
+            useEffect(() => { 
+                if(user) {
+                    const u = user; 
+                    // Robust mapping: try multiple casing variants for each field
+                    const getVal = (keys) => {
+                        for(const k of keys) if(u[k] !== undefined) return u[k];
+                        return '';
+                    };
+                    const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
+
+                    const mapped = {
+                        ...u,
+                        loginname: getVal(['loginname', 'LoginName', 'Login']),
+                        HN: getVal(['HN', 'hn']),
+                        cid: getVal(['cid', 'CID', 'id_card']),
+                        Title: getVal(['Title', 'title']),
+                        Name: getVal(['Name', 'name']),
+                        nickname: getVal(['nickname', 'NickName', 'Nick']),
+                        Gender: getVal(['Gender', 'gender', 'sex']),
+                        dob: getVal(['dob', 'birthdate', 'birth_date']),
+                        Age: getVal(['Age', 'age']),
+                        Dept: getVal(['Dept', 'dept', 'department']),
+                        Job: getVal(['Job', 'job', 'position']),
+                        Right: getVal(['Right', 'right']) || 'SW Staff',
+                        phone: cleanPhone(getVal(['phone', 'Phone', 'Tel', 'tel'])),
+                        email: getVal(['email', 'Email'])
+                    };
+                    setData(mapped); 
+                }
+            }, [user]);
+
+            const h = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleDob = (v) => {
+                h('dob', v);
+                if(v) {
+                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
+                    h('Age', age > 0 ? age : 0);
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon name="user-cog" className="text-indigo-400" /> อัปเดตประวัติส่วนตัว</h2>
+                        <button onClick={onSkip} className="text-xs text-slate-400 border border-slate-600 px-3 py-1.5 rounded-full hover:bg-slate-800 transition-colors">ข้ามไปก่อน &rarr;</button>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow relative">
+                        <div className="flex justify-center mb-6">
+                            <div className="relative">
+                                <img src={data.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-24 h-24 rounded-full border-4 border-indigo-500/30 shadow-2xl object-cover" />
+                                <div className="absolute bottom-0 right-0 bg-slate-800 p-1.5 rounded-full border border-slate-600"><Icon name="camera" className="text-slate-300" size={16} /></div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/20 space-y-3">
+                            <h3 className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1"><Icon name="shield" size={12} /> ข้อมูลยืนยันตัวตน</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Field label="Login Name" val={data.loginname} onChange={v=>h('loginname',v)} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Field label="HN" val={data.HN} onChange={v=>h('HN',v)} />
+                                    <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
+                                <div className="col-span-8"><Field label="ชื่อ-สกุล" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="ชื่อเล่น" val={data.nickname} onChange={v=>h('nickname',v)} />
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><select className="glass-input" value={data.Gender} onChange={e=>h('Gender',e.target.value)}><option>ชาย</option><option>หญิง</option></select></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
+                                <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">แผนก</label><Select val={data.Dept} options={codebook['department']} onChange={v=>h('Dept',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน</label><select className="glass-input" value={data.Right} onChange={e=>h('Right',e.target.value)}><option>SW Staff</option><option>ICN</option><option>ICWN</option></select></div>
+                                <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
+                            </div>
+                            <Field label="อีเมล" val={data.email} onChange={v=>h('email',v)} />
+                        </div>
+                    </div>
+                    <button onClick={() => onSubmit(data)} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
+                </div>
+            );
+        };
+
+        // --- 3. Main Menu (Updated Icons) ---
+        const MainMenu = ({ user, onSelect }) => (
+            <div className="p-5 fade-in min-h-screen max-w-lg mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-3.5">
+                        <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-12 h-12 rounded-full border-2 border-slate-500 shadow-md object-cover" />
+                        <div><h3 className="font-bold text-white text-base">{user.Name || 'User'}</h3><p className="text-xs text-slate-400">{user.Dept || '-'}</p></div>
+                    </div>
+                    <button onClick={() => onSelect('form')} className="w-10 h-10 flex items-center justify-center bg-slate-800/80 rounded-full hover:bg-slate-700 border border-slate-700 transition-colors"><Icon name="settings" size={20} className="text-slate-300" /></button>
+                </div>
+                
+                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 mb-8 border border-indigo-500/20 text-center relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-[50px] rounded-full"></div>
+                    <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
+                    <p className="text-xs text-indigo-300 relative z-10">ระบบสารสนเทศสุขภาพบุคลากร รพ.สวี</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <MenuBtn icon="activity" title="ผลตรวจสุขภาพ" color="text-blue-400" bg="bg-blue-500/10" onClick={() => onSelect('healthBook')} />
+                    <MenuBtn icon="syringe" title="จองวัคซีน" color="text-green-400" bg="bg-green-500/10" onClick={() => alert('Coming Soon')} />
+                    <MenuBtn icon="thermometer" title="การลาป่วย" color="text-red-400" bg="bg-red-500/10" onClick={() => alert('Coming Soon')} />
+                    <MenuBtn icon="bandage" title="อุบัติเหตุเข็มตำ" color="text-red-500" bg="bg-red-500/10" onClick={() => alert('Coming Soon')} />
+                    <MenuBtn icon="biohazard" title="สัมผัสเชื้อ" color="text-orange-400" bg="bg-orange-500/10" onClick={() => alert('Coming Soon')} />
+                    <MenuBtn icon="graduation-cap" title="อบรม IC" color="text-purple-400" bg="bg-purple-500/10" onClick={() => alert('Coming Soon')} />
+                </div>
+            </div>
+        );
+
+        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
+            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
+                <div className={`p-4 rounded-full ${bg} shadow-inner`}>
+                    <Icon name={icon} size={40} className={color} />
+                </div>
+                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
+            </button>
+        );
+
+        const HealthBook = ({ user, codebook, onBack }) => {
+            const [years, setYears] = useState([]);
+            const [selYear, setSelYear] = useState(new Date().getFullYear());
+            const [data, setData] = useState({});
+            const [loading, setLoading] = useState(false);
+            const [vaccine, setVaccine] = useState(null);
+            const [modal, setModal] = useState(null);
+            const [isNewYear, setIsNewYear] = useState(false);
+
+            useEffect(() => {
+                const load = async () => {
+                    try {
+                        const y = await callGAS('getAvailableYears', { hn: user.HN });
+                        const all = [...new Set([new Date().getFullYear(), ...(Array.isArray(y)?y:[])])].sort((a,b)=>b-a);
+                        setYears(all); setSelYear(all[0]);
+                    } catch { setYears([new Date().getFullYear()]); }
+                };
+                load();
+            }, []);
+
+            useEffect(() => {
+                const loadData = async () => {
+                    setLoading(true);
+                    const def = { 
+                        hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, 
+                        visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', 
+                        pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', 
+                        bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', 
+                        has_chronic:'', family_history_flag:'', cxr_flag:'', smoking:'', alcohol:'' 
+                    };
+                    try {
+                        const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
+                        if (h) {
+                            // If timestamp/visit_date exists from DB, format it YYYY-MM-DD
+                            if(h.timestamp || h.visit_date) {
+                                let d = new Date(h.visit_date || h.timestamp);
+                                if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
+                            }
+                            setData(h);
+                            setIsNewYear(false);
+                        } else {
+                            setData(def);
+                            setIsNewYear(true);
+                        }
+                        
+                        const v = await callGAS('getVaccineStatus', { hn: user.HN, year: selYear });
+                        setVaccine(v);
+                    } catch { setData(def); setIsNewYear(true); }
+                    setLoading(false);
+                };
+                loadData();
+            }, [selYear]);
+
+            const bmi = useMemo(() => (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '', [data]);
+            const cvRisk = useMemo(() => {
+                let s = (data.age*0.1) + (data.bp_systolic*0.01) + (data.chol*0.005) + (data.smoking==='2'?1:0) + (data.sex==='ชาย'?1:0);
+                return s > 10 ? 10 : s.toFixed(1);
+            }, [data]);
+            
+            const getFlags = (d) => {
+                return {
+                    bmi: getFlag('bmi', bmi),
+                    bp: getFlag('bp', d.bp_systolic, d.bp_diastolic),
+                    waist: getFlag('waist', d.waist_cm, d.sex),
+                    pulse: getFlag('pulse', d.pulse),
+                    fbs: getFlag('fbs', d.fbs),
+                    chol: getFlag('chol', d.chol),
+                    trig: getFlag('trig', d.trig),
+                    hdl: getFlag('hdl', d.hdl, d.sex),
+                    ldl: getFlag('ldl', d.ldl),
+                    bun: getFlag('bun', d.bun),
+                    cr: getFlag('cr', d.cr),
+                    uric: getFlag('uric', d.uric),
+                    sgot: getFlag('liver', d.sgot),
+                    sgpt: getFlag('liver', d.sgpt),
+                    alk: getFlag('liver', d.alk_phos), 
+                    hct: getFlag('hct', d.hct, d.sex),
+                    hgb: getFlag('hgb', d.hgb, d.sex),
+                    rbc: getFlag('urine', d.rbc_ua),
+                    wbc: getFlag('urine', d.wbc_ua)
+                };
+            };
+            const flags = getFlags(data);
+
+            const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleSave = async () => {
+                setLoading(true);
+                try {
+                    await callGAS('saveHealthData', { payload: { ...data, bmi, cvrisk_score: cvRisk } });
+                    alert('บันทึกสำเร็จ');
+                    // Refresh data after save (optional, to confirm it saved)
+                    setIsNewYear(false);
+                } catch { alert('บันทึกผิดพลาด'); }
+                setLoading(false);
+            };
+
+            const openChart = (field, title) => setModal({ open: true, field, title });
+            
+            // Fixed Vaccine Logic
+            const isVaccineValid = useMemo(() => {
+                if (!vaccine?.found || !vaccine?.date) return false;
+                const vacDate = String(vaccine.date);
+                return vacDate.includes(String(selYear));
+            }, [vaccine, selYear]);
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative">
+                    <div className="bg-[#0f172a]/80 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onBack}><Icon name="arrow-left" className="text-slate-300 hover:text-white transition" /></button>
+                            <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-9 h-9 rounded-full border border-indigo-500/50" />
+                            <div><h2 className="font-bold text-white text-sm">{user.Name}</h2><p className="text-[10px] text-slate-400">สมุดสุขภาพประจำปี</p></div>
+                        </div>
+                        <button onClick={handleSave} className="text-xs bg-indigo-600 px-4 py-1.5 rounded-full text-white font-bold shadow-lg hover:bg-indigo-500 transition">บันทึก</button>
+                    </div>
+
+                    <div className="bg-[#0f172a] px-4 pt-3 pb-0 border-b border-slate-800 sticky top-[68px] z-20 overflow-x-auto no-scrollbar flex shadow-md">
+                        {years.map(y => <div key={y} onClick={() => setSelYear(y)} className={`tab-btn cursor-pointer ${selYear===y ? 'active' : ''}`}>{y}</div>)}
+                    </div>
+
+                    <div className="p-4 space-y-5">
+                        {loading && <div className="text-center text-xs text-slate-500 animate-pulse">กำลังดึงข้อมูลสุขภาพ...</div>}
+
+                        {/* Missing Data Warning */}
+                        {!loading && isNewYear && selYear === new Date().getFullYear() && (
+                            <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r shadow-lg animate-bounce-slow">
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0"><Icon name="alert-circle" className="h-5 w-5 text-amber-400" /></div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-amber-200">ยังไม่มีข้อมูลปีปัจจุบัน</p>
+                                        <p className="text-xs text-amber-400/80 mt-1">กรุณาระบุวันที่รับการตรวจสุขภาพประจำปี และกรอกข้อมูล card ที่เหลือ ก่อนกดส่ง</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <Card title="1. สัญญาณชีพ & ร่างกาย">
+                            <div className="mb-3">
+                                <label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label>
+                                <input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก')} />
+                                <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
+                                <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ')} />
+                            </div>
+                            <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50">
+                                <span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>
+                                {flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว')} />
+                                <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร')} />
+                            </div>
+                            <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
+                                <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
+                                <div className="flex gap-2 items-center">
+                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
+                                    <span className="text-slate-500">/</span>
+                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
+                                    <button onClick={()=>openChart('bp_systolic','ความดันโลหิต')} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
+                                </div>
+                                {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
+                                <div className="clear-both"></div>
+                            </div>
+                        </Card>
+
+                        <Card title="2. ผลเลือด & เคมีคลินิก">
+                            <div className="space-y-4">
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct')} />
+                                        <Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb')} />
+                                    </div>
+                                </div>
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล')} />
+                                        <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol')} />
+                                        <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride')} />
+                                        <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL')} />
+                                        <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL')} /></div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN')} />
+                                        <Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine')} />
+                                        <Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT')} />
+                                        <Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT')} />
+                                        <Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} />
+                                        <Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid')} />
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card title="3. การตรวจปัสสาวะ (Urine)">
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} />
+                                <Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} />
+                            </div>
+                            <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5">
+                                <label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label>
+                                <div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} /></div>
+                                {data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} />}
+                            </div>
+                        </Card>
+
+                        <Card title="4. ประวัติ & การคัดกรอง">
+                            <FlagInput label="โรคประจำตัว" name="has_chronic" val={data.has_chronic} detail={data.chronic_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
+                            <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
+                            <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
+                        </Card>
+
+                        <Card title="5. พฤติกรรมสุขภาพ">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']} onChange={v=>handleChange('smoking',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={codebook['alcohol']} onChange={v=>handleChange('alcohol',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={[{code:1,label:'สวม'},{code:2,label:'ไม่สวม'}]} onChange={v=>handleChange('helmet',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={[{code:1,label:'คาด'},{code:2,label:'ไม่คาด'}]} onChange={v=>handleChange('belt',v)} /></div>
+                            </div>
+                        </Card>
+
+                        <Card title="6. วัคซีน & ภูมิคุ้มกัน">
+                            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-slate-300">ไข้หวัดใหญ่ {selYear}</span>
+                                    {isVaccineValid ? <span className="badge bg-green">ได้รับแล้ว</span> : <span className="badge bg-red">ยังไม่ได้รับ</span>}
+                                </div>
+                                <div className="flex justify-between items-center"><span className="text-xs text-slate-300">HBs Ag</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} /></div>
+                            </div>
+                        </Card>
+
+                        <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
+                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
+                                <textarea className="glass-input h-24 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)}></textarea>
+                                <Select label="แพทย์ผู้ตรวจ" val={data.doctor_name} options={codebook['doctor_name']} onChange={v=>handleChange('doctor_name',v)} />
+                            </div>
+                        </Card>
+                    </div>
+
+                    {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} year={selYear} onClose={()=>setModal(null)} />}
+                </div>
+            );
+        };
+
+        // --- Helper UI Components ---
+        const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
+            <div>
+                <div className="flex justify-between items-end mb-1">
+                    <label className="text-[10px] text-slate-400">{label}</label>
+                    {onChart && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
+                </div>
+                <div className="relative">
+                    <input type="number" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} readOnly={readonly} />
+                    {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
+                </div>
+            </div>
+        );
+
+        const Card = ({ title, children }) => (
+            <div className="glass-panel p-5 rounded-2xl">
+                <h3 className="text-indigo-300 font-bold text-[11px] uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">{title}</h3>
+                {children}
+            </div>
+        );
+
+        const Select = ({ label, val, options, onChange }) => (
+            <div>
+                {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
+                <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)}>
+                    <option value="">- เลือก -</option>
+                    {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
+                </select>
+            </div>
+        );
+
+        const RadioBtn = ({ name, val, setVal, opts }) => (
+            <div className="flex bg-slate-800 rounded p-0.5 w-full">
+                {opts.map(o => (
+                    <button key={o.v} onClick={()=>setVal(o.v)} 
+                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                        {o.l}
+                    </button>
+                ))}
+            </div>
+        );
+
+        const FlagInput = ({ label, name, val, detail, onChange, opts }) => (
+            <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
+                    <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} /></div>
+                </div>
+                {(val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2)) &&
+                    <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail} onChange={e=>onChange(name.replace('flag','detail').replace('has_','').replace('_flag','_detail'), e.target.value)} />
+                }
+            </div>
+        );
+
+        // --- Chart Modal & Logic (Frequency Line) ---
+        const ChartModal = ({ hn, field, title, year, onClose }) => {
+            const canvasRef = useRef(null);
+            const [mode, setMode] = useState('self');
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const draw = async () => {
+                    setLoading(true);
+                    try {
+                        let config = {};
+                        if (mode === 'self') {
+                            const res = await callGAS('getSelfTrend', { hn, field });
+                            config = { 
+                                type: 'line', 
+                                data: { labels: res.map(d=>d.year), datasets: [{ label: 'แนวโน้ม', data: res.map(d=>d.value), borderColor: '#6366f1', tension: 0.4, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)' }] } 
+                            };
+                        } else {
+                            const res = await callGAS('getDistribution', { field, year, hn });
+                            const vals = res.values || [];
+                            const userVal = res.userVal || 0;
+                            
+                            // Frequency Line Chart
+                            const bins = 10;
+                            const min = Math.min(...vals, userVal);
+                            const max = Math.max(...vals, userVal);
+                            const step = (max - min) / bins || 1;
+                            
+                            const labels = [];
+                            const dataCounts = new Array(bins).fill(0);
+                            for(let i=0; i<bins; i++) {
+                                const start = min + (i*step);
+                                labels.push(start.toFixed(1));
+                            }
+                            vals.forEach(v => {
+                                let idx = Math.floor((v - min) / step);
+                                if (idx >= bins) idx = bins - 1;
+                                dataCounts[idx]++;
+                            });
+
+                            // Identify user x index approximation
+                            const userIdx = (userVal - min) / step;
+
+                            config = { 
+                                type: 'line', 
+                                data: { 
+                                    labels: labels, 
+                                    datasets: [
+                                        { label: 'การกระจายตัวของกลุ่ม', data: dataCounts, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59,130,246,0.1)', pointRadius: 0 },
+                                    ] 
+                                },
+                                options: { 
+                                    scales: { x: { grid:{color:'#334155'}, ticks:{color:'#94a3b8'} }, y: { display:false } },
+                                    plugins: { 
+                                        annotation: { 
+                                            annotations: { 
+                                                point1: { 
+                                                    type: 'point', 
+                                                    xValue: userIdx, 
+                                                    yValue: 0, // Plot on x-axis
+                                                    backgroundColor: '#f43f5e', 
+                                                    radius: 8,
+                                                    borderWidth: 2,
+                                                    borderColor: 'white'
+                                                } 
+                                            } 
+                                        } 
+                                    }
+                                }
+                            };
+                        }
+                        
+                        if (canvasRef.current) {
+                            const chart = Chart.getChart(canvasRef.current);
+                            if (chart) chart.destroy();
+                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid:{color:'#1e293b'} }, x: { grid:{color:'#1e293b'} } } } });
+                        }
+                    } catch(e) {}
+                    setLoading(false);
+                };
+                draw();
+            }, [mode]);
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in" onClick={onClose}>
+                    <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-5 border border-slate-700 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white"><Icon name="x" size={20} /></button>
+                        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
+                        <div className="flex bg-slate-900 rounded p-1 mb-4">
+                            <button onClick={()=>setMode('self')} className={`flex-1 text-xs py-2 rounded ${mode==='self'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบตัวเอง</button>
+                            <button onClick={()=>setMode('others')} className={`flex-1 text-xs py-2 rounded ${mode==='others'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบกลุ่ม</button>
+                        </div>
+                        <div className="h-56 relative">{loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">สร้างกราฟ...</div>}<canvas ref={canvasRef}></canvas></div>
+                        {mode === 'others' && <p className="text-[10px] text-slate-500 text-center mt-3">* จุดสีแดงคือตำแหน่งของคุณ</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const getFlag = (t, v, s) => {
+            const n = parseFloat(v); if(!n) return null;
+            const dot = (c) => c === 'bg-green' ? 'bg-emerald-500' : c === 'bg-yellow' ? 'bg-amber-500' : 'bg-rose-500';
+            let res = null;
+            if(t=='bmi') res = n<18.5?{bg:'bg-yellow',label:'ผอม'}:n<23?{bg:'bg-green',label:'ปกติ'}:n<25?{bg:'bg-yellow',label:'ท้วม'}:{bg:'bg-red',label:'อ้วน'};
+            if(t=='bp') res = n<120?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='waist') { let lim=s=='ชาย'?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
+            if(t=='pulse') res = (n>=60 && n<=100)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t=='fbs') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<126?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t=='chol') res = n<200?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='trig') res = n<150?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='hdl') res = n>=40?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ต่ำ'};
+            if(t=='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<130?{bg:'bg-yellow',label:'สูง'}:{bg:'bg-red',label:'สูงมาก'};
+            if(t=='bun') res = n<=20?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='cr') res = n<=1.2?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='uric') res = n<=7?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='liver') res = n<=40?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='hct') res = (n>=36 && n<=50)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t=='hgb') res = (n>=12 && n<=17)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t=='urine') res = n<=5?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            
+            if(res) return { ...res, dot: dot(res.bg) };
+            return null;
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+        setTimeout(() => lucide.createIcons(), 500);
     </script>
 </body>
 </html>
