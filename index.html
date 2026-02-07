@@ -574,7 +574,8 @@
                             date: res.date,
                             status: 'Pending'
                         });
-                        alert(`จองสำเร็จ! ลำดับที่ ${res.no}`);
+                        // Don't alert, just update UI
+                        // alert(`จองสำเร็จ! ลำดับที่ ${res.no}`);
                         fetchDashboard(); // Background fetch to ensure consistency
                     } else alert(res.error);
                 } catch(e) { alert('Network Error'); }
@@ -584,11 +585,12 @@
             const handleConfirm = async () => {
                  setLoading(true);
                  try {
-                     const res = await callGAS('confirmVaccineReceived', { hn: user.HN, year }); 
+                     const res = await callGAS('confirmVaccineReceived', { payload: { hn: user.HN, year } }); // FIX: Wrap in payload
                      if(res.success) {
                          // Optimistic Update
                          setBooking(prev => ({ ...prev, status: 'Received' }));
-                         alert('ยืนยันการรับวัคซีนเรียบร้อย');
+                         // Alert optional, UI update is immediate
+                         // alert('ยืนยันการรับวัคซีนเรียบร้อย');
                      } else alert('Error updating status');
                  } catch(e) {}
                  setLoading(false);
@@ -637,9 +639,9 @@
                                                 <h3 className="text-white font-bold text-lg">จองสำเร็จ</h3>
                                                 <p className="text-slate-400 text-xs">คิวที่</p>
                                                 
-                                                {/* Updated Booking Number Display */}
-                                                <div className="border-4 border-white/20 rounded-xl p-4 my-4 bg-white/5 inline-block">
-                                                    <div className="text-6xl font-bold text-white tracking-widest drop-shadow-lg">{booking.no}</div>
+                                                {/* BIG BOOKING NUMBER */}
+                                                <div className="border-4 border-white/30 rounded-2xl p-6 my-4 bg-white/10 backdrop-blur-md inline-block shadow-lg">
+                                                    <div className="text-7xl font-black text-white tracking-widest drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] font-mono">{booking.no}</div>
                                                 </div>
                                             </div>
                                             <div className="bg-slate-800/50 rounded-lg p-3 text-left space-y-2">
@@ -652,7 +654,7 @@
                                                     <p className="text-[10px] text-red-300 mb-3 bg-red-900/20 p-2 rounded border border-red-500/20">
                                                         โปรดมารับวัคซีนภายใน 7 วันหลังจากการจอง <br/>(ภายใน {new Date(new Date(booking.date).getTime() + 7*24*60*60*1000).toLocaleDateString('th-TH')}) <br/>หากไม่มาจะถือว่าสละสิทธิ์
                                                     </p>
-                                                    <button onClick={handleConfirm} className="btn-primary w-full py-3 bg-green-600 hover:bg-green-500">กดปุ่มนี้เมื่อ "ได้รับวัคซีนแล้ว"</button>
+                                                    <button onClick={handleConfirm} className="btn-primary w-full py-3 bg-green-600 hover:bg-green-500 text-lg shadow-lg transform transition-transform active:scale-95">ยืนยัน "ได้รับวัคซีนแล้ว"</button>
                                                 </div>
                                             )}
                                     </div>
@@ -1014,7 +1016,7 @@
                 };
 
                 try {
-                    const res = await callGAS('saveSickLeave', { payload });
+                    const res = await callGAS('saveSickLeave', { payload }); // FIX: Wrapped in payload
                     if(res.success) {
                         setAdvice(adv);
                         setStep('success');
@@ -1099,6 +1101,20 @@
                                 {advice && advice.length > 0 && (
                                     <div className="glass-panel p-5 rounded-xl border-l-4 border-yellow-500"><h3 className="text-yellow-300 font-bold text-sm mb-3 flex items-center gap-2"><Icon name="info" /> คำแนะนำการหยุดงาน</h3><ul className="list-disc pl-5 space-y-2 text-xs text-slate-200">{advice.map((a,i) => <li key={i}>{a}</li>)}</ul></div>
                                 )}
+                                
+                                {/* New My History Section */}
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-indigo-300 font-bold text-xs uppercase mb-2">ประวัติการลาของคุณ</h3>
+                                    <div className="max-h-40 overflow-y-auto space-y-2">
+                                        {stats.history && stats.history.length > 0 ? stats.history.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center text-xs border-b border-slate-700/50 pb-2">
+                                                <div><span className="text-white block">{h.date}</span><span className="text-slate-500">{h.diagnosis}</span></div>
+                                                <div className="bg-slate-800 px-2 py-1 rounded text-slate-300">{h.days} วัน</div>
+                                            </div>
+                                        )) : <p className="text-xs text-slate-500 text-center">ยังไม่มีประวัติ</p>}
+                                    </div>
+                                </div>
+
                                 <button onClick={() => setStep('form')} className="btn-secondary w-full">กลับหน้าหลัก</button>
                             </div>
                         )}
@@ -1168,7 +1184,7 @@
                 };
 
                 try {
-                    const res = await callGAS('saveExposure', payload);
+                    const res = await callGAS('saveExposure', { payload }); // FIX: Wrapped in payload
                     if(res.success) {
                         setResult({ ...advice, ticketId: res.ticketId });
                         setStep('result');
@@ -1284,7 +1300,7 @@
                     staff_dept: reportType === 'Self' ? user.Dept : formData.staff_dept
                 };
                 try {
-                    const res = await callGAS('saveSharpInjury', payload);
+                    const res = await callGAS('saveSharpInjury', { payload }); // FIX: Wrapped in payload
                     if (res.success) { setTicketId(res.ticketId); setStep('success'); }
                     else alert('บันทึกไม่สำเร็จ: ' + res.error);
                 } catch(e) { alert('การเชื่อมต่อขัดข้อง (Network Error) กรุณาลองใหม่'); }
@@ -1403,11 +1419,17 @@
 
                     // 3. Init LIFF (Optional based on requirements, but good to have)
                     try {
-                        await liff.init({ liffId: LIFF_ID });
-                        if (liff.isLoggedIn()) {
-                            // Logic to auto-login via LINE ID can go here
+                        // Check if running in LINE
+                        if (LIFF_ID) {
+                            await liff.init({ liffId: LIFF_ID });
+                            if (liff.isLoggedIn()) {
+                                const profile = await liff.getProfile();
+                                // We can auto-login here if we want, but better to let user click button
+                            }
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.warn("LIFF Init Error:", e);
+                    }
                 };
                 init();
             }, []);
@@ -1428,12 +1450,39 @@
             };
 
             const handleLiffLogin = async () => {
-                if(!liff.isInClient() && !liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    // Get profile and check against GAS
-                    const profile = await liff.getProfile();
-                    handleLogin({ userId: profile.userId }); // Assumes backend handles userId login
+                if(!LIFF_ID) return alert("System Error: LIFF ID missing");
+                try {
+                    if(!liff.isInClient() && !liff.isLoggedIn()) {
+                        liff.login();
+                    } else {
+                        // Get profile and check against GAS
+                        const profile = await liff.getProfile();
+                        // Special logic: Login with userId, and if successful, check/update picture
+                        setLoading(true);
+                        const res = await callGAS('loginUser', { criteria: { userId: profile.userId } });
+                        
+                        if (res.found) {
+                            let currentUser = res.data;
+                            // Check if picture needs update
+                            if (currentUser.pictureProfile !== profile.pictureUrl) {
+                                // Update picture in background
+                                const newPayload = { ...currentUser, pictureProfile: profile.pictureUrl, userId: profile.userId };
+                                await callGAS('saveRegistration', { payload: newPayload, isEdit: true });
+                                currentUser = newPayload; // Use new data locally
+                            }
+                            setUser(currentUser);
+                            localStorage.setItem('ic_sw_user', JSON.stringify(currentUser));
+                            setPage('form');
+                        } else {
+                            // User not found -> Register flow with pre-filled LIFF data
+                            alert('ไม่พบผู้ใช้งาน กรุณาลงทะเบียนหรือเชื่อมต่อบัญชี');
+                            // Could pre-fill form here but logic is complex, stick to manual login first
+                        }
+                        setLoading(false);
+                    }
+                } catch (e) {
+                    alert("LIFF Login Error: " + e.message);
+                    setLoading(false);
                 }
             };
 
