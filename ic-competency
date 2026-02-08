@@ -179,38 +179,52 @@
                         
                         {/* Section 1: IC Day Summary */}
                         <div className="glass-panel p-5 rounded-2xl border-t-4 border-red-600">
-                            <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2"><Icon name="award" /> ผลการอบรม IC Day 2025</h3>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-red-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2"><Icon name="award" /> ผลการอบรม IC Day 2025</h3>
+                                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><Icon name="calendar" size={12}/> 16-18 ธ.ค. 2568</p>
+                                </div>
+                                {stats?.missions.certUrl ? (
+                                    <span className="text-[10px] bg-green-900/40 text-green-400 px-2 py-1 rounded border border-green-500/30 font-bold flex items-center gap-1"><Icon name="check-circle" size={12}/> ผ่านการอบรม</span>
+                                ) : (
+                                    <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">กำลังดำเนินการ</span>
+                                )}
+                            </div>
                             
-                            {/* Stamps */}
-                            <div className="grid grid-cols-6 gap-2 mb-4">
-                                {[1,2,3,4,5,6].map(m => (
-                                    <div key={m} className={`aspect-square rounded-lg flex items-center justify-center border ${stats?.missions[`m${m}`] ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/10 border-red-900/50 text-red-900/50'}`}>
-                                        <Icon name={stats?.missions[`m${m}`] ? 'check' : 'circle'} size={16} />
-                                    </div>
-                                ))}
+                            {/* Stamps (Dots) */}
+                            <div className="flex items-center gap-3 mb-4 bg-black/20 p-3 rounded-lg border border-white/5">
+                                <span className="text-xs text-slate-300">ฐานกิจกรรม:</span>
+                                <div className="flex gap-2">
+                                    {[1,2,3,4,5,6].map(m => (
+                                        <div key={m} className={`w-3 h-3 rounded-full shadow-sm transition-all duration-300 ${stats?.missions[`m${m}`] ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] scale-110' : 'bg-slate-700'}`} title={`Mission ${m}`}></div>
+                                    ))}
+                                </div>
+                                <span className="text-xs text-slate-500 ml-auto font-mono">{stats?.missions.total || 0}/6</span>
                             </div>
                             
                             {/* Exam Scores */}
                             <div className="space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
                                 <div>
-                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Pre-Test</span><span className="text-white">{stats?.exams.pre || 0} คะแนน</span></div>
-                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-500" style={{width:`${progressPre}%`}}></div></div>
+                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Pre-Test</span><span className="text-white font-mono">{stats?.exams.pre || 0} คะแนน</span></div>
+                                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-500" style={{width:`${progressPre}%`}}></div></div>
                                 </div>
                                 <div>
-                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Post-Test ({stats?.exams.duration} วิ)</span><span className="text-red-400 font-bold">{stats?.exams.post || 0} คะแนน</span></div>
-                                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-red-600" style={{width:`${progressPost}%`}}></div></div>
+                                    <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Post-Test ({stats?.exams.duration} วิ)</span><span className="text-red-400 font-bold font-mono">{stats?.exams.post || 0} คะแนน</span></div>
+                                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-red-600" style={{width:`${progressPost}%`}}></div></div>
                                 </div>
                             </div>
 
                             {/* Certificate */}
-                            {stats?.missions.total >= 6 ? (
-                                <a href={stats.missions.certUrl} target="_blank" className="mt-4 btn-primary bg-gradient-to-r from-yellow-600 to-yellow-800 border border-yellow-500/50 text-yellow-100">
-                                    <Icon name="file-badge" /> ดาวน์โหลดเกียรติบัตร
+                            {stats?.missions.certUrl ? (
+                                <a href={stats.missions.certUrl} target="_blank" className="mt-4 btn-primary bg-gradient-to-r from-yellow-600 to-yellow-800 border border-yellow-500/50 text-yellow-100 no-underline hover:text-white group">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Icon name="file-badge" /> ดาวน์โหลดเกียรติบัตร
+                                    </div>
                                 </a>
                             ) : (
-                                <button disabled className="mt-4 w-full py-3 rounded-lg bg-slate-800 text-slate-500 text-xs text-center cursor-not-allowed">
-                                    สะสมแสตมป์ให้ครบเพื่อรับเกียรติบัตร
-                                </button>
+                                <div className="mt-4 text-center">
+                                    <p className="text-[10px] text-slate-500">* เก็บสะสมแสตมป์ให้ครบ 6 ฐานและทำแบบทดสอบเพื่อรับเกียรติบัตร</p>
+                                </div>
                             )}
                         </div>
 
