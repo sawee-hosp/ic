@@ -38,7 +38,7 @@
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
         .glass-input { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.375rem; transition: all 0.2s; font-size: 0.9rem; height: 38px; }
         .glass-input:focus { outline: none; border-color: #818cf8; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-        .glass-input:read-only { opacity: 0.7; cursor: default; }
+        .glass-input:read-only, .glass-input:disabled { opacity: 0.6; cursor: not-allowed; background: rgba(15, 23, 42, 0.3); }
 
         .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; font-weight: 600; padding: 0.6rem; border-radius: 0.5rem; width: 100%; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .btn-primary:active:not(:disabled) { transform: scale(0.97); }
@@ -120,20 +120,22 @@
             let res = null;
             if(t=='bmi') res = n<18.5?{bg:'bg-yellow',label:'ผอม'}:n<23?{bg:'bg-green',label:'ปกติ'}:n<25?{bg:'bg-yellow',label:'ท้วม'}:{bg:'bg-red',label:'อ้วน'};
             if(t=='bp') res = n<120?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='waist') { let lim=s=='ชาย'?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
+            if(t=='waist') { let lim=(s=='ชาย'||s=='1')?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
             if(t=='pulse') res = (n>=60 && n<=100)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
             if(t=='fbs') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<126?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
             if(t=='chol') res = n<200?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
             if(t=='trig') res = n<150?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='hdl') res = n>=40?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ต่ำ'};
-            if(t=='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<130?{bg:'bg-yellow',label:'สูง'}:{bg:'bg-red',label:'สูงมาก'};
+            if(t=='hdl') res = n>=((s=='ชาย'||s=='1')?40:50)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ต่ำ'};
+            if(t=='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<160?{bg:'bg-yellow',label:'สูง'}:{bg:'bg-red',label:'สูงมาก'};
             if(t=='bun') res = n<=20?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='cr') res = n<=1.2?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='uric') res = n<=7?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='liver') res = n<=40?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='hct') res = (n>=36 && n<=50)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
-            if(t=='hgb') res = (n>=12 && n<=17)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
-            if(t=='urine') res = n<=5?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t=='cr') res = n<=1.44?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='uric') res = n<=8.2?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='sgot') res = n<35?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='sgpt') res = n<45?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='alk') res = n<=147?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='hct') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?38:36) && n<=(isM?50:45))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t=='hgb') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?13.2:11.6) && n<=(isM?16.6:15.0))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t=='urine') { let str = String(v).toLowerCase(); res = (str==='0'||str.includes('not')||str.includes('none')||str==='-')?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
             if(res) return { ...res, dot: dot(res.bg) };
             return null;
         };
@@ -143,10 +145,10 @@
             <div>
                 <div className="flex justify-between items-end mb-1">
                     <label className="text-[10px] text-slate-400">{label}</label>
-                    {onChart && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
+                    {onChart && !readonly && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
                 </div>
                 <div className="relative">
-                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} readOnly={readonly} />
+                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} disabled={readonly} />
                     {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
                 </div>
             </div>
@@ -159,12 +161,12 @@
             </div>
         );
 
-        const Select = ({ label, val, options, onChange }) => {
+        const Select = ({ label, val, options, onChange, disabled }) => {
             const found = options?.find(o => o.code == val);
             return (
                 <div>
                     {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
-                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)}>
+                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)} disabled={disabled}>
                         <option value="">- เลือก -</option>
                         {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
                         {val && !found && <option value={val}>{val}</option>}
@@ -173,28 +175,32 @@
             );
         };
 
-        const RadioBtn = ({ name, val, setVal, opts }) => (
+        const RadioBtn = ({ name, val, setVal, opts, disabled }) => (
             <div className="flex bg-slate-800 rounded p-0.5 w-full">
                 {opts.map(o => (
-                    <button key={o.v} onClick={()=>setVal(o.v)} 
-                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                    <button key={o.v} onClick={()=> !disabled && setVal(o.v)} 
+                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         {o.l}
                     </button>
                 ))}
             </div>
         );
 
-        const FlagInput = ({ label, name, val, detail, onChange, opts }) => (
-            <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
-                <div className="flex justify-between items-center mb-2">
-                    <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
-                    <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} /></div>
+        const FlagInput = ({ label, name, val, detail, onChange, opts, disabled }) => {
+            const hasDetail = (val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2) || (name.includes('cbc') && val==2) || (name.includes('chemistry') && val==2));
+            const detailName = name.replace('flag','detail').replace('has_','').replace('_flag','_detail');
+            return (
+                <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
+                        <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} disabled={disabled} /></div>
+                    </div>
+                    {hasDetail && name !== 'has_chronic' && (
+                        <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail||''} onChange={e=>onChange(detailName, e.target.value)} disabled={disabled} />
+                    )}
                 </div>
-                {(val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2)) &&
-                    <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail} onChange={e=>onChange(name.replace('flag','detail').replace('has_','').replace('_flag','_detail'), e.target.value)} />
-                }
-            </div>
-        );
+            );
+        };
 
         const MenuBtn = ({ icon, title, color, bg, onClick }) => (
             <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
@@ -425,10 +431,8 @@
                 }
             };
 
-            // Auto-select Right group based on Job map
             useEffect(() => {
                 if (data.Job && codebook?.job_map && codebook.job_map[data.Job]) {
-                     // Auto select mapped group
                      h('Right', codebook.job_map[data.Job]);
                 }
             }, [data.Job, codebook]);
@@ -658,7 +662,6 @@
                                                 <h3 className="text-white font-bold text-lg">จองสำเร็จ</h3>
                                                 <p className="text-slate-400 text-xs">คิวที่</p>
                                                 
-                                                {/* BIG BOOKING NUMBER */}
                                                 <div className="border-4 border-white/30 rounded-2xl p-6 my-4 bg-white/10 backdrop-blur-md inline-block shadow-lg">
                                                     <div className="text-7xl font-black text-white tracking-widest drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] font-mono">{booking.no}</div>
                                                 </div>
@@ -683,7 +686,6 @@
                                                 <p className="text-slate-400 text-sm">ท่านยังไม่ได้จองวัคซีนปี {year}</p>
                                             </div>
                                             
-                                            {/* Year Lock Check */}
                                             {isPastYear ? (
                                                 <button disabled className="btn-secondary w-full py-4 text-lg opacity-50 cursor-not-allowed bg-slate-800 border-slate-700 text-slate-500">ปิดรับลงทะเบียน (สิ้นสุดปี)</button>
                                             ) : (
@@ -725,14 +727,24 @@
             useEffect(() => {
                 const loadData = async () => {
                     setLoading(true);
-                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment:'' };
+                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment: '1', chronic_disease_type: '' };
                     try {
                         const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
-                        if (h) {
+                        if (h && (h.timestamp || h.visit_date)) {
                             if(h.timestamp || h.visit_date) {
                                 let d = new Date(h.visit_date || h.timestamp);
                                 if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
                             }
+                            // Map chronic_detail to dropdown type if it matches
+                            if (h.has_chronic == 1 && h.chronic_detail) {
+                                const knownDiseases = ["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"];
+                                if (knownDiseases.includes(h.chronic_detail)) {
+                                    h.chronic_disease_type = h.chronic_detail;
+                                } else {
+                                    h.chronic_disease_type = "อื่นๆ";
+                                }
+                            }
+                            if(!h.treatment) h.treatment = '1';
                             setData(h);
                             setIsNewYear(false);
                         } else {
@@ -749,11 +761,45 @@
                 loadData();
             }, [selYear]);
 
+            const isCurrentYear = selYear === new Date().getFullYear();
+            const noDataPastYear = !isCurrentYear && isNewYear;
+            const isReadOnly = !isCurrentYear && !isNewYear;
+
             const bmi = useMemo(() => (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '', [data]);
+            
+            // Calculate CV Risk Approximation
             const cvRisk = useMemo(() => {
-                let s = (data.age*0.1) + (data.bp_systolic*0.01) + (data.chol*0.005) + (data.smoking==='2'?1:0) + (data.sex==='ชาย'?1:0);
-                return s > 10 ? 10 : s.toFixed(1);
-            }, [data]);
+                if (!data.age) return 0;
+                
+                let base = 0;
+                const age = parseFloat(data.age);
+                const sbp = parseFloat(data.bp_systolic) || 120;
+                const fbs = parseFloat(data.fbs) || 90;
+                const chol = parseFloat(data.chol);
+                
+                // Age factor
+                if (age > 35) base += (age - 35) * 0.4;
+                // Sex factor (Men > Risk)
+                if (data.sex == '1' || data.sex === 'ชาย') base += 3;
+                // BP factor
+                if (sbp >= 140 && sbp < 160) base += 4;
+                if (sbp >= 160) base += 8;
+                // Smoking
+                if (data.smoking == '2') base += 7;
+                // DM (FBS > 130)
+                if (fbs > 130) base += 8;
+                
+                // Lipid or Obesity factor
+                if (chol) {
+                    if (chol > 200 && chol <= 239) base += 3;
+                    if (chol >= 240) base += 6;
+                } else if (data.waist_cm && data.height_cm) {
+                    const waistRatio = parseFloat(data.waist_cm) / parseFloat(data.height_cm);
+                    if (waistRatio > 0.5) base += 4; 
+                }
+                
+                return Math.max(1, Math.min(base, 50)).toFixed(1); 
+            }, [data.age, data.bp_systolic, data.fbs, data.chol, data.smoking, data.sex, data.waist_cm, data.height_cm]);
             
             const getFlags = (d) => {
                 const f = {
@@ -769,9 +815,9 @@
                     bun: getFlag('bun', d.bun),
                     cr: getFlag('cr', d.cr),
                     uric: getFlag('uric', d.uric),
-                    sgot: getFlag('liver', d.sgot),
-                    sgpt: getFlag('liver', d.sgpt),
-                    alk: getFlag('liver', d.alk_phos), 
+                    sgot: getFlag('sgot', d.sgot),
+                    sgpt: getFlag('sgpt', d.sgpt),
+                    alk: getFlag('alk', d.alk_phos), 
                     hct: getFlag('hct', d.hct, d.sex),
                     hgb: getFlag('hgb', d.hgb, d.sex),
                     rbc: getFlag('urine', d.rbc_ua),
@@ -784,6 +830,7 @@
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
             const handleSave = async () => {
+                if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
 
                 // --- CALCULATION LOGIC BASED ON CODEBOOK ---
@@ -791,28 +838,19 @@
                 const has = (val) => val !== undefined && val !== null && val !== '';
                 const codes = {};
 
-                // age_flag
                 if (has(data.age)) codes.age_flag = v(data.age) < 35 ? 1 : (v(data.age) <= 60 ? 2 : 3);
-
-                // bmi_flag
                 if (has(data.weight_kg) && has(data.height_cm)) {
                     const bmiVal = v(data.weight_kg) / Math.pow(v(data.height_cm)/100, 2);
                     codes.bmi_flag = bmiVal < 18.5 ? 1 : (bmiVal < 23 ? 2 : (bmiVal < 25 ? 3 : (bmiVal < 30 ? 4 : 5)));
                 }
-
-                // waist_cm_flag
                 if (has(data.waist_cm)) {
                     const limit = (data.sex === 'ชาย' || data.sex == 1) ? 90 : 80;
                     codes.waist_cm_flag = v(data.waist_cm) < limit ? 1 : 2;
                 }
-
-                // pulse_flag
                 if (has(data.pulse)) {
                     const p = v(data.pulse);
                     codes.pulse_flag = p < 60 ? 1 : (p <= 100 ? 2 : 3);
                 }
-
-                // bp_flag
                 if (has(data.bp_systolic) || has(data.bp_diastolic)) {
                     const sbp = v(data.bp_systolic) || 0;
                     const dbp = v(data.bp_diastolic) || 0;
@@ -820,85 +858,61 @@
                     else if ((sbp >= 120 && sbp <= 139) || (dbp >= 80 && dbp <= 89)) codes.bp_flag = 2;
                     else codes.bp_flag = 1;
                 }
-
-                // hct_flag
                 if (has(data.hct)) {
                     const h = v(data.hct);
                     const isMale = (data.sex === 'ชาย' || data.sex == 1);
-                    const min = isMale ? 38 : 36;
-                    const max = isMale ? 50 : 45;
-                    codes.hct_flag = h < min ? 1 : (h > max ? 3 : 2);
+                    codes.hct_flag = h < (isMale ? 38 : 36) ? 1 : (h > (isMale ? 50 : 45) ? 3 : 2);
                 }
-
-                // hgb_flag
                 if (has(data.hgb)) {
                     const h = v(data.hgb);
                     const isMale = (data.sex === 'ชาย' || data.sex == 1);
-                    const min = isMale ? 13.2 : 11.6;
-                    const max = isMale ? 16.6 : 15.0;
-                    codes.hgb_flag = h < min ? 1 : (h > max ? 3 : 2);
+                    codes.hgb_flag = h < (isMale ? 13.2 : 11.6) ? 1 : (h > (isMale ? 16.6 : 15.0) ? 3 : 2);
                 }
 
-                // fbs_flag
                 if (has(data.fbs)) codes.fbs_flag = v(data.fbs) < 100 ? 1 : (v(data.fbs) <= 125 ? 2 : 3);
-                
-                // chol_flag
                 if (has(data.chol)) codes.chol_flag = v(data.chol) < 200 ? 1 : (v(data.chol) <= 239 ? 2 : 3);
-                
-                // trig_flag
                 if (has(data.trig)) codes.trig_flag = v(data.trig) < 150 ? 1 : (v(data.trig) <= 199 ? 2 : 3);
-                
-                // hdl_flag
                 if (has(data.hdl)) {
                     const limit = (data.sex === 'ชาย' || data.sex == 1) ? 40 : 50;
                     codes.hdl_flag = v(data.hdl) >= limit ? 1 : 2;
                 }
-                
-                // ldl_flag
                 if (has(data.ldl)) codes.ldl_flag = v(data.ldl) < 100 ? 1 : (v(data.ldl) <= 159 ? 2 : 3);
-                
-                // bun_flag
                 if (has(data.bun)) codes.bun_flag = v(data.bun) > 20 ? 2 : 1;
-                
-                // cr_flag
                 if (has(data.cr)) codes.cr_flag = v(data.cr) > 1.44 ? 2 : 1;
-                
-                // sgot_flag
                 if (has(data.sgot)) codes.sgot_flag = v(data.sgot) >= 35 ? 2 : 1;
-                
-                // sgpt_flag
                 if (has(data.sgpt)) codes.sgpt_flag = v(data.sgpt) >= 45 ? 2 : 1;
-                
-                // alk_phos_flag
                 if (has(data.alk_phos)) codes.alk_phos_flag = v(data.alk_phos) > 147 ? 2 : 1;
-                
-                // uric_flag
                 if (has(data.uric)) codes.uric_flag = v(data.uric) > 8.2 ? 2 : 1;
 
-                // rbc_ua_flag & wbc_ua_flag (String matching)
                 const checkUrine = (val) => {
                     if (!val) return '';
                     const str = String(val).toLowerCase();
-                    if (str === '0' || str.includes('not seen') || str.includes('none') || str === '-') return 1;
+                    if (str === '0' || str.includes('not') || str.includes('none') || str === '-') return 1;
                     return 2;
                 };
                 if (has(data.rbc_ua)) codes.rbc_ua_flag = checkUrine(data.rbc_ua);
                 if (has(data.wbc_ua)) codes.wbc_ua_flag = checkUrine(data.wbc_ua);
 
-                // cvrisk_score_flag
+                // Calculate risk code from cvRisk
                 const cv = parseFloat(cvRisk);
-                if (!isNaN(cv)) codes.cvrisk_score_flag = cv < 10 ? 1 : (cv < 20 ? 2 : (cv < 30 ? 3 : (cv < 40 ? 4 : 5)));
+                let calculatedRiskCode = 9;
+                if (!isNaN(cv) && cv > 0) {
+                    if (cv < 10) calculatedRiskCode = 1;
+                    else if (cv < 20) calculatedRiskCode = 2;
+                    else if (cv < 30) calculatedRiskCode = 3;
+                    else if (cv < 40) calculatedRiskCode = 4;
+                    else calculatedRiskCode = 5;
+                }
 
-                // Pass-through other specific fields requested to ensure they are added to payload
                 const additionalFields = {
-                    chronic_detail: data.chronic_detail || '',
-                    urine_detail: data.urine_detail || '',
+                    chronic_detail: data.has_chronic == 1 ? data.chronic_detail || '' : '',
+                    urine_detail: data.urine_flag == 2 ? data.urine_detail || '' : '',
                     cbc_flag: data.cbc_flag || '',
-                    cbc_detail: data.cbc_detail || '',
+                    cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
                     chemistry_flag: data.chemistry_flag || '',
-                    chemistry_detail: data.chemistry_detail || '',
-                    risk: data.risk || '',
-                    treatment: data.treatment || '',
+                    chemistry_detail: data.chemistry_flag == 2 ? data.chemistry_detail || '' : '',
+                    risk: calculatedRiskCode,
+                    treatment: data.treatment || '1',
                     visit_date: data.visit_date || ''
                 };
 
@@ -913,7 +927,11 @@
             };
 
             const openChart = (field, title, val) => setModal({ open: true, field, title, value: val });
-            const isVaccineValid = useMemo(() => vaccine?.found && String(vaccine.date).includes(String(selYear)), [vaccine, selYear]);
+            
+            // Hardcoded Options for specific fields
+            const alcoholOpts = [{code:1,label:'ไม่ดื่ม'},{code:2,label:'นานๆครั้ง'},{code:3,label:'ดื่มเป็นประจำ'},{code:9,label:'ไม่มีข้อมูล'}];
+            const helmetOpts = [{code:1,label:'ไม่สวม'},{code:2,label:'สวมบางครั้ง'},{code:3,label:'สวมทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
+            const beltOpts = [{code:1,label:'ไม่คาด'},{code:2,label:'คาดบางครั้ง'},{code:3,label:'คาดทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
 
             return (
                 <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative">
@@ -923,7 +941,9 @@
                             <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-9 h-9 rounded-full border border-indigo-500/50" />
                             <div><h2 className="font-bold text-white text-sm">{user.Name}</h2><p className="text-[10px] text-slate-400">สมุดสุขภาพประจำปี</p></div>
                         </div>
-                        <button onClick={handleSave} className="text-xs bg-indigo-600 px-4 py-1.5 rounded-full text-white font-bold shadow-lg hover:bg-indigo-500 transition">บันทึก</button>
+                        {!isReadOnly && !noDataPastYear && (
+                            <button onClick={handleSave} className="text-xs bg-indigo-600 px-4 py-1.5 rounded-full text-white font-bold shadow-lg hover:bg-indigo-500 transition">บันทึก</button>
+                        )}
                     </div>
 
                     <div className="bg-[#0f172a] px-4 pt-3 pb-0 border-b border-slate-800 sticky top-[68px] z-20 overflow-x-auto no-scrollbar flex shadow-md">
@@ -931,108 +951,165 @@
                     </div>
 
                     <div className="p-4 space-y-5">
-                        {loading && <div className="text-center text-xs text-slate-500 animate-pulse">กำลังดึงข้อมูลสุขภาพ...</div>}
+                        {loading && <div className="text-center text-xs text-slate-500 animate-pulse">กำลังโหลดข้อมูลสุขภาพ...</div>}
                         
-                        <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} /></div>
+                        {!loading && noDataPastYear && (
+                            <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-xl text-center fade-in">
+                                <Icon name="alert-circle" className="text-red-400 mx-auto mb-2" size={32} />
+                                <h3 className="text-red-300 font-bold">ไม่พบข้อมูลตรวจสุขภาพ ปี {selYear}</h3>
+                                <p className="text-xs text-slate-400 mt-1">ไม่มีประวัติการบันทึกข้อมูลในปีนี้</p>
+                            </div>
+                        )}
 
-                        <Card title="1. สัญญาณชีพ & ร่างกาย">
-                            <div className="grid grid-cols-3 gap-2 mb-3">
-                                <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} />
-                                <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
-                                <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} />
-                            </div>
-                            <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50"><span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>{flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}</div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} />
-                                <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} />
-                            </div>
-                            <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
-                                <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
-                                <div className="flex gap-2 items-center">
-                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
-                                    <span className="text-slate-500">/</span>
-                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
-                                    <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
-                                </div>
-                                {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
-                                <div className="clear-both"></div>
-                            </div>
-                        </Card>
+                        {!loading && !noDataPastYear && (
+                            <div className={`space-y-5 ${isReadOnly ? 'opacity-90' : ''}`}>
+                                {isReadOnly && <div className="text-center text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded-lg border border-yellow-500/30">คุณกำลังดูประวัติย้อนหลัง (ไม่สามารถแก้ไขได้)</div>}
+                                
+                                <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} disabled={isReadOnly} /></div>
 
-                        <Card title="2. ผลเลือด & เคมีคลินิก">
-                            <div className="space-y-4">
-                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
-                                    <div className="grid grid-cols-2 gap-3"><Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} /><Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} /></div>
-                                </div>
-                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
+                                <Card title="1. สัญญาณชีพ & ร่างกาย">
+                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                        <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} readonly={isReadOnly} />
+                                        <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} readonly={isReadOnly} />
+                                        <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} readonly={isReadOnly} />
+                                    </div>
+                                    <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50"><span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>{flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}</div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} />
-                                        <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} />
-                                        <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} />
-                                        <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} />
-                                        <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} /></div>
+                                        <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} readonly={isReadOnly} />
+                                        <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} readonly={isReadOnly} />
                                     </div>
-                                </div>
-                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
-                                    <div className="grid grid-cols-2 gap-3"><Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} /><Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} /><Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} /><Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} /><Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} /><Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} /></div>
-                                </div>
-                            </div>
-                        </Card>
-
-                        <Card title="3. การตรวจปัสสาวะ (Urine)">
-                            <div className="grid grid-cols-2 gap-3"><Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} /><Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} /></div>
-                            <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5"><label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label><div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} /></div>{data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} />}</div>
-                        </Card>
-
-                        <Card title="4. ประวัติ & การคัดกรอง">
-                            <FlagInput label="โรคประจำตัว" name="has_chronic" val={data.has_chronic} detail={data.chronic_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
-                            <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
-                            <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
-                        </Card>
-
-                        <Card title="5. พฤติกรรมสุขภาพ">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']} onChange={v=>handleChange('smoking',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={codebook['alcohol']} onChange={v=>handleChange('alcohol',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={[{code:1,label:'สวม'},{code:2,label:'ไม่สวม'}]} onChange={v=>handleChange('helmet',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={[{code:1,label:'คาด'},{code:2,label:'ไม่คาด'}]} onChange={v=>handleChange('belt',v)} /></div>
-                            </div>
-                        </Card>
-
-                        <Card title="6. วัคซีน & ภูมิคุ้มกัน">
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                                <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} /></div>
-                                <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
-                            </div>
-                            {data.influenza == 1 && (
-                                <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
-                                    <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Icon name="check-circle" size={14} /> ข้อมูลวัคซีนไข้หวัดใหญ่</h4>
-                                    <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-300">
-                                        <div><span className="block text-[9px] text-slate-500">วันที่รับ</span>{vaccine?.date || '-'}</div>
-                                        <div><span className="block text-[9px] text-slate-500">Lot Number</span>{vaccine?.lot || '-'}</div>
+                                    <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
+                                        <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} disabled={isReadOnly} />
+                                            <span className="text-slate-500">/</span>
+                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} disabled={isReadOnly} />
+                                            {!isReadOnly && <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>}
+                                        </div>
+                                        {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
+                                        <div className="clear-both"></div>
                                     </div>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center p-2 bg-slate-800 rounded"><span className="text-xs text-slate-300">HBs Ag (ผลเลือด)</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} /></div>
-                        </Card>
+                                </Card>
 
-                        <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
-                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
+                                <Card title="2. ผลเลือด & เคมีคลินิก">
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
+                                            <div className="grid grid-cols-2 gap-3"><Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} readonly={isReadOnly} /><Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} readonly={isReadOnly} /></div>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} readonly={isReadOnly} />
+                                                <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} readonly={isReadOnly} />
+                                                <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} readonly={isReadOnly} />
+                                                <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} readonly={isReadOnly} />
+                                                <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} readonly={isReadOnly} /></div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
+                                            <div className="grid grid-cols-2 gap-3"><Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} readonly={isReadOnly} /><Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} readonly={isReadOnly} /><Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} readonly={isReadOnly} /><Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} readonly={isReadOnly} /><Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} flag={flags.alk} readonly={isReadOnly} /><Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} readonly={isReadOnly} /></div>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                <Card title="3. การตรวจปัสสาวะ (Urine)">
+                                    <div className="grid grid-cols-2 gap-3"><Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} readonly={isReadOnly} /><Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} readonly={isReadOnly} /></div>
+                                    <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5"><label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label><div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} /></div>{data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} disabled={isReadOnly} />}</div>
+                                </Card>
+
+                                <Card title="4. ประวัติ & การคัดกรอง">
+                                    <div className="mb-3 border-b border-slate-700/50 pb-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-[10px] text-slate-400 w-1/3">โรคประจำตัว</label>
+                                            <div className="w-2/3"><RadioBtn name="has_chronic" val={data.has_chronic} setVal={v=>handleChange('has_chronic',v)} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} disabled={isReadOnly} /></div>
+                                        </div>
+                                        {data.has_chronic == 1 && (
+                                            <div className="mt-2 pl-4 border-l-2 border-slate-700">
+                                                <select className="glass-input text-xs mb-2" value={data.chronic_disease_type || ''} onChange={e => {
+                                                    handleChange('chronic_disease_type', e.target.value);
+                                                    if(e.target.value !== 'อื่นๆ') handleChange('chronic_detail', e.target.value);
+                                                    else handleChange('chronic_detail', '');
+                                                }} disabled={isReadOnly}>
+                                                    <option value="">-- เลือกโรคประจำตัว --</option>
+                                                    <option value="ความดันโลหิตสูง">ความดันโลหิตสูง</option>
+                                                    <option value="เบาหวาน">เบาหวาน</option>
+                                                    <option value="ไขมันในเลือดสูง">ไขมันในเลือดสูง</option>
+                                                    <option value="โรคหัวใจ">โรคหัวใจ</option>
+                                                    <option value="โรคไต">โรคไต</option>
+                                                    <option value="โรคหอบหืด/ถุงลมโป่งพอง">โรคหอบหืด/ถุงลมโป่งพอง</option>
+                                                    <option value="โรคไทรอยด์">โรคไทรอยด์</option>
+                                                    <option value="โรคเก๊าท์">โรคเก๊าท์</option>
+                                                    <option value="โรคภูมิแพ้">โรคภูมิแพ้</option>
+                                                    <option value="โรคไมเกรน">โรคไมเกรน</option>
+                                                    <option value="อื่นๆ">อื่นๆ (โปรดระบุ)</option>
+                                                </select>
+                                                {(data.chronic_disease_type === 'อื่นๆ' || (data.chronic_detail && !["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"].includes(data.chronic_detail))) && (
+                                                    <input className="glass-input text-xs" placeholder="ระบุโรคประจำตัวอื่นๆ..." value={data.chronic_detail} onChange={e=>handleChange('chronic_detail', e.target.value)} disabled={isReadOnly}/>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} disabled={isReadOnly} />
+                                    <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
+                                    <FlagInput label="เม็ดเลือด (CBC)" name="cbc_flag" val={data.cbc_flag} detail={data.cbc_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
+                                    <FlagInput label="เคมีในเลือด (Chemistry)" name="chemistry_flag" val={data.chemistry_flag} detail={data.chemistry_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
+                                </Card>
+
+                                <Card title="5. พฤติกรรมสุขภาพ">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']} onChange={v=>handleChange('smoking',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={alcoholOpts} onChange={v=>handleChange('alcohol',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={helmetOpts} onChange={v=>handleChange('helmet',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={beltOpts} onChange={v=>handleChange('belt',v)} disabled={isReadOnly} /></div>
+                                    </div>
+                                </Card>
+
+                                <Card title="6. วัคซีน & ภูมิคุ้มกัน">
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} disabled={isReadOnly} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)} disabled={isReadOnly}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
+                                    </div>
+                                    {data.influenza == 1 && (
+                                        <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
+                                            <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Icon name="check-circle" size={14} /> ข้อมูลวัคซีนไข้หวัดใหญ่</h4>
+                                            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-300">
+                                                <div><span className="block text-[9px] text-slate-500">วันที่รับ</span>{vaccine?.date || '-'}</div>
+                                                <div><span className="block text-[9px] text-slate-500">Lot Number</span>{vaccine?.lot || '-'}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center p-2 bg-slate-800 rounded"><span className="text-xs text-slate-300">HBs Ag (ผลเลือด)</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} disabled={isReadOnly} /></div>
+                                </Card>
+
+                                <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
+                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
+                                            <textarea className="glass-input h-20 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)} disabled={isReadOnly}></textarea>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] text-slate-400">แผนการรักษา</label>
+                                            <select className="glass-input text-xs" value={data.treatment || 1} onChange={e=>handleChange('treatment', e.target.value)} disabled={isReadOnly}>
+                                                <option value="1">นัดตรวจสุขภาพประจำปี(ตามรอบปกติ)</option>
+                                                <option value="2">นัดติดตามผลเลือดอีกครั้งในอีก...เดือน(เร็วกว่าปกติ)</option>
+                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤติกรรมสุขภาพ</option>
+                                                <option value="4">วินิจฉัยเป็นโรคและให้เริ่มกินยา</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1 pt-2">
+                                            <label className="text-[10px] text-slate-400">แพทย์ผู้ตรวจ</label>
+                                            <input className="glass-input h-9 text-sm" value={data.doctor_name} onChange={e=>handleChange('doctor_name',e.target.value)} disabled={isReadOnly} />
+                                        </div>
+                                    </div>
+                                </Card>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
-                                <textarea className="glass-input h-24 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)}></textarea>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-slate-400">แพทย์ผู้ตรวจ</label>
-                                    <input className="glass-input h-9 text-sm" value={data.doctor_name} onChange={e=>handleChange('doctor_name',e.target.value)} />
-                                </div>
-                            </div>
-                        </Card>
+                        )}
                     </div>
 
                     {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
