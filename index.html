@@ -77,6 +77,12 @@
             "รพ.สต.บ้านน้ำฉา", "รพ.สต.ปากแพรก", "รพ.สต.วิสัยใต้", "รพ.สต.สวี", "สสอ.สวี"
         ];
 
+        const CHRONIC_DISEASES = [
+            "ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", 
+            "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", 
+            "โรคภูมิแพ้", "โรคไมเกรน"
+        ];
+
         // --- 1. GLOBAL UTILS & HELPERS ---
         const callGAS = async (action, payload = {}) => {
             try {
@@ -145,7 +151,7 @@
             <div>
                 <div className="flex justify-between items-end mb-1">
                     <label className="text-[10px] text-slate-400">{label}</label>
-                    {onChart && !readonly && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
+                    {onChart && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
                 </div>
                 <div className="relative">
                     <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} disabled={readonly} />
@@ -728,7 +734,7 @@
             useEffect(() => {
                 const loadData = async () => {
                     setLoading(true);
-                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment: '1', chronic_disease_type: '' };
+                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment: '1', chronic_array: [], chronic_other: '' };
                     try {
                         const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
                         if (h && (h.timestamp || h.visit_date)) {
@@ -736,15 +742,23 @@
                                 let d = new Date(h.visit_date || h.timestamp);
                                 if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
                             }
-                            // Map chronic_detail to dropdown type if it matches
+                            
+                            // Map chronic_detail to Multiple Array and Other String
+                            let chronicArr = [];
+                            let chronicOther = '';
                             if (h.has_chronic == 1 && h.chronic_detail) {
-                                const knownDiseases = ["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"];
-                                if (knownDiseases.includes(h.chronic_detail)) {
-                                    h.chronic_disease_type = h.chronic_detail;
-                                } else {
-                                    h.chronic_disease_type = "อื่นๆ";
-                                }
+                                const parts = h.chronic_detail.split(',').map(s => s.trim()).filter(s => s);
+                                parts.forEach(p => {
+                                    if (CHRONIC_DISEASES.includes(p)) {
+                                        chronicArr.push(p);
+                                    } else {
+                                        chronicOther = chronicOther ? chronicOther + ', ' + p : p;
+                                    }
+                                });
                             }
+                            h.chronic_array = chronicArr;
+                            h.chronic_other = chronicOther;
+
                             if(!h.treatment) h.treatment = '1';
                             setData(h);
                             setIsNewYear(false);
@@ -838,6 +852,15 @@
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
+            const toggleChronic = (disease) => {
+                if(isReadOnly) return;
+                setData(p => {
+                    const arr = p.chronic_array || [];
+                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
+                    return { ...p, chronic_array: newArr };
+                });
+            };
+
             const handleSave = async () => {
                 if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
@@ -913,8 +936,13 @@
                     else calculatedRiskCode = 5;
                 }
 
+                // Combine Chronic Diseases Array + Other String
+                let combinedChronic = [];
+                if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
+                if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
+
                 const additionalFields = {
-                    chronic_detail: data.has_chronic == 1 ? data.chronic_detail || '' : '',
+                    chronic_detail: data.has_chronic == 1 ? combinedChronic.join(', ') : '',
                     urine_detail: data.urine_flag == 2 ? data.urine_detail || '' : '',
                     cbc_flag: data.cbc_flag || '',
                     cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
@@ -1036,28 +1064,27 @@
                                             <div className="w-2/3"><RadioBtn name="has_chronic" val={data.has_chronic} setVal={v=>handleChange('has_chronic',v)} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} disabled={isReadOnly} /></div>
                                         </div>
                                         {data.has_chronic == 1 && (
-                                            <div className="mt-2 pl-4 border-l-2 border-slate-700">
-                                                <select className="glass-input text-xs mb-2" value={data.chronic_disease_type || ''} onChange={e => {
-                                                    handleChange('chronic_disease_type', e.target.value);
-                                                    if(e.target.value !== 'อื่นๆ') handleChange('chronic_detail', e.target.value);
-                                                    else handleChange('chronic_detail', '');
-                                                }} disabled={isReadOnly}>
-                                                    <option value="">-- เลือกโรคประจำตัว --</option>
-                                                    <option value="ความดันโลหิตสูง">ความดันโลหิตสูง</option>
-                                                    <option value="เบาหวาน">เบาหวาน</option>
-                                                    <option value="ไขมันในเลือดสูง">ไขมันในเลือดสูง</option>
-                                                    <option value="โรคหัวใจ">โรคหัวใจ</option>
-                                                    <option value="โรคไต">โรคไต</option>
-                                                    <option value="โรคหอบหืด/ถุงลมโป่งพอง">โรคหอบหืด/ถุงลมโป่งพอง</option>
-                                                    <option value="โรคไทรอยด์">โรคไทรอยด์</option>
-                                                    <option value="โรคเก๊าท์">โรคเก๊าท์</option>
-                                                    <option value="โรคภูมิแพ้">โรคภูมิแพ้</option>
-                                                    <option value="โรคไมเกรน">โรคไมเกรน</option>
-                                                    <option value="อื่นๆ">อื่นๆ (โปรดระบุ)</option>
-                                                </select>
-                                                {(data.chronic_disease_type === 'อื่นๆ' || (data.chronic_detail && !["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"].includes(data.chronic_detail))) && (
-                                                    <input className="glass-input text-xs" placeholder="ระบุโรคประจำตัวอื่นๆ..." value={data.chronic_detail} onChange={e=>handleChange('chronic_detail', e.target.value)} disabled={isReadOnly}/>
-                                                )}
+                                            <div className="mt-2 pl-2 border-l-2 border-slate-700">
+                                                <label className="text-[10px] text-slate-400 block mb-2">เลือกโรคประจำตัว (เลือกได้มากกว่า 1)</label>
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {CHRONIC_DISEASES.map(dis => (
+                                                        <button 
+                                                            key={dis} 
+                                                            onClick={() => toggleChronic(dis)} 
+                                                            disabled={isReadOnly}
+                                                            className={`text-[10px] px-2 py-1 rounded border transition-all ${data.chronic_array?.includes(dis) ? 'bg-orange-500 text-white border-orange-500' : 'bg-transparent text-slate-400 border-slate-700'} ${isReadOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            {dis}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <input 
+                                                    className="glass-input text-xs w-full" 
+                                                    placeholder="ระบุโรคประจำตัวอื่นๆ (ถ้ามี)..." 
+                                                    value={data.chronic_other || ''} 
+                                                    onChange={e => handleChange('chronic_other', e.target.value)} 
+                                                    disabled={isReadOnly}
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -1098,7 +1125,11 @@
 
                                 <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
                                     <div className="grid grid-cols-2 gap-2 mb-3">
-                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center relative">
+                                            <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div>
+                                            <div className="text-xl font-bold text-white">{cvRisk}%</div>
+                                            <div className="text-[8px] text-indigo-400 mt-1">คำนวณความเสี่ยงโดยสวีรู้ทันสโตรก</div>
+                                        </div>
                                         <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center">
                                             <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">รายการค่าเสี่ยง</div>
                                             <div className="text-xs font-bold text-red-400 leading-tight">{riskyItems || <span className="text-green-400">ไม่มี (ปกติ)</span>}</div>
