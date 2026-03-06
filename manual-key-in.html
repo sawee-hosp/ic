@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IC SW-1 (ระบบบันทึกข้อมูลสุขภาพ)</title>
+    <title>IC SW-1 (Manual Health Book)</title>
     
     <link rel="icon" href="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,7 +32,6 @@
             background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
             opacity: 0.4;
         }
-        @keyframes aurora { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
         .glass-input { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.375rem; transition: all 0.2s; font-size: 0.9rem; height: 38px; }
@@ -66,9 +65,16 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         
-        // ** อัปเดต GAS_URL ตามที่ระบุล่าสุด **
+        // ** สำคัญมาก: เปลี่ยนลิงก์นี้เป็น URL Web App ปัจจุบันของคุณ **
         const GAS_URL = "https://script.google.com/macros/s/AKfycbx16YPdL2SVeLCn-dz_jm9nDWI1gNPYkXw_2MSsy283ycBJUxS917kDoBNjQ7m8ZFUHlw/exec";
         const LOGO_URL = "https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png";
+
+        const PCU_OPTIONS = [
+            "รพ.สต.เขาค่าย", "รพ.สต.เขาทะลุ", "รพ.สต.ครน", "รพ.สต.ด่านสวี",
+            "รพ.สต.ท่าหิน", "รพ.สต.ทุ่งระยะ", "รพ.สต.นาสัก", "รพ.สต.บ้านแก่งกระทั่ง",
+            "รพ.สต.บ้านคลองน้อย", "รพ.สต.บ้านควนสามัคคี", "รพ.สต.บ้านดอนทราย", "รพ.สต.บ้านไทยพัฒนา",
+            "รพ.สต.บ้านน้ำฉา", "รพ.สต.ปากแพรก", "รพ.สต.วิสัยใต้", "รพ.สต.สวี", "สสอ.สวี"
+        ];
 
         const CHRONIC_DISEASES = [
             "ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", 
@@ -79,12 +85,9 @@
         // --- 1. GLOBAL UTILS & HELPERS ---
         const callGAS = async (action, payload = {}) => {
             try {
-                // ปรับ Fetch Headers ให้เป็น text/plain ป้องกันการเรียก CORS Preflight (OPTIONS)
                 const res = await fetch(GAS_URL, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "text/plain;charset=utf-8",
-                    },
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, // ป้องกัน CORS
                     body: JSON.stringify({ action, ...payload })
                 });
                 return await res.json();
@@ -337,10 +340,77 @@
                                 />
                             </div>
                             <button onClick={attemptLogin} disabled={!hn.trim()} className={`btn-primary mt-4 shadow-lg shadow-indigo-500/30 w-full transition-all ${!hn.trim() ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>
-                                <Icon name="search" size={18} /> ค้นหาและบันทึกข้อมูล
+                                <Icon name="search" size={18} /> ค้นหาข้อมูล
                             </button>
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        // ฟอร์มสำหรับลงทะเบียนใหม่ กรณีไม่พบ HN
+        const RegistrationPage = ({ pendingHn, codebook, onSubmit, onCancel }) => {
+            const [data, setData] = useState({ HN: pendingHn, Title: 'นาย', Gender: 1 });
+            const [orgType, setOrgType] = useState('hospital'); 
+
+            const h = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleDob = (v) => {
+                h('dob', v);
+                if(v) {
+                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
+                    h('Age', age > 0 ? age : 0);
+                }
+            };
+
+            const validateAndSubmit = () => {
+                if (!data.Name || data.Name.trim() === "") return alert("กรุณากรอก ชื่อ-สกุล");
+                onSubmit(data);
+            };
+
+            const deptOptions = orgType === 'hospital' ? (codebook['department'] || []) : PCU_OPTIONS.map(name => ({ code: name, label: name }));
+            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
+
+            return (
+                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                        <button onClick={onCancel} className="text-slate-400 hover:text-white"><Icon name="arrow-left" /></button>
+                        <h2 className="text-lg font-bold text-orange-400 flex items-center gap-2"><Icon name="user-plus" /> ลงทะเบียนบุคลากรใหม่</h2>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow border-t-2 border-orange-500/50">
+                        <div className="p-3 bg-red-900/20 rounded-xl border border-red-500/30 text-center mb-2">
+                            <p className="text-xs text-red-300">ไม่พบ HN: <span className="font-bold text-white">{pendingHn}</span> ในระบบ</p>
+                            <p className="text-[10px] text-slate-400 mt-1">กรุณากรอกข้อมูลเบื้องต้นเพื่อสร้างประวัติใหม่</p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="HN (ล็อกอัตโนมัติ)" val={data.HN} readonly={true} />
+                                <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
+                            </div>
+                            <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
+                                <div className="col-span-8"><Field label="ชื่อ-สกุล *" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
+                            </div>
+                            
+                            <div className="pt-3 border-t border-slate-700/50">
+                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
+                                <div className="flex bg-slate-800 rounded p-1 mb-2">
+                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>รพ.สต.</button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">{orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}</label><Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} /></div>
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 bg-orange-600 hover:bg-orange-500 text-base shadow-lg shadow-orange-900/50">บันทึกประวัติ และไปยังสมุดสุขภาพ</button>
                 </div>
             );
         };
@@ -411,19 +481,13 @@
                 const fbs = parseFloat(data.fbs) || 90;
                 const chol = parseFloat(data.chol);
                 
-                // Age factor
                 if (age > 35) base += (age - 35) * 0.4;
-                // Sex factor (Men > Risk)
                 if (data.sex == '1' || data.sex === 'ชาย') base += 3;
-                // BP factor
                 if (sbp >= 140 && sbp < 160) base += 4;
                 if (sbp >= 160) base += 8;
-                // Smoking
                 if (data.smoking == '2') base += 7;
-                // DM (FBS > 130)
                 if (fbs > 130) base += 8;
                 
-                // Lipid or Obesity factor
                 if (chol) {
                     if (chol > 200 && chol <= 239) base += 3;
                     if (chol >= 240) base += 6;
@@ -482,7 +546,6 @@
             const handleSave = async () => {
                 setLoading(true);
 
-                // --- CALCULATION LOGIC BASED ON CODEBOOK ---
                 const v = (val) => parseFloat(val);
                 const has = (val) => val !== undefined && val !== null && val !== '';
                 const codes = {};
@@ -542,7 +605,6 @@
                 if (has(data.rbc_ua)) codes.rbc_ua_flag = checkUrine(data.rbc_ua);
                 if (has(data.wbc_ua)) codes.wbc_ua_flag = checkUrine(data.wbc_ua);
 
-                // Calculate risk code from cvRisk
                 const cv = parseFloat(cvRisk);
                 let calculatedRiskCode = 9;
                 if (!isNaN(cv) && cv > 0) {
@@ -553,7 +615,6 @@
                     else calculatedRiskCode = 5;
                 }
 
-                // Combine Chronic Diseases Array + Other String
                 let combinedChronic = [];
                 if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
                 if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
@@ -598,7 +659,6 @@
                         <button onClick={handleSave} className="text-xs bg-indigo-600 px-6 py-2 rounded-full text-white font-bold shadow-lg hover:bg-indigo-500 transition">บันทึกข้อมูล</button>
                     </div>
 
-                    {/* แสดงเฉพาะปีปัจจุบันเท่านั้นสำหรับ Manual Key-in */}
                     <div className="bg-[#0f172a] px-4 pt-3 pb-0 border-b border-slate-800 sticky top-[68px] z-20 overflow-x-auto no-scrollbar flex shadow-md">
                         <div className="tab-btn active">{currentYear}</div>
                     </div>
@@ -785,7 +845,8 @@
         // --- MAIN APP COMPONENT ---
         const App = () => {
             const [user, setUser] = useState(null);
-            const [page, setPage] = useState('login'); 
+            const [page, setPage] = useState('login'); // login, register, healthBook
+            const [pendingHn, setPendingHn] = useState('');
             const [codebook, setCodebook] = useState({});
 
             useEffect(() => {
@@ -805,18 +866,37 @@
                         setUser(res.data);
                         setPage('healthBook'); 
                     } else {
-                        alert(res.error);
+                        // ถ้าไม่พบ HN ส่งไปหน้า Register
+                        setPendingHn(hn);
+                        setPage('register');
                     }
                 } catch(e) { alert('Connection Error'); }
             };
 
+            const handleRegister = async (formData) => {
+                try {
+                    const res = await callGAS('saveRegistration', { payload: formData });
+                    if(res.success) {
+                        setUser(res.data); // ดึงข้อมูลที่เพิ่งสร้างมาใช้งานต่อ
+                        setPage('healthBook');
+                    } else {
+                        alert("ลงทะเบียนล้มเหลว: " + res.error);
+                    }
+                } catch(e) { alert('Connection Error'); }
+            }
+
             const handleLogout = () => {
                 setUser(null);
+                setPendingHn('');
                 setPage('login');
             };
 
             if (!user && page === 'login') {
                 return <LoginPage onLogin={handleLogin} />;
+            }
+            
+            if (!user && page === 'register') {
+                return <RegistrationPage pendingHn={pendingHn} codebook={codebook} onSubmit={handleRegister} onCancel={handleLogout} />;
             }
 
             if (page === 'healthBook') {
