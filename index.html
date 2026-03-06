@@ -717,7 +717,8 @@
                 const load = async () => {
                     try {
                         const y = await callGAS('getAvailableYears', { hn: user.HN });
-                        const all = [...new Set([new Date().getFullYear(), ...(Array.isArray(y)?y:[])])].sort((a,b)=>b-a);
+                        // แปลงปีทั้งหมดให้เป็น Number เพื่อให้ Set กำจัดตัวที่ซ้ำซ้อนได้อย่างสมบูรณ์
+                        const all = [...new Set([new Date().getFullYear(), ...(Array.isArray(y)?y.map(Number):[])])].sort((a,b)=>b-a);
                         setYears(all); setSelYear(all[0]);
                     } catch { setYears([new Date().getFullYear()]); }
                 };
@@ -827,6 +828,14 @@
             };
             const flags = getFlags(data);
 
+            const riskyItems = useMemo(() => {
+                const labels = {bmi:'BMI', bp:'ความดันโลหิต', waist:'รอบเอว', pulse:'ชีพจร', fbs:'FBS', chol:'Cholesterol', trig:'Triglyceride', hdl:'HDL', ldl:'LDL', bun:'BUN', cr:'Cr', sgot:'SGOT', sgpt:'SGPT', alk:'Alk Phos', uric:'Uric', hct:'Hct', hgb:'Hgb', rbc:'RBC(Urine)', wbc:'WBC(Urine)'};
+                return Object.entries(flags)
+                    .filter(([k, v]) => v && (v.bg === 'bg-red' || v.bg === 'bg-yellow'))
+                    .map(([k, v]) => labels[k] || k)
+                    .join(', ');
+            }, [flags]);
+
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
             const handleSave = async () => {
@@ -911,7 +920,8 @@
                     cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
                     chemistry_flag: data.chemistry_flag || '',
                     chemistry_detail: data.chemistry_flag == 2 ? data.chemistry_detail || '' : '',
-                    risk: calculatedRiskCode,
+                    risk: data.risk || '', 
+                    cvrisk_score_flag: calculatedRiskCode,
                     treatment: data.treatment || '1',
                     visit_date: data.visit_date || ''
                 };
@@ -951,20 +961,23 @@
                     </div>
 
                     <div className="p-4 space-y-5">
+                        <div className="text-[10px] text-indigo-300 bg-indigo-900/30 border border-indigo-500/20 p-2 rounded-lg flex items-center gap-2">
+                            <Icon name="info" size={14} className="text-indigo-400 flex-shrink-0" /> 
+                            <span>คำแนะนำ: คุณสามารถคลิก <Icon name="bar-chart-2" size={12} className="inline text-indigo-400 mb-0.5"/> ท้ายช่องกรอก เพื่อเทียบประวัติส่วนตัวย้อนหลัง หรือดูเทียบกับกลุ่มบุคลากรในรพ.</span>
+                        </div>
+
                         {loading && <div className="text-center text-xs text-slate-500 animate-pulse">กำลังโหลดข้อมูลสุขภาพ...</div>}
                         
                         {!loading && noDataPastYear && (
                             <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-xl text-center fade-in">
                                 <Icon name="alert-circle" className="text-red-400 mx-auto mb-2" size={32} />
-                                <h3 className="text-red-300 font-bold">ไม่พบข้อมูลตรวจสุขภาพ ปี {selYear}</h3>
+                                <h3 className="text-red-300 font-bold">ไม่พบข้อมูลสุขภาพปี {selYear}</h3>
                                 <p className="text-xs text-slate-400 mt-1">ไม่มีประวัติการบันทึกข้อมูลในปีนี้</p>
                             </div>
                         )}
 
                         {!loading && !noDataPastYear && (
                             <div className={`space-y-5 ${isReadOnly ? 'opacity-90' : ''}`}>
-                                {isReadOnly && <div className="text-center text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded-lg border border-yellow-500/30">คุณกำลังดูประวัติย้อนหลัง (ไม่สามารถแก้ไขได้)</div>}
-                                
                                 <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} disabled={isReadOnly} /></div>
 
                                 <Card title="1. สัญญาณชีพ & ร่างกาย">
@@ -1085,10 +1098,17 @@
 
                                 <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
                                     <div className="grid grid-cols-2 gap-2 mb-3">
-                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
-                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center">
+                                            <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">รายการค่าเสี่ยง</div>
+                                            <div className="text-xs font-bold text-red-400 leading-tight">{riskyItems || <span className="text-green-400">ไม่มี (ปกติ)</span>}</div>
+                                        </div>
                                     </div>
                                     <div className="space-y-3">
+                                        <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                                            <label className="text-[10px] text-slate-400 block mb-1">สรุปการตรวจสุขภาพ (ตามความเห็นแพทย์)</label>
+                                            <RadioBtn name="risk" val={data.risk} setVal={v=>handleChange('risk',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'เสี่ยง'},{v:3,l:'เป็นโรค'}]} disabled={isReadOnly} />
+                                        </div>
                                         <div>
                                             <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
                                             <textarea className="glass-input h-20 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)} disabled={isReadOnly}></textarea>
