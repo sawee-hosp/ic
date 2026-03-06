@@ -24,10 +24,13 @@
         .btn-secondary { background: rgba(51, 65, 85, 0.6); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; transition: all 0.2s; }
         .btn-secondary:hover { background: rgba(71, 85, 105, 0.8); color: white; }
         .chart-container { position: relative; width: 100%; }
+        
+        /* Modal Adjustments for Scrolling */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 50; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.show { opacity: 1; pointer-events: auto; }
-        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; width: 90%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s; }
+        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s; }
         .modal-overlay.show .modal-content { transform: scale(1); }
+        
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
@@ -37,11 +40,11 @@
 </head>
 <body>
     <div class="bg-overlay"></div>
-    <div id="spinner" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md hidden"><div class="loading-spinner mb-4"></div><p class="text-indigo-200 text-xs tracking-wider animate-pulse">กำลังประมวลผลข้อมูล...</p></div>
+    <div id="spinner" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md hidden"><div class="loading-spinner mb-4"></div><p class="text-indigo-200 text-xs tracking-wider animate-pulse">กำลังประมวลผลข้อมูลจากฐาน Personnel...</p></div>
 
     <div class="container mx-auto p-4 max-w-7xl">
         <div class="glass-panel p-4 rounded-2xl mb-6 flex flex-col lg:flex-row items-center justify-between gap-4 sticky top-4 z-20">
-            <div class="flex items-center gap-3"><div class="bg-indigo-500/20 p-2 rounded-xl"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain drop-shadow" /></div><div><h1 class="text-lg font-bold text-white leading-tight">Dashboard สุขภาพ</h1><p class="text-[11px] text-slate-400">รพ.สวี (Admin View)</p></div></div>
+            <div class="flex items-center gap-3"><div class="bg-indigo-500/20 p-2 rounded-xl"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain drop-shadow" /></div><div><h1 class="text-lg font-bold text-white leading-tight">Dashboard สุขภาพ</h1><p class="text-[11px] text-slate-400">อ้างอิงรายชื่อจาก Personnel (Admin)</p></div></div>
             <div class="flex flex-wrap gap-2 w-full lg:w-auto justify-end"><select id="yearSelect" class="glass-input w-24 text-center"></select><select id="metricSelect" class="glass-input w-48"></select><select id="sexSelect" class="glass-input w-28"></select><select id="ageGroupSelect" class="glass-input w-28"></select><select id="deptSelect" class="glass-input flex-1 lg:w-48"></select></div>
         </div>
 
@@ -50,11 +53,17 @@
             
             <!-- Stacked Bar Chart for Departments -->
             <div class="glass-panel p-4 rounded-2xl">
-                <h3 class="text-white font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="bar-chart-2" class="text-indigo-400"></i> สรุปรายแผนก (เรียงตามจำนวนคน)</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-white font-bold text-sm flex items-center gap-2"><i data-lucide="bar-chart-2" class="text-indigo-400"></i> สรุปรายแผนก</h3>
+                    <select id="sortDeptSelect" class="glass-input w-auto text-xs py-1" onchange="loadDashboard()">
+                        <option value="total">เรียงตาม: จำนวนรวม</option>
+                        <option value="name">เรียงตาม: ชื่อแผนก (ก-ฮ)</option>
+                    </select>
+                </div>
                 <div class="relative w-full" style="height: 600px;">
                     <canvas id="deptStackedChart"></canvas>
                 </div>
-                <p class="text-center text-xs text-slate-400 mt-2">* คลิกที่แท่งกราฟเพื่อดูรายชื่อบุคลากร</p>
+                <p class="text-center text-xs text-slate-400 mt-2">* คลิกที่แท่งกราฟเพื่อดูรายชื่อบุคลากร (เทียบกับทะเบียน Personnel)</p>
             </div>
         </div>
 
@@ -66,24 +75,35 @@
                 </div>
                 <div class="space-y-4">
                     <div class="glass-panel p-5 rounded-2xl"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2">ข้อมูลทางสถิติ</h3><div id="statsCards" class="grid grid-cols-2 gap-3"></div></div>
-                    <div class="glass-panel p-5 rounded-2xl max-h-[500px] overflow-y-auto custom-scroll"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2">รายละเอียด (Legend)</h3><ul id="flagLegend" class="space-y-2"></ul></div>
+                    <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col max-h-[500px]"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2 shrink-0">รายละเอียด (Legend)</h3><div class="overflow-y-auto custom-scroll flex-1"><ul id="flagLegend" class="space-y-2"></ul></div></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal List -->
     <div id="deptModal" class="modal-overlay">
         <div class="modal-content glass-panel">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50 rounded-t-xl"><h5 class="text-white font-bold flex items-center gap-2"><i data-lucide="users" class="text-indigo-400"></i> <span id="modalTitle">รายชื่อ</span></h5><button onclick="closeModal()" class="text-slate-400 hover:text-white transition"><i data-lucide="x"></i></button></div>
-            <div class="p-0 flex-grow overflow-hidden flex flex-col md:flex-row h-full">
-                <div class="flex-1 border-b md:border-b-0 md:border-r border-white/10 flex flex-col h-1/2 md:h-full"><div class="p-3 bg-green-500/10 text-green-400 text-xs font-bold uppercase sticky top-0 backdrop-blur-sm border-b border-white/5">✅ ตรวจแล้ว (<span id="countReported">0</span>)</div><div class="overflow-y-auto custom-scroll p-2 space-y-1" id="reportedList"></div></div>
-                <div class="flex-1 flex flex-col h-1/2 md:h-full"><div class="p-3 bg-red-500/10 text-red-400 text-xs font-bold uppercase sticky top-0 backdrop-blur-sm border-b border-white/5">❌ ยังไม่ตรวจ (<span id="countNotReported">0</span>)</div><div class="overflow-y-auto custom-scroll p-2 space-y-1" id="notReportedList"></div></div>
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50 rounded-t-xl shrink-0"><h5 class="text-white font-bold flex items-center gap-2"><i data-lucide="users" class="text-indigo-400"></i> <span id="modalTitle">รายชื่อบุคลากร</span></h5><button onclick="closeModal()" class="text-slate-400 hover:text-white transition"><i data-lucide="x"></i></button></div>
+            <div class="flex-grow overflow-hidden flex flex-col md:flex-row">
+                <!-- ตรวจแล้ว Box -->
+                <div class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-white/10">
+                    <div class="p-3 bg-green-500/10 text-green-400 text-xs font-bold uppercase shrink-0 border-b border-white/5">✅ ตรวจสุขภาพแล้ว (<span id="countReported">0</span>)</div>
+                    <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1" id="reportedList"></div>
+                </div>
+                <!-- ยังไม่ตรวจ Box -->
+                <div class="flex-1 flex flex-col">
+                    <div class="p-3 bg-red-500/10 text-red-400 text-xs font-bold uppercase shrink-0 border-b border-white/5">❌ ยังไม่ตรวจ (<span id="countNotReported">0</span>)</div>
+                    <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1" id="notReportedList"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // *** อัปเดต URL ของ Web App ให้ตรงกับของคุณ ***
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxoAiCFIoDT3kgaY5k2BmVeUMN5kR_9w0WToW79sw6-ko4kYgUzo45n_PJ1c6QKDnCgsw/exec";
+        
         lucide.createIcons();
         Chart.defaults.color = '#94a3b8'; Chart.defaults.borderColor = '#334155'; Chart.register(ChartDataLabels);
         
@@ -94,9 +114,9 @@
         const closeModal = () => { modal.classList.remove('show'); setTimeout(() => modal.style.display = 'none', 300); };
         const openModal = () => { modal.style.display = 'flex'; requestAnimationFrame(() => modal.classList.add('show')); };
 
-        let yearSel, sexSel, deptSel, ageSel, metricSel;
+        let yearSel, sexSel, deptSel, ageSel, metricSel, sortDeptSel;
         let chartHist = null, chartFlag = null, deptChart = null;
-        let globalDeptData = []; // Store data for modal
+        let globalDeptData = []; 
 
         const pieMetrics = ['has_chronic','hbs_flag','exercise','smoking','alcohol','helmet','belt','family_history_flag','urine_flag','cbc_flag','chemistry_flag','cxr_flag','risk','treatment','doctor_name','rbc_ua_flag','wbc_ua_flag','hbv','mmr','influenza','covid'];
 
@@ -115,6 +135,7 @@
             deptSel = document.getElementById('deptSelect');
             metricSel = document.getElementById('metricSelect');
             ageSel = document.getElementById('ageGroupSelect');
+            sortDeptSel = document.getElementById('sortDeptSelect');
 
             const cur = new Date().getFullYear();
             for(let y=2019; y<=cur; y++) yearSel.add(new Option(y,y));
@@ -133,7 +154,7 @@
                 hideSpinner();
                 if (!opt || !opt.sexes || !opt.depts) { alert("ไม่สามารถโหลดข้อมูลตัวเลือกได้"); return; }
                 sexSel.innerHTML = ''; opt.sexes.forEach(s => sexSel.add(new Option(s.label, s.code))); sexSel.options[0].text = 'ทุกเพศ';
-                deptSel.innerHTML = ''; opt.depts.forEach(d => deptSel.add(new Option(d.label, d.code))); deptSel.options[0].text = 'ทุกแผนก';
+                deptSel.innerHTML = ''; opt.depts.forEach(d => deptSel.add(new Option(d.label, d.code))); deptSel.options[0].text = 'ทุกแผนก (อิง Personnel)';
                 [yearSel, sexSel, deptSel, ageSel, metricSel].forEach(el => el.onchange = renderView);
                 renderView();
             }).catch(e => { hideSpinner(); alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); });
@@ -152,19 +173,24 @@
             }
         }
 
+        let cacheDashboardData = null;
+
         function loadDashboard() {
             const year = yearSel.value;
-            showSpinner();
-            callGAS('getDashboardData', {year}).then(data => {
-                hideSpinner();
-                if (!data || !data.summary) return;
-                
+            const sortMode = sortDeptSel.value;
+
+            const renderDashboardChart = (data) => {
                 document.getElementById('overallPercent').innerText = data.overallPercent;
-                document.getElementById('summaryText').innerHTML = `ตรวจแล้ว <span class="text-green-400 font-bold">${data.summary.reported}</span> จาก <span class="text-white">${data.summary.total}</span> คน`;
+                document.getElementById('summaryText').innerHTML = `ตรวจแล้ว <span class="text-green-400 font-bold">${data.summary.reported}</span> จากประชากรใน Personnel <span class="text-white">${data.summary.total}</span> คน`;
                 document.getElementById('progressBar').style.width = `${data.summary.percent}%`;
 
-                // Sort by Total Count Descending
-                globalDeptData = [...data.perDept].sort((a, b) => b.total - a.total);
+                // Sorting Logic
+                globalDeptData = [...data.perDept];
+                if(sortMode === 'total'){
+                    globalDeptData.sort((a, b) => b.total - a.total); // Sort by total descending
+                } else {
+                    globalDeptData.sort((a, b) => a.dept.localeCompare(b.dept, 'th')); // Sort alphabet Thai
+                }
                 
                 const labels = globalDeptData.map(d => d.dept);
                 const reportedData = globalDeptData.map(d => d.reported);
@@ -178,20 +204,8 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            {
-                                label: 'ตรวจแล้ว',
-                                data: reportedData,
-                                backgroundColor: '#10b981', // Green
-                                barPercentage: 0.8,
-                                categoryPercentage: 0.9
-                            },
-                            {
-                                label: 'ยังไม่ตรวจ',
-                                data: notReportedData,
-                                backgroundColor: '#f43f5e', // Red
-                                barPercentage: 0.8,
-                                categoryPercentage: 0.9
-                            }
+                            { label: 'ตรวจแล้ว', data: reportedData, backgroundColor: '#10b981', barPercentage: 0.8, categoryPercentage: 0.9 },
+                            { label: 'ยังไม่ตรวจ', data: notReportedData, backgroundColor: '#f43f5e', barPercentage: 0.8, categoryPercentage: 0.9 }
                         ]
                     },
                     options: {
@@ -204,11 +218,7 @@
                         },
                         plugins: {
                             legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                            datalabels: {
-                                color: '#fff',
-                                font: { weight: 'bold', size: 10 },
-                                formatter: (val) => val > 0 ? val : ''
-                            }
+                            datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (val) => val > 0 ? val : '' }
                         },
                         onClick: (e, elements) => {
                             if (elements.length > 0) {
@@ -220,6 +230,19 @@
                     },
                     plugins: [ChartDataLabels]
                 });
+            }
+
+            if (cacheDashboardData && cacheDashboardData.year === year) {
+                renderDashboardChart(cacheDashboardData.data);
+                return;
+            }
+
+            showSpinner();
+            callGAS('getDashboardData', {year}).then(data => {
+                hideSpinner();
+                if (!data || !data.summary) return;
+                cacheDashboardData = { year, data };
+                renderDashboardChart(data);
             });
         }
 
@@ -231,7 +254,7 @@
                 const el = document.getElementById(elId);
                 el.innerHTML = '';
                 if (list.length === 0) el.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-4">ไม่มีรายชื่อ</div>';
-                else list.forEach(n => { el.innerHTML += `<div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 transition"><div class="${iconClass} w-1.5 h-1.5 rounded-full shrink-0"></div><span class="${textClass} text-xs truncate">${n}</span></div>`; });
+                else list.forEach(n => { el.innerHTML += `<div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 transition border-b border-white/5 last:border-0"><div class="${iconClass} w-1.5 h-1.5 rounded-full shrink-0"></div><span class="${textClass} text-xs truncate">${n}</span></div>`; });
             };
             renderList(rep, 'reportedList', 'bg-emerald-500', 'text-emerald-200');
             renderList(notRep, 'notReportedList', 'bg-rose-500', 'text-rose-200');
@@ -273,7 +296,7 @@
                     chartFlag = new Chart(document.getElementById('flagChart'), { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#1e293b', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#fff', formatter: (v, ctx) => (v*100/ctx.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0)+'%' } } }, plugins: [ChartDataLabels] });
                     
                     legendEl.innerHTML = '';
-                    labels.forEach((l, i) => { legendEl.innerHTML += `<li class="flex justify-between items-center text-xs py-1.5 border-b border-white/5"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full" style="background:${colors[i]}"></div><span class="text-slate-300">${l}</span></div><span class="badge bg-slate-700 text-white">${data[i]}</span></li>`; });
+                    labels.forEach((l, i) => { legendEl.innerHTML += `<li class="flex justify-between items-center text-xs py-2 border-b border-white/5"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full" style="background:${colors[i]}"></div><span class="text-slate-300 leading-tight">${l}</span></div><span class="badge bg-slate-700 text-white font-bold ml-2 px-2 py-0.5 rounded">${data[i]}</span></li>`; });
                 } else {
                     histEl.classList.remove('hidden'); flagEl.classList.add('hidden');
                     const bins = 10, min = res.stats?.min || 0, max = res.stats?.max || 100, step = (max - min) / bins || 1;
@@ -287,7 +310,7 @@
                     legendEl.innerHTML = '';
                     if (res.classificationCounts) {
                         Object.entries(res.classificationCounts).forEach(([k,v]) => {
-                            legendEl.innerHTML += `<li class="flex justify-between text-xs py-1.5 border-b border-white/5"><span class="text-slate-300">${k}</span><span class="badge bg-slate-700 text-white">${v}</span></li>`;
+                            legendEl.innerHTML += `<li class="flex justify-between text-xs py-2 border-b border-white/5"><span class="text-slate-300">${k}</span><span class="badge bg-slate-700 text-white font-bold px-2 py-0.5 rounded">${v}</span></li>`;
                         });
                     }
                 }
