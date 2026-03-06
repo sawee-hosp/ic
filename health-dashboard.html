@@ -26,9 +26,9 @@
         .chart-container { position: relative; width: 100%; }
         
         /* Modal Adjustments for Scrolling */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 50; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 50; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 1rem; }
         .modal-overlay.show { opacity: 1; pointer-events: auto; }
-        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s; }
+        .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; width: 100%; max-width: 800px; height: 85vh; max-height: 800px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s; }
         .modal-overlay.show .modal-content { transform: scale(1); }
         
         .custom-scroll::-webkit-scrollbar { width: 6px; }
@@ -40,11 +40,11 @@
 </head>
 <body>
     <div class="bg-overlay"></div>
-    <div id="spinner" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md hidden"><div class="loading-spinner mb-4"></div><p class="text-indigo-200 text-xs tracking-wider animate-pulse">กำลังประมวลผลข้อมูลจากฐาน Personnel...</p></div>
+    <div id="spinner" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md hidden"><div class="loading-spinner mb-4"></div><p class="text-indigo-200 text-xs tracking-wider animate-pulse">กำลังประมวลผลข้อมูล...</p></div>
 
     <div class="container mx-auto p-4 max-w-7xl">
         <div class="glass-panel p-4 rounded-2xl mb-6 flex flex-col lg:flex-row items-center justify-between gap-4 sticky top-4 z-20">
-            <div class="flex items-center gap-3"><div class="bg-indigo-500/20 p-2 rounded-xl"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain drop-shadow" /></div><div><h1 class="text-lg font-bold text-white leading-tight">Dashboard สุขภาพ</h1><p class="text-[11px] text-slate-400">อ้างอิงรายชื่อจาก Personnel (Admin)</p></div></div>
+            <div class="flex items-center gap-3"><div class="bg-indigo-500/20 p-2 rounded-xl"><img src="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" class="w-10 h-10 object-contain drop-shadow" /></div><div><h1 class="text-lg font-bold text-white leading-tight">Dashboard สุขภาพ</h1><p class="text-[11px] text-slate-400">รพ.สวี (Admin View)</p></div></div>
             <div class="flex flex-wrap gap-2 w-full lg:w-auto justify-end"><select id="yearSelect" class="glass-input w-24 text-center"></select><select id="metricSelect" class="glass-input w-48"></select><select id="sexSelect" class="glass-input w-28"></select><select id="ageGroupSelect" class="glass-input w-28"></select><select id="deptSelect" class="glass-input flex-1 lg:w-48"></select></div>
         </div>
 
@@ -63,7 +63,7 @@
                 <div class="relative w-full" style="height: 600px;">
                     <canvas id="deptStackedChart"></canvas>
                 </div>
-                <p class="text-center text-xs text-slate-400 mt-2">* คลิกที่แท่งกราฟเพื่อดูรายชื่อบุคลากร (เทียบกับทะเบียน Personnel)</p>
+                <p class="text-center text-xs text-slate-400 mt-2">* คลิกที่แท่งกราฟเพื่อดูรายชื่อบุคลากรเปรียบเทียบกับทะเบียนเจ้าหน้าที่</p>
             </div>
         </div>
 
@@ -75,7 +75,7 @@
                 </div>
                 <div class="space-y-4">
                     <div class="glass-panel p-5 rounded-2xl"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2">ข้อมูลทางสถิติ</h3><div id="statsCards" class="grid grid-cols-2 gap-3"></div></div>
-                    <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col max-h-[500px]"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2 shrink-0">รายละเอียด (Legend)</h3><div class="overflow-y-auto custom-scroll flex-1"><ul id="flagLegend" class="space-y-2"></ul></div></div>
+                    <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col max-h-[400px]"><h3 class="text-slate-300 font-bold text-xs uppercase mb-3 border-b border-slate-700 pb-2 shrink-0">รายละเอียด (Legend)</h3><div class="overflow-y-auto custom-scroll flex-1 pr-1"><ul id="flagLegend" class="space-y-2"></ul></div></div>
                 </div>
             </div>
         </div>
@@ -85,14 +85,15 @@
     <div id="deptModal" class="modal-overlay">
         <div class="modal-content glass-panel">
             <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50 rounded-t-xl shrink-0"><h5 class="text-white font-bold flex items-center gap-2"><i data-lucide="users" class="text-indigo-400"></i> <span id="modalTitle">รายชื่อบุคลากร</span></h5><button onclick="closeModal()" class="text-slate-400 hover:text-white transition"><i data-lucide="x"></i></button></div>
-            <div class="flex-grow overflow-hidden flex flex-col md:flex-row">
+            <!-- Body of Modal uses flex, min-h-0 is crucial for inner scrolling -->
+            <div class="flex-grow flex flex-col md:flex-row min-h-0 overflow-hidden">
                 <!-- ตรวจแล้ว Box -->
-                <div class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-white/10">
+                <div class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-white/10 min-w-0 min-h-0">
                     <div class="p-3 bg-green-500/10 text-green-400 text-xs font-bold uppercase shrink-0 border-b border-white/5">✅ ตรวจสุขภาพแล้ว (<span id="countReported">0</span>)</div>
                     <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1" id="reportedList"></div>
                 </div>
                 <!-- ยังไม่ตรวจ Box -->
-                <div class="flex-1 flex flex-col">
+                <div class="flex-1 flex flex-col min-w-0 min-h-0">
                     <div class="p-3 bg-red-500/10 text-red-400 text-xs font-bold uppercase shrink-0 border-b border-white/5">❌ ยังไม่ตรวจ (<span id="countNotReported">0</span>)</div>
                     <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1" id="notReportedList"></div>
                 </div>
@@ -101,7 +102,6 @@
     </div>
 
     <script>
-        // *** อัปเดต URL ของ Web App ให้ตรงกับของคุณ ***
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxoAiCFIoDT3kgaY5k2BmVeUMN5kR_9w0WToW79sw6-ko4kYgUzo45n_PJ1c6QKDnCgsw/exec";
         
         lucide.createIcons();
@@ -154,7 +154,7 @@
                 hideSpinner();
                 if (!opt || !opt.sexes || !opt.depts) { alert("ไม่สามารถโหลดข้อมูลตัวเลือกได้"); return; }
                 sexSel.innerHTML = ''; opt.sexes.forEach(s => sexSel.add(new Option(s.label, s.code))); sexSel.options[0].text = 'ทุกเพศ';
-                deptSel.innerHTML = ''; opt.depts.forEach(d => deptSel.add(new Option(d.label, d.code))); deptSel.options[0].text = 'ทุกแผนก (อิง Personnel)';
+                deptSel.innerHTML = ''; opt.depts.forEach(d => deptSel.add(new Option(d.label, d.code))); deptSel.options[0].text = 'ทุกแผนก';
                 [yearSel, sexSel, deptSel, ageSel, metricSel].forEach(el => el.onchange = renderView);
                 renderView();
             }).catch(e => { hideSpinner(); alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); });
@@ -181,15 +181,15 @@
 
             const renderDashboardChart = (data) => {
                 document.getElementById('overallPercent').innerText = data.overallPercent;
-                document.getElementById('summaryText').innerHTML = `ตรวจแล้ว <span class="text-green-400 font-bold">${data.summary.reported}</span> จากประชากรใน Personnel <span class="text-white">${data.summary.total}</span> คน`;
+                document.getElementById('summaryText').innerHTML = `ตรวจแล้ว <span class="text-green-400 font-bold">${data.summary.reported}</span> จากประชากรทั้งหมด <span class="text-white">${data.summary.total}</span> คน`;
                 document.getElementById('progressBar').style.width = `${data.summary.percent}%`;
 
                 // Sorting Logic
                 globalDeptData = [...data.perDept];
                 if(sortMode === 'total'){
-                    globalDeptData.sort((a, b) => b.total - a.total); // Sort by total descending
+                    globalDeptData.sort((a, b) => b.total - a.total); 
                 } else {
-                    globalDeptData.sort((a, b) => a.dept.localeCompare(b.dept, 'th')); // Sort alphabet Thai
+                    globalDeptData.sort((a, b) => a.dept.localeCompare(b.dept, 'th')); 
                 }
                 
                 const labels = globalDeptData.map(d => d.dept);
@@ -204,8 +204,9 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'ตรวจแล้ว', data: reportedData, backgroundColor: '#10b981', barPercentage: 0.8, categoryPercentage: 0.9 },
-                            { label: 'ยังไม่ตรวจ', data: notReportedData, backgroundColor: '#f43f5e', barPercentage: 0.8, categoryPercentage: 0.9 }
+                            // maxBarThickness จำกัดความอ้วนของกราฟให้เป็นแท่งเล็กๆ
+                            { label: 'ตรวจแล้ว', data: reportedData, backgroundColor: '#10b981', maxBarThickness: 20 },
+                            { label: 'ยังไม่ตรวจ', data: notReportedData, backgroundColor: '#f43f5e', maxBarThickness: 20 }
                         ]
                     },
                     options: {
@@ -254,11 +255,23 @@
                 const el = document.getElementById(elId);
                 el.innerHTML = '';
                 if (list.length === 0) el.innerHTML = '<div class="text-slate-500 text-xs italic text-center py-4">ไม่มีรายชื่อ</div>';
-                else list.forEach(n => { el.innerHTML += `<div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 transition border-b border-white/5 last:border-0"><div class="${iconClass} w-1.5 h-1.5 rounded-full shrink-0"></div><span class="${textClass} text-xs truncate">${n}</span></div>`; });
+                else list.forEach(n => { el.innerHTML += `<div class="flex items-center gap-2 p-2 rounded hover:bg-white/5 transition border-b border-white/5 last:border-0"><div class="${iconClass} w-1.5 h-1.5 rounded-full shrink-0"></div><span class="${textClass} text-[13px] truncate">${n}</span></div>`; });
             };
             renderList(rep, 'reportedList', 'bg-emerald-500', 'text-emerald-200');
             renderList(notRep, 'notReportedList', 'bg-rose-500', 'text-rose-200');
             openModal();
+        }
+
+        function renderStatsBox(statsObj, title = null) {
+            let html = '';
+            if(title) html += `<div class="col-span-2 text-xs text-indigo-300 font-bold border-b border-indigo-900/50 pb-1">${title}</div>`;
+            html += `
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-white/5"><div class="text-slate-400 text-[10px] mb-1">จำนวนข้อมูล (Count)</div><div class="text-lg font-bold text-white">${statsObj.count}</div></div>
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-white/5"><div class="text-slate-400 text-[10px] mb-1">ค่าเฉลี่ย (Avg)</div><div class="text-lg font-bold text-emerald-400">${statsObj.avg}</div></div>
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-white/5"><div class="text-slate-400 text-[10px] mb-1">ค่าน้อยสุด (Min)</div><div class="text-lg font-bold text-slate-300">${statsObj.min}</div></div>
+                <div class="bg-slate-800/50 p-3 rounded-lg border border-white/5"><div class="text-slate-400 text-[10px] mb-1">ค่ามากสุด (Max)</div><div class="text-lg font-bold text-rose-400">${statsObj.max}</div></div>
+            `;
+            return html;
         }
 
         function loadStats(metric) {
@@ -281,8 +294,10 @@
                     if (chartHist) chartHist.destroy();
                     chartHist = new Chart(document.getElementById('histChart'), { type: 'bar', data: { labels, datasets: [{ label: 'Systolic', data: dSys, backgroundColor: 'rgba(244, 63, 94, 0.6)' }, { label: 'Diastolic', data: dDia, backgroundColor: 'rgba(99, 102, 241, 0.6)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: {display:false} }, y: { grid: {color: '#334155'} } } } });
                     
+                    statsEl.innerHTML = renderStatsBox(res.statsSys, "Systolic (ตัวบน)") + renderStatsBox(res.statsDia, "Diastolic (ตัวล่าง)");
+
                     legendEl.innerHTML = ''; // BP flags legend
-                    if(res.classificationCounts) Object.entries(res.classificationCounts).forEach(([k,v]) => { legendEl.innerHTML += `<li class="flex justify-between text-xs py-1 border-b border-white/5"><span class="text-slate-300">${k}</span><span class="badge bg-slate-700 text-white">${v}</span></li>`; });
+                    if(res.classificationCounts) Object.entries(res.classificationCounts).forEach(([k,v]) => { legendEl.innerHTML += `<li class="flex justify-between text-[11px] py-1 border-b border-white/5"><span class="text-slate-300 leading-tight pr-2">${k}</span><span class="badge bg-slate-700 text-white px-1.5 rounded h-min">${v}</span></li>`; });
                     return;
                 }
 
@@ -295,8 +310,10 @@
                     if (chartFlag) chartFlag.destroy();
                     chartFlag = new Chart(document.getElementById('flagChart'), { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#1e293b', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#fff', formatter: (v, ctx) => (v*100/ctx.dataset.data.reduce((a,b)=>a+b,0)).toFixed(0)+'%' } } }, plugins: [ChartDataLabels] });
                     
+                    statsEl.innerHTML = `<div class="col-span-2 flex items-center justify-center p-6 text-slate-400 text-xs italic">สถิติตัวเลขแสดงเฉพาะข้อมูลเชิงปริมาณ</div>`;
+
                     legendEl.innerHTML = '';
-                    labels.forEach((l, i) => { legendEl.innerHTML += `<li class="flex justify-between items-center text-xs py-2 border-b border-white/5"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full" style="background:${colors[i]}"></div><span class="text-slate-300 leading-tight">${l}</span></div><span class="badge bg-slate-700 text-white font-bold ml-2 px-2 py-0.5 rounded">${data[i]}</span></li>`; });
+                    labels.forEach((l, i) => { legendEl.innerHTML += `<li class="flex justify-between items-center text-xs py-2 border-b border-white/5"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full shrink-0" style="background:${colors[i]}"></div><span class="text-slate-300 leading-tight">${l}</span></div><span class="badge bg-slate-700 text-white font-bold ml-2 px-2 py-0.5 rounded">${data[i]}</span></li>`; });
                 } else {
                     histEl.classList.remove('hidden'); flagEl.classList.add('hidden');
                     const bins = 10, min = res.stats?.min || 0, max = res.stats?.max || 100, step = (max - min) / bins || 1;
@@ -307,10 +324,12 @@
                     if (chartHist) chartHist.destroy();
                     chartHist = new Chart(document.getElementById('histChart'), { type: 'line', data: { labels, datasets: [{ label: 'คน', data: counts, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: '#6366f1', tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: {display:false} }, y: { grid: {color: '#334155'} } } } });
 
+                    statsEl.innerHTML = renderStatsBox(res.stats);
+
                     legendEl.innerHTML = '';
                     if (res.classificationCounts) {
                         Object.entries(res.classificationCounts).forEach(([k,v]) => {
-                            legendEl.innerHTML += `<li class="flex justify-between text-xs py-2 border-b border-white/5"><span class="text-slate-300">${k}</span><span class="badge bg-slate-700 text-white font-bold px-2 py-0.5 rounded">${v}</span></li>`;
+                            legendEl.innerHTML += `<li class="flex justify-between text-xs py-2 border-b border-white/5"><span class="text-slate-300 leading-tight pr-2">${k}</span><span class="badge bg-slate-700 text-white font-bold px-2 py-0.5 rounded h-min">${v}</span></li>`;
                         });
                     }
                 }
