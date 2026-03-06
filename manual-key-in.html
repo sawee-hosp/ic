@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IC SW-1 (ระบบบันทึกข้อมูลสุขภาพ)</title>
+    
+    <link rel="icon" href="https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #0f172a; color: #f8fafc; -webkit-tap-highlight-color: transparent; overflow-x: hidden; font-size: 14px; }
+        
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: 150% 150%;
+            animation: aurora 15s ease infinite;
+        }
+        .bg-overlay::after {
+            content: ""; position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.4;
+        }
+        @keyframes aurora { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .glass-input { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: white; width: 100%; padding: 0.4rem 0.6rem; border-radius: 0.375rem; transition: all 0.2s; font-size: 0.9rem; height: 38px; }
+        .glass-input:focus { outline: none; border-color: #818cf8; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        .glass-input:read-only, .glass-input:disabled { opacity: 0.6; cursor: not-allowed; background: rgba(15, 23, 42, 0.3); }
+
+        .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; font-weight: 600; padding: 0.6rem; border-radius: 0.5rem; width: 100%; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary:active:not(:disabled) { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); }
+
+        .btn-secondary { background: rgba(51, 65, 85, 0.5); color: #cbd5e1; font-weight: 500; padding: 0.6rem; border-radius: 0.5rem; width: 100%; border: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        .badge { padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 4px; white-space: nowrap; height: 20px; display: inline-flex; align-items: center; letter-spacing: 0.5px; }
+        .bg-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .bg-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .bg-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .tab-btn { position: relative; padding: 0.6rem 1.2rem; color: #94a3b8; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { color: white; font-weight: 600; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: #6366f1; border-radius: 3px 3px 0 0; box-shadow: 0 -2px 10px rgba(99, 102, 241, 0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+        
+        // ** อัปเดต GAS_URL ตามที่ระบุ **
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbx16YPdL2SVeLCn-dz_jm9nDWI1gNPYkXw_2MSsy283ycBJUxS917kDoBNjQ7m8ZFUHlw/exec";
+        const LOGO_URL = "https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png";
+
+        const CHRONIC_DISEASES = [
+            "ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", 
+            "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", 
+            "โรคภูมิแพ้", "โรคไมเกรน"
+        ];
+
+        // --- 1. GLOBAL UTILS & HELPERS ---
+        const callGAS = async (action, payload = {}) => {
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action, ...payload })
+                });
+                return await res.json();
+            } catch (error) {
+                console.error("API Error:", error);
+                throw error;
+            }
+        };
+
+        const Icon = ({ name, className, size=24 }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if(ref.current) {
+                    ref.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    i.className = className || '';
+                    ref.current.appendChild(i);
+                    lucide.createIcons({ root: ref.current, attrs: { width: size, height: size } });
+                }
+            }, [name, className, size]);
+            return <span ref={ref} className="inline-flex items-center justify-center"></span>;
+        };
+
+        const Loading = ({ text }) => (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md">
+                <img src={LOGO_URL} className="w-20 h-20 mb-4 animate-pulse" />
+                <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
+                <p className="text-indigo-200 text-xs tracking-wider">{text}</p>
+            </div>
+        );
+
+        const getFlag = (t, v, s) => {
+            const n = parseFloat(v); if(!n) return null;
+            const dot = (c) => c === 'bg-green' ? 'bg-emerald-500' : c === 'bg-yellow' ? 'bg-amber-500' : 'bg-rose-500';
+            let res = null;
+            if(t=='bmi') res = n<18.5?{bg:'bg-yellow',label:'ผอม'}:n<23?{bg:'bg-green',label:'ปกติ'}:n<25?{bg:'bg-yellow',label:'ท้วม'}:{bg:'bg-red',label:'อ้วน'};
+            if(t=='bp') res = n<120?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='waist') { let lim=(s=='ชาย'||s=='1')?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
+            if(t=='pulse') res = (n>=60 && n<=100)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t=='fbs') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<126?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t=='chol') res = n<200?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='trig') res = n<150?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='hdl') res = n>=((s=='ชาย'||s=='1')?40:50)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ต่ำ'};
+            if(t=='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<160?{bg:'bg-yellow',label:'สูง'}:{bg:'bg-red',label:'สูงมาก'};
+            if(t=='bun') res = n<=20?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='cr') res = n<=1.44?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='uric') res = n<=8.2?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='sgot') res = n<35?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='sgpt') res = n<45?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='alk') res = n<=147?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t=='hct') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?38:36) && n<=(isM?50:45))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t=='hgb') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?13.2:11.6) && n<=(isM?16.6:15.0))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t=='urine') { let str = String(v).toLowerCase(); res = (str==='0'||str.includes('not')||str.includes('none')||str==='-')?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(res) return { ...res, dot: dot(res.bg) };
+            return null;
+        };
+
+        // --- 2. UI COMPONENTS (ATOMS) ---
+        const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
+            <div>
+                <div className="flex justify-between items-end mb-1">
+                    <label className="text-[10px] text-slate-400">{label}</label>
+                    {onChart && !readonly && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
+                </div>
+                <div className="relative">
+                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} disabled={readonly} />
+                    {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
+                </div>
+            </div>
+        );
+
+        const Card = ({ title, children }) => (
+            <div className="glass-panel p-5 rounded-2xl">
+                <h3 className="text-indigo-300 font-bold text-[11px] uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">{title}</h3>
+                {children}
+            </div>
+        );
+
+        const Select = ({ label, val, options, onChange, disabled }) => {
+            const found = options?.find(o => o.code == val);
+            return (
+                <div>
+                    {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
+                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)} disabled={disabled}>
+                        <option value="">- เลือก -</option>
+                        {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
+                        {val && !found && <option value={val}>{val}</option>}
+                    </select>
+                </div>
+            );
+        };
+
+        const RadioBtn = ({ name, val, setVal, opts, disabled }) => (
+            <div className="flex bg-slate-800 rounded p-0.5 w-full">
+                {opts.map(o => (
+                    <button key={o.v} onClick={()=> !disabled && setVal(o.v)} 
+                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {o.l}
+                    </button>
+                ))}
+            </div>
+        );
+
+        const FlagInput = ({ label, name, val, detail, onChange, opts, disabled }) => {
+            const hasDetail = (val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2) || (name.includes('cbc') && val==2) || (name.includes('chemistry') && val==2));
+            const detailName = name.replace('flag','detail').replace('has_','').replace('_flag','_detail');
+            return (
+                <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
+                        <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} disabled={disabled} /></div>
+                    </div>
+                    {hasDetail && name !== 'has_chronic' && (
+                        <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail||''} onChange={e=>onChange(detailName, e.target.value)} disabled={disabled} />
+                    )}
+                </div>
+            );
+        };
+
+        const ChartModal = ({ hn, field, title, value, year, onClose }) => {
+            const canvasRef = useRef(null);
+            const [mode, setMode] = useState('self');
+            const [loading, setLoading] = useState(true);
+            const [stats, setStats] = useState(null);
+
+            useEffect(() => {
+                const draw = async () => {
+                    setLoading(true);
+                    try {
+                        let config = {};
+                        if (mode === 'self') {
+                            setStats(null);
+                            const res = await callGAS('getSelfTrend', { hn, field });
+                            config = { 
+                                type: 'line', 
+                                data: { labels: res.map(d=>d.year), datasets: [{ label: 'แนวโน้ม', data: res.map(d=>d.value), borderColor: '#6366f1', tension: 0.4, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)' }] } 
+                            };
+                        } else {
+                            const res = await callGAS('getDistribution', { field, year, hn });
+                            const vals = res.values || [];
+                            const userVal = parseFloat(value) || res.userVal || 0;
+                            
+                            const n = vals.length;
+                            const sortedVals = [...vals].sort((a,b) => a - b);
+                            const rank = sortedVals.findIndex(v => v >= userVal) + 1 || n;
+                            setStats({ n, rank });
+
+                            const bins = 10;
+                            const min = Math.min(...vals, userVal);
+                            const max = Math.max(...vals, userVal);
+                            const buffer = (max - min) * 0.1 || 1;
+                            const rangeMin = Math.floor(min - buffer);
+                            const rangeMax = Math.ceil(max + buffer);
+                            const step = (rangeMax - rangeMin) / bins;
+                            const curveData = [];
+                            
+                            for(let i=0; i<bins; i++) {
+                                const start = rangeMin + (i*step);
+                                const end = start + step;
+                                const mid = start + (step/2);
+                                const count = vals.filter(v => v >= start && v < end).length;
+                                curveData.push({ x: mid, y: count });
+                            }
+                            
+                            if(curveData.length > 0) {
+                                curveData.unshift({ x: rangeMin, y: 0 });
+                                curveData.push({ x: rangeMax, y: 0 });
+                            }
+
+                            config = { 
+                                type: 'line', 
+                                data: { 
+                                    datasets: [
+                                        { label: 'กลุ่ม', data: curveData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', fill: true, tension: 0.4, pointRadius: 0 },
+                                        { type: 'scatter', label: 'คุณ', data: [{x: userVal, y: 0}], backgroundColor: '#f43f5e', pointRadius: 8, borderColor: 'white', borderWidth: 2, order: 0 }
+                                    ] 
+                                },
+                                options: { 
+                                    scales: { x: { type: 'linear', grid:{color:'#334155'}, ticks:{color:'#94a3b8'}, min: rangeMin, max: rangeMax }, y: { display:false, beginAtZero: true } },
+                                    plugins: { legend: { display: false } }
+                                }
+                            };
+                        }
+                        
+                        if (canvasRef.current) {
+                            const chart = Chart.getChart(canvasRef.current);
+                            if (chart) chart.destroy();
+                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false } });
+                        }
+                    } catch(e) {}
+                    setLoading(false);
+                };
+                draw();
+            }, [mode]);
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in" onClick={onClose}>
+                    <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-5 border border-slate-700 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white"><Icon name="x" size={20} /></button>
+                        <h3 className="text-white font-bold mb-1 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
+                        <p className="text-xs text-slate-400 mb-4 ml-7">ค่าของคุณ: <span className="text-white font-bold">{value || '-'}</span></p>
+                        
+                        <div className="flex bg-slate-900 rounded p-1 mb-4">
+                            <button onClick={()=>setMode('self')} className={`flex-1 text-xs py-2 rounded ${mode==='self'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบตัวเอง</button>
+                            <button onClick={()=>setMode('others')} className={`flex-1 text-xs py-2 rounded ${mode==='others'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบกลุ่ม</button>
+                        </div>
+                        <div className="h-56 relative">{loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">สร้างกราฟ...</div>}<canvas ref={canvasRef}></canvas></div>
+                        {mode === 'others' && (
+                            <div className="mt-3 text-center">
+                                <p className="text-[10px] text-slate-500">* จุดสีแดงคือตำแหน่งของค่าที่บันทึกในกลุ่มบุคลากร</p>
+                                {stats && <p className="text-xs text-slate-300 mt-1">จำนวนข้อมูล (n) = <span className="font-bold text-white">{stats.n}</span> | ลำดับที่ <span className="font-bold text-white">{stats.rank}</span> (จากน้อยไปมาก)</p>}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3. PAGE COMPONENTS ---
+
+        const LoginPage = ({ onLogin }) => {
+            const [hn, setHn] = useState('');
+
+            const attemptLogin = () => {
+                if(!hn.trim()) return alert("กรุณาระบุ HN");
+                onLogin(hn.trim());
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in relative overflow-hidden">
+                    <div className="w-full max-w-sm text-center z-10">
+                        <div className="mb-6 relative inline-block">
+                            <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
+                            <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
+                        </div>
+                        <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Health Book</h1>
+                        <h2 className="text-lg text-orange-300 font-medium mb-2 tracking-wide">Manual Key-in</h2>
+                        <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">ระบบบันทึกข้อมูลสุขภาพสำหรับเจ้าหน้าที่<br/>กรอกรหัส HN เพื่อเข้าสู่แบบบันทึกของบุคลากร</p>
+
+                        <div className="glass-panel p-6 rounded-2xl space-y-4 text-left border-t-2 border-orange-500/50">
+                            <div className="space-y-2">
+                                <label className="text-xs text-slate-300 block text-center font-bold">ระบุรหัส HN ของบุคลากร</label>
+                                <input 
+                                    className="glass-input text-center text-lg tracking-widest font-mono" 
+                                    placeholder="เช่น 550001234" 
+                                    value={hn} 
+                                    onChange={e=>setHn(e.target.value)} 
+                                    onKeyDown={e => e.key === 'Enter' && attemptLogin()}
+                                />
+                            </div>
+                            <button onClick={attemptLogin} disabled={!hn.trim()} className={`btn-primary mt-4 shadow-lg shadow-indigo-500/30 w-full transition-all ${!hn.trim() ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>
+                                <Icon name="search" size={18} /> ค้นหาและบันทึกข้อมูล
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const HealthBook = ({ user, codebook, onLogout }) => {
+            // บังคับใช้แค่ปีปัจจุบัน สำหรับ Manual Mode
+            const currentYear = new Date().getFullYear();
+            const [selYear, setSelYear] = useState(currentYear);
+            
+            const [data, setData] = useState({});
+            const [loading, setLoading] = useState(false);
+            const [vaccine, setVaccine] = useState(null);
+            const [modal, setModal] = useState(null);
+
+            useEffect(() => {
+                const loadData = async () => {
+                    setLoading(true);
+                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment: '1', chronic_array: [], chronic_other: '' };
+                    try {
+                        const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
+                        if (h && (h.timestamp || h.visit_date)) {
+                            if(h.timestamp || h.visit_date) {
+                                let d = new Date(h.visit_date || h.timestamp);
+                                if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
+                            }
+                            
+                            // Map chronic_detail to Multiple Array and Other String
+                            let chronicArr = [];
+                            let chronicOther = '';
+                            if (h.has_chronic == 1 && h.chronic_detail) {
+                                const parts = h.chronic_detail.split(',').map(s => s.trim()).filter(s => s);
+                                parts.forEach(p => {
+                                    if (CHRONIC_DISEASES.includes(p)) {
+                                        chronicArr.push(p);
+                                    } else {
+                                        chronicOther = chronicOther ? chronicOther + ', ' + p : p;
+                                    }
+                                });
+                            }
+                            h.chronic_array = chronicArr;
+                            h.chronic_other = chronicOther;
+
+                            if(!h.treatment) h.treatment = '1';
+                            setData(h);
+                        } else {
+                            // ไม่พบข้อมูลในปีปัจจุบัน ให้ใช้ค่า default เพื่อกรอกใหม่
+                            setData(def);
+                        }
+                        
+                        const v = await callGAS('getVaccineStatus', { hn: user.HN, year: selYear });
+                        setVaccine(v);
+                        if (v.found) setData(prev => ({...prev, influenza: 1}));
+                    } catch { setData(def); }
+                    setLoading(false);
+                };
+                loadData();
+            }, [selYear]);
+
+            const bmi = useMemo(() => (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '', [data]);
+            
+            // Calculate CV Risk Approximation
+            const cvRisk = useMemo(() => {
+                if (!data.age) return 0;
+                
+                let base = 0;
+                const age = parseFloat(data.age);
+                const sbp = parseFloat(data.bp_systolic) || 120;
+                const fbs = parseFloat(data.fbs) || 90;
+                const chol = parseFloat(data.chol);
+                
+                // Age factor
+                if (age > 35) base += (age - 35) * 0.4;
+                // Sex factor (Men > Risk)
+                if (data.sex == '1' || data.sex === 'ชาย') base += 3;
+                // BP factor
+                if (sbp >= 140 && sbp < 160) base += 4;
+                if (sbp >= 160) base += 8;
+                // Smoking
+                if (data.smoking == '2') base += 7;
+                // DM (FBS > 130)
+                if (fbs > 130) base += 8;
+                
+                // Lipid or Obesity factor
+                if (chol) {
+                    if (chol > 200 && chol <= 239) base += 3;
+                    if (chol >= 240) base += 6;
+                } else if (data.waist_cm && data.height_cm) {
+                    const waistRatio = parseFloat(data.waist_cm) / parseFloat(data.height_cm);
+                    if (waistRatio > 0.5) base += 4; 
+                }
+                
+                return Math.max(1, Math.min(base, 50)).toFixed(1); 
+            }, [data.age, data.bp_systolic, data.fbs, data.chol, data.smoking, data.sex, data.waist_cm, data.height_cm]);
+            
+            const getFlags = (d) => {
+                const f = {
+                    bmi: getFlag('bmi', bmi),
+                    bp: getFlag('bp', d.bp_systolic, d.bp_diastolic),
+                    waist: getFlag('waist', d.waist_cm, d.sex),
+                    pulse: getFlag('pulse', d.pulse),
+                    fbs: getFlag('fbs', d.fbs),
+                    chol: getFlag('chol', d.chol),
+                    trig: getFlag('trig', d.trig),
+                    hdl: getFlag('hdl', d.hdl, d.sex),
+                    ldl: getFlag('ldl', d.ldl),
+                    bun: getFlag('bun', d.bun),
+                    cr: getFlag('cr', d.cr),
+                    uric: getFlag('uric', d.uric),
+                    sgot: getFlag('sgot', d.sgot),
+                    sgpt: getFlag('sgpt', d.sgpt),
+                    alk: getFlag('alk', d.alk_phos), 
+                    hct: getFlag('hct', d.hct, d.sex),
+                    hgb: getFlag('hgb', d.hgb, d.sex),
+                    rbc: getFlag('urine', d.rbc_ua),
+                    wbc: getFlag('urine', d.wbc_ua)
+                };
+                return f;
+            };
+            const flags = getFlags(data);
+
+            const riskyItems = useMemo(() => {
+                const labels = {bmi:'BMI', bp:'ความดันโลหิต', waist:'รอบเอว', pulse:'ชีพจร', fbs:'FBS', chol:'Cholesterol', trig:'Triglyceride', hdl:'HDL', ldl:'LDL', bun:'BUN', cr:'Cr', sgot:'SGOT', sgpt:'SGPT', alk:'Alk Phos', uric:'Uric', hct:'Hct', hgb:'Hgb', rbc:'RBC(Urine)', wbc:'WBC(Urine)'};
+                return Object.entries(flags)
+                    .filter(([k, v]) => v && (v.bg === 'bg-red' || v.bg === 'bg-yellow'))
+                    .map(([k, v]) => labels[k] || k)
+                    .join(', ');
+            }, [flags]);
+
+            const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
+            
+            const toggleChronic = (disease) => {
+                setData(p => {
+                    const arr = p.chronic_array || [];
+                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
+                    return { ...p, chronic_array: newArr };
+                });
+            };
+
+            const handleSave = async () => {
+                setLoading(true);
+
+                // --- CALCULATION LOGIC BASED ON CODEBOOK ---
+                const v = (val) => parseFloat(val);
+                const has = (val) => val !== undefined && val !== null && val !== '';
+                const codes = {};
+
+                if (has(data.age)) codes.age_flag = v(data.age) < 35 ? 1 : (v(data.age) <= 60 ? 2 : 3);
+                if (has(data.weight_kg) && has(data.height_cm)) {
+                    const bmiVal = v(data.weight_kg) / Math.pow(v(data.height_cm)/100, 2);
+                    codes.bmi_flag = bmiVal < 18.5 ? 1 : (bmiVal < 23 ? 2 : (bmiVal < 25 ? 3 : (bmiVal < 30 ? 4 : 5)));
+                }
+                if (has(data.waist_cm)) {
+                    const limit = (data.sex === 'ชาย' || data.sex == 1) ? 90 : 80;
+                    codes.waist_cm_flag = v(data.waist_cm) < limit ? 1 : 2;
+                }
+                if (has(data.pulse)) {
+                    const p = v(data.pulse);
+                    codes.pulse_flag = p < 60 ? 1 : (p <= 100 ? 2 : 3);
+                }
+                if (has(data.bp_systolic) || has(data.bp_diastolic)) {
+                    const sbp = v(data.bp_systolic) || 0;
+                    const dbp = v(data.bp_diastolic) || 0;
+                    if (sbp >= 140 || dbp >= 90) codes.bp_flag = 3;
+                    else if ((sbp >= 120 && sbp <= 139) || (dbp >= 80 && dbp <= 89)) codes.bp_flag = 2;
+                    else codes.bp_flag = 1;
+                }
+                if (has(data.hct)) {
+                    const h = v(data.hct);
+                    const isMale = (data.sex === 'ชาย' || data.sex == 1);
+                    codes.hct_flag = h < (isMale ? 38 : 36) ? 1 : (h > (isMale ? 50 : 45) ? 3 : 2);
+                }
+                if (has(data.hgb)) {
+                    const h = v(data.hgb);
+                    const isMale = (data.sex === 'ชาย' || data.sex == 1);
+                    codes.hgb_flag = h < (isMale ? 13.2 : 11.6) ? 1 : (h > (isMale ? 16.6 : 15.0) ? 3 : 2);
+                }
+
+                if (has(data.fbs)) codes.fbs_flag = v(data.fbs) < 100 ? 1 : (v(data.fbs) <= 125 ? 2 : 3);
+                if (has(data.chol)) codes.chol_flag = v(data.chol) < 200 ? 1 : (v(data.chol) <= 239 ? 2 : 3);
+                if (has(data.trig)) codes.trig_flag = v(data.trig) < 150 ? 1 : (v(data.trig) <= 199 ? 2 : 3);
+                if (has(data.hdl)) {
+                    const limit = (data.sex === 'ชาย' || data.sex == 1) ? 40 : 50;
+                    codes.hdl_flag = v(data.hdl) >= limit ? 1 : 2;
+                }
+                if (has(data.ldl)) codes.ldl_flag = v(data.ldl) < 100 ? 1 : (v(data.ldl) <= 159 ? 2 : 3);
+                if (has(data.bun)) codes.bun_flag = v(data.bun) > 20 ? 2 : 1;
+                if (has(data.cr)) codes.cr_flag = v(data.cr) > 1.44 ? 2 : 1;
+                if (has(data.sgot)) codes.sgot_flag = v(data.sgot) >= 35 ? 2 : 1;
+                if (has(data.sgpt)) codes.sgpt_flag = v(data.sgpt) >= 45 ? 2 : 1;
+                if (has(data.alk_phos)) codes.alk_phos_flag = v(data.alk_phos) > 147 ? 2 : 1;
+                if (has(data.uric)) codes.uric_flag = v(data.uric) > 8.2 ? 2 : 1;
+
+                const checkUrine = (val) => {
+                    if (!val) return '';
+                    const str = String(val).toLowerCase();
+                    if (str === '0' || str.includes('not') || str.includes('none') || str === '-') return 1;
+                    return 2;
+                };
+                if (has(data.rbc_ua)) codes.rbc_ua_flag = checkUrine(data.rbc_ua);
+                if (has(data.wbc_ua)) codes.wbc_ua_flag = checkUrine(data.wbc_ua);
+
+                // Calculate risk code from cvRisk
+                const cv = parseFloat(cvRisk);
+                let calculatedRiskCode = 9;
+                if (!isNaN(cv) && cv > 0) {
+                    if (cv < 10) calculatedRiskCode = 1;
+                    else if (cv < 20) calculatedRiskCode = 2;
+                    else if (cv < 30) calculatedRiskCode = 3;
+                    else if (cv < 40) calculatedRiskCode = 4;
+                    else calculatedRiskCode = 5;
+                }
+
+                // Combine Chronic Diseases Array + Other String
+                let combinedChronic = [];
+                if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
+                if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
+
+                const additionalFields = {
+                    chronic_detail: data.has_chronic == 1 ? combinedChronic.join(', ') : '',
+                    urine_detail: data.urine_flag == 2 ? data.urine_detail || '' : '',
+                    cbc_flag: data.cbc_flag || '',
+                    cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
+                    chemistry_flag: data.chemistry_flag || '',
+                    chemistry_detail: data.chemistry_flag == 2 ? data.chemistry_detail || '' : '',
+                    risk: data.risk || '', 
+                    cvrisk_score_flag: calculatedRiskCode,
+                    treatment: data.treatment || '1',
+                    visit_date: data.visit_date || ''
+                };
+
+                const payload = { ...data, ...codes, ...additionalFields, bmi, cvrisk_score: cvRisk };
+                
+                try {
+                    await callGAS('saveHealthData', { payload });
+                    alert('บันทึกสำเร็จ');
+                } catch { alert('บันทึกผิดพลาด'); }
+                setLoading(false);
+            };
+
+            const openChart = (field, title, val) => setModal({ open: true, field, title, value: val });
+            
+            const alcoholOpts = [{code:1,label:'ไม่ดื่ม'},{code:2,label:'นานๆครั้ง'},{code:3,label:'ดื่มเป็นประจำ'},{code:9,label:'ไม่มีข้อมูล'}];
+            const helmetOpts = [{code:1,label:'ไม่สวม'},{code:2,label:'สวมบางครั้ง'},{code:3,label:'สวมทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
+            const beltOpts = [{code:1,label:'ไม่คาด'},{code:2,label:'คาดบางครั้ง'},{code:3,label:'คาดทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative">
+                    <div className="bg-[#0f172a]/80 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onLogout} className="bg-slate-800 p-2 rounded-full border border-slate-700 hover:bg-slate-700 transition flex items-center gap-2">
+                                <Icon name="search" size={16} className="text-orange-400" />
+                                <span className="text-[10px] text-white pr-2">ค้นหา HN อื่น</span>
+                            </button>
+                        </div>
+                        <button onClick={handleSave} className="text-xs bg-indigo-600 px-6 py-2 rounded-full text-white font-bold shadow-lg hover:bg-indigo-500 transition">บันทึกข้อมูล</button>
+                    </div>
+
+                    {/* แสดงเฉพาะปีปัจจุบันเท่านั้นสำหรับ Manual Key-in */}
+                    <div className="bg-[#0f172a] px-4 pt-3 pb-0 border-b border-slate-800 sticky top-[68px] z-20 overflow-x-auto no-scrollbar flex shadow-md">
+                        <div className="tab-btn active">{currentYear}</div>
+                    </div>
+
+                    <div className="p-4 space-y-5">
+                        
+                        <div className="bg-indigo-900/30 border border-indigo-500/20 p-3 rounded-xl flex items-center gap-3 mb-4">
+                            <img src={user.pictureProfile || LOGO_URL} className="w-12 h-12 rounded-full border-2 border-indigo-500/50" />
+                            <div>
+                                <h2 className="font-bold text-white text-base">{user.Name}</h2>
+                                <p className="text-xs text-slate-400">HN: <span className="text-orange-300 font-mono">{user.HN}</span> | {user.Dept}</p>
+                            </div>
+                        </div>
+
+                        <div className="text-[10px] text-indigo-300 bg-indigo-900/30 border border-indigo-500/20 p-2 rounded-lg flex items-center gap-2">
+                            <Icon name="info" size={14} className="text-indigo-400 flex-shrink-0" /> 
+                            <span>คำแนะนำ: คุณสามารถคลิก <Icon name="bar-chart-2" size={12} className="inline text-indigo-400 mb-0.5"/> ท้ายช่องกรอก เพื่อดูข้อมูลเปรียบเทียบในฐานข้อมูล</span>
+                        </div>
+
+                        {loading && <div className="text-center text-xs text-slate-500 animate-pulse">กำลังโหลด / บันทึกข้อมูล...</div>}
+                        
+                        {!loading && (
+                            <div className="space-y-5">
+                                <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} /></div>
+
+                                <Card title="1. สัญญาณชีพ & ร่างกาย">
+                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                        <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} />
+                                        <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
+                                        <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} />
+                                    </div>
+                                    <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50"><span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>{flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}</div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} />
+                                        <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} />
+                                    </div>
+                                    <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
+                                        <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
+                                            <span className="text-slate-500">/</span>
+                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
+                                            <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
+                                        </div>
+                                        {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
+                                        <div className="clear-both"></div>
+                                    </div>
+                                </Card>
+
+                                <Card title="2. ผลเลือด & เคมีคลินิก">
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
+                                            <div className="grid grid-cols-2 gap-3"><Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} /><Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} /></div>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} />
+                                                <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} />
+                                                <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} />
+                                                <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} />
+                                                <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} /></div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
+                                            <div className="grid grid-cols-2 gap-3"><Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} /><Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} /><Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} /><Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} /><Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} flag={flags.alk} /><Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} /></div>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                <Card title="3. การตรวจปัสสาวะ (Urine)">
+                                    <div className="grid grid-cols-2 gap-3"><Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} /><Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} /></div>
+                                    <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5"><label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label><div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} /></div>{data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} />}</div>
+                                </Card>
+
+                                <Card title="4. ประวัติ & การคัดกรอง">
+                                    <div className="mb-3 border-b border-slate-700/50 pb-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-[10px] text-slate-400 w-1/3">โรคประจำตัว</label>
+                                            <div className="w-2/3"><RadioBtn name="has_chronic" val={data.has_chronic} setVal={v=>handleChange('has_chronic',v)} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} /></div>
+                                        </div>
+                                        {data.has_chronic == 1 && (
+                                            <div className="mt-2 pl-2 border-l-2 border-slate-700">
+                                                <label className="text-[10px] text-slate-400 block mb-2">เลือกโรคประจำตัว (เลือกได้มากกว่า 1)</label>
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {CHRONIC_DISEASES.map(dis => (
+                                                        <button 
+                                                            key={dis} 
+                                                            onClick={() => toggleChronic(dis)} 
+                                                            className={`text-[10px] px-2 py-1 rounded border transition-all ${data.chronic_array?.includes(dis) ? 'bg-orange-500 text-white border-orange-500' : 'bg-transparent text-slate-400 border-slate-700'}`}
+                                                        >
+                                                            {dis}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <input 
+                                                    className="glass-input text-xs w-full" 
+                                                    placeholder="ระบุโรคประจำตัวอื่นๆ (ถ้ามี)..." 
+                                                    value={data.chronic_other || ''} 
+                                                    onChange={e => handleChange('chronic_other', e.target.value)} 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
+                                    <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
+                                    <FlagInput label="เม็ดเลือด (CBC)" name="cbc_flag" val={data.cbc_flag} detail={data.cbc_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
+                                    <FlagInput label="เคมีในเลือด (Chemistry)" name="chemistry_flag" val={data.chemistry_flag} detail={data.chemistry_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
+                                </Card>
+
+                                <Card title="5. พฤติกรรมสุขภาพ">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']||[{code:1,label:'ไม่สูบ'},{code:2,label:'สูบ'},{code:9,label:'ไม่มีข้อมูล'}]} onChange={v=>handleChange('smoking',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={alcoholOpts} onChange={v=>handleChange('alcohol',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={helmetOpts} onChange={v=>handleChange('helmet',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={beltOpts} onChange={v=>handleChange('belt',v)} /></div>
+                                    </div>
+                                </Card>
+
+                                <Card title="6. วัคซีน & ภูมิคุ้มกัน">
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} /></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
+                                    </div>
+                                    {data.influenza == 1 && (
+                                        <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
+                                            <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Icon name="check-circle" size={14} /> ข้อมูลวัคซีนไข้หวัดใหญ่</h4>
+                                            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-300">
+                                                <div><span className="block text-[9px] text-slate-500">วันที่รับ</span>{vaccine?.date || '-'}</div>
+                                                <div><span className="block text-[9px] text-slate-500">Lot Number</span>{vaccine?.lot || '-'}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center p-2 bg-slate-800 rounded"><span className="text-xs text-slate-300">HBs Ag (ผลเลือด)</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} /></div>
+                                </Card>
+
+                                <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
+                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center relative">
+                                            <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div>
+                                            <div className="text-xl font-bold text-white">{cvRisk}%</div>
+                                            <div className="text-[8px] text-indigo-400 mt-1">คำนวณความเสี่ยงโดยสวีรู้ทันสโตรก</div>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner flex flex-col justify-center">
+                                            <div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">รายการค่าเสี่ยง</div>
+                                            <div className="text-xs font-bold text-red-400 leading-tight">{riskyItems || <span className="text-green-400">ไม่มี (ปกติ)</span>}</div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                                            <label className="text-[10px] text-slate-400 block mb-1">สรุปการตรวจสุขภาพ (ตามความเห็นแพทย์)</label>
+                                            <RadioBtn name="risk" val={data.risk} setVal={v=>handleChange('risk',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'เสี่ยง'},{v:3,l:'เป็นโรค'}]} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
+                                            <textarea className="glass-input h-20 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)}></textarea>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] text-slate-400">แผนการรักษา</label>
+                                            <select className="glass-input text-xs" value={data.treatment || 1} onChange={e=>handleChange('treatment', e.target.value)}>
+                                                <option value="1">นัดตรวจสุขภาพประจำปี(ตามรอบปกติ)</option>
+                                                <option value="2">นัดติดตามผลเลือดอีกครั้งในอีก...เดือน(เร็วกว่าปกติ)</option>
+                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤติกรรมสุขภาพ</option>
+                                                <option value="4">วินิจฉัยเป็นโรคและให้เริ่มกินยา</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1 pt-2">
+                                            <label className="text-[10px] text-slate-400">แพทย์ผู้ตรวจ</label>
+                                            <input className="glass-input h-9 text-sm" value={data.doctor_name} onChange={e=>handleChange('doctor_name',e.target.value)} />
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
+                    </div>
+
+                    {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
+                </div>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [page, setPage] = useState('login'); 
+            const [codebook, setCodebook] = useState({});
+
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        const cb = await callGAS('getCodebook');
+                        setCodebook(cb || {});
+                    } catch(e) { console.error("Codebook Error", e); }
+                };
+                init();
+            }, []);
+
+            const handleLogin = async (hn) => {
+                try {
+                    const res = await callGAS('loginByHN', { hn });
+                    if (res.found) {
+                        setUser(res.data);
+                        setPage('healthBook'); 
+                    } else {
+                        alert(res.error);
+                    }
+                } catch(e) { alert('Connection Error'); }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                setPage('login');
+            };
+
+            if (!user && page === 'login') {
+                return <LoginPage onLogin={handleLogin} />;
+            }
+
+            if (page === 'healthBook') {
+                return <HealthBook user={user} codebook={codebook} onLogout={handleLogout} />;
+            }
+
+            return <div className="text-white text-center mt-10">System Error</div>;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        setTimeout(() => lucide.createIcons(), 500);
+    </script>
+</body>
+</html>
