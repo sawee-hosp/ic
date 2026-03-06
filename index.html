@@ -357,7 +357,7 @@
                             <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
                             <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">IC SW-1 <span style={{color:'#94a3b8'}} className="font-normal text-xl">(สวีวรรณ)</span></h1>
+                        <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
                         <h2 className="text-lg text-indigo-300 font-medium mb-2 tracking-wide">Digital Health Book</h2>
                         <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">สมุดบันทึกสุขภาพบุคลากร<br/>งานป้องกันและควบคุมการติดเชื้อในโรงพยาบาลสวี</p>
 
@@ -592,8 +592,6 @@
                             date: res.date,
                             status: 'Pending'
                         });
-                        // Don't alert, just update UI
-                        // alert(`จองสำเร็จ! ลำดับที่ ${res.no}`);
                         fetchDashboard(); // Background fetch to ensure consistency
                     } else alert(res.error);
                 } catch(e) { alert('Network Error'); }
@@ -607,8 +605,6 @@
                      if(res.success) {
                          // Optimistic Update
                          setBooking(prev => ({ ...prev, status: 'Received' }));
-                         // Alert optional, UI update is immediate
-                         // alert('ยืนยันการรับวัคซีนเรียบร้อย');
                      } else alert('Error updating status');
                  } catch(e) {}
                  setLoading(false);
@@ -714,8 +710,6 @@
             const [vaccine, setVaccine] = useState(null);
             const [modal, setModal] = useState(null);
             const [isNewYear, setIsNewYear] = useState(false);
-            const [synced, setSynced] = useState(false);
-            const [isHisWait, setIsHisWait] = useState(false);
 
             useEffect(() => {
                 const load = async () => {
@@ -731,9 +725,7 @@
             useEffect(() => {
                 const loadData = async () => {
                     setLoading(true);
-                    setSynced(false);
-                    setIsHisWait(false);
-                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', family_history_flag:'', cxr_flag:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '' };
+                    const def = { hn: user.HN, year: selYear, full_name: user.Name, sex: user.Gender, age: user.Age, visit_date: '', weight_kg:'', height_cm:'', waist_cm:'', pulse:'', bp_systolic:'', bp_diastolic:'', hct:'', hgb:'', fbs:'', chol:'', trig:'', hdl:'', ldl:'', bun:'', cr:'', sgot:'', sgpt:'', alk_phos:'', uric:'', rbc_ua:'', wbc_ua:'', has_chronic:'', chronic_detail:'', family_history_flag:'', family_history_detail:'', cxr_flag:'', cxr_detail:'', smoking:'', alcohol:'', helmet:'', belt:'', influenza: '', hbv: '', mmr: '', covid: '', urine_flag:'', urine_detail:'', cbc_flag:'', cbc_detail:'', chemistry_flag:'', chemistry_detail:'', risk:'', treatment:'' };
                     try {
                         const h = await callGAS('getHealthData', { hn: user.HN, year: selYear });
                         if (h) {
@@ -743,7 +735,6 @@
                             }
                             setData(h);
                             setIsNewYear(false);
-                            setSynced(true);
                         } else {
                             setData(def);
                             setIsNewYear(true);
@@ -757,12 +748,6 @@
                 };
                 loadData();
             }, [selYear]);
-
-            const handleSyncHIS = async () => {
-                alert("ส่วนที่เป็นตัวเลขท่านไม่ต้องกรอกเอง เมื่อดึงข้อมูลเสร็จเราจะแจ้งให้ท่านทราบภายหลัง กรุณาประเมินผลส่วนที่เหลือให้ครบถ้วน");
-                setIsHisWait(true);
-                setSynced(true);
-            };
 
             const bmi = useMemo(() => (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '', [data]);
             const cvRisk = useMemo(() => {
@@ -797,31 +782,132 @@
             const flags = getFlags(data);
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
+            
             const handleSave = async () => {
                 setLoading(true);
-                const calculateFlagCodes = (data) => {
-                    const codes = {};
-                    const getC = (t, v, s) => {
-                        const res = getFlag(t, v, s);
-                        if (!res) return '';
-                        if (res.bg.includes('green')) return 1;
-                        if (res.bg.includes('yellow')) return 2;
-                        return 3;
-                    };
-                    codes.bmi_flag = getC('bmi', (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '');
-                    codes.bp_flag = getC('bp', data.bp_systolic); 
-                    if(data.fbs) codes.fbs_flag = getC('fbs', data.fbs);
-                    if(data.chol) codes.chol_flag = getC('chol', data.chol);
-                    return codes;
+
+                // --- CALCULATION LOGIC BASED ON CODEBOOK ---
+                const v = (val) => parseFloat(val);
+                const has = (val) => val !== undefined && val !== null && val !== '';
+                const codes = {};
+
+                // age_flag
+                if (has(data.age)) codes.age_flag = v(data.age) < 35 ? 1 : (v(data.age) <= 60 ? 2 : 3);
+
+                // bmi_flag
+                if (has(data.weight_kg) && has(data.height_cm)) {
+                    const bmiVal = v(data.weight_kg) / Math.pow(v(data.height_cm)/100, 2);
+                    codes.bmi_flag = bmiVal < 18.5 ? 1 : (bmiVal < 23 ? 2 : (bmiVal < 25 ? 3 : (bmiVal < 30 ? 4 : 5)));
+                }
+
+                // waist_cm_flag
+                if (has(data.waist_cm)) {
+                    const limit = (data.sex === 'ชาย' || data.sex == 1) ? 90 : 80;
+                    codes.waist_cm_flag = v(data.waist_cm) < limit ? 1 : 2;
+                }
+
+                // pulse_flag
+                if (has(data.pulse)) {
+                    const p = v(data.pulse);
+                    codes.pulse_flag = p < 60 ? 1 : (p <= 100 ? 2 : 3);
+                }
+
+                // bp_flag
+                if (has(data.bp_systolic) || has(data.bp_diastolic)) {
+                    const sbp = v(data.bp_systolic) || 0;
+                    const dbp = v(data.bp_diastolic) || 0;
+                    if (sbp >= 140 || dbp >= 90) codes.bp_flag = 3;
+                    else if ((sbp >= 120 && sbp <= 139) || (dbp >= 80 && dbp <= 89)) codes.bp_flag = 2;
+                    else codes.bp_flag = 1;
+                }
+
+                // hct_flag
+                if (has(data.hct)) {
+                    const h = v(data.hct);
+                    const isMale = (data.sex === 'ชาย' || data.sex == 1);
+                    const min = isMale ? 38 : 36;
+                    const max = isMale ? 50 : 45;
+                    codes.hct_flag = h < min ? 1 : (h > max ? 3 : 2);
+                }
+
+                // hgb_flag
+                if (has(data.hgb)) {
+                    const h = v(data.hgb);
+                    const isMale = (data.sex === 'ชาย' || data.sex == 1);
+                    const min = isMale ? 13.2 : 11.6;
+                    const max = isMale ? 16.6 : 15.0;
+                    codes.hgb_flag = h < min ? 1 : (h > max ? 3 : 2);
+                }
+
+                // fbs_flag
+                if (has(data.fbs)) codes.fbs_flag = v(data.fbs) < 100 ? 1 : (v(data.fbs) <= 125 ? 2 : 3);
+                
+                // chol_flag
+                if (has(data.chol)) codes.chol_flag = v(data.chol) < 200 ? 1 : (v(data.chol) <= 239 ? 2 : 3);
+                
+                // trig_flag
+                if (has(data.trig)) codes.trig_flag = v(data.trig) < 150 ? 1 : (v(data.trig) <= 199 ? 2 : 3);
+                
+                // hdl_flag
+                if (has(data.hdl)) {
+                    const limit = (data.sex === 'ชาย' || data.sex == 1) ? 40 : 50;
+                    codes.hdl_flag = v(data.hdl) >= limit ? 1 : 2;
+                }
+                
+                // ldl_flag
+                if (has(data.ldl)) codes.ldl_flag = v(data.ldl) < 100 ? 1 : (v(data.ldl) <= 159 ? 2 : 3);
+                
+                // bun_flag
+                if (has(data.bun)) codes.bun_flag = v(data.bun) > 20 ? 2 : 1;
+                
+                // cr_flag
+                if (has(data.cr)) codes.cr_flag = v(data.cr) > 1.44 ? 2 : 1;
+                
+                // sgot_flag
+                if (has(data.sgot)) codes.sgot_flag = v(data.sgot) >= 35 ? 2 : 1;
+                
+                // sgpt_flag
+                if (has(data.sgpt)) codes.sgpt_flag = v(data.sgpt) >= 45 ? 2 : 1;
+                
+                // alk_phos_flag
+                if (has(data.alk_phos)) codes.alk_phos_flag = v(data.alk_phos) > 147 ? 2 : 1;
+                
+                // uric_flag
+                if (has(data.uric)) codes.uric_flag = v(data.uric) > 8.2 ? 2 : 1;
+
+                // rbc_ua_flag & wbc_ua_flag (String matching)
+                const checkUrine = (val) => {
+                    if (!val) return '';
+                    const str = String(val).toLowerCase();
+                    if (str === '0' || str.includes('not seen') || str.includes('none') || str === '-') return 1;
+                    return 2;
+                };
+                if (has(data.rbc_ua)) codes.rbc_ua_flag = checkUrine(data.rbc_ua);
+                if (has(data.wbc_ua)) codes.wbc_ua_flag = checkUrine(data.wbc_ua);
+
+                // cvrisk_score_flag
+                const cv = parseFloat(cvRisk);
+                if (!isNaN(cv)) codes.cvrisk_score_flag = cv < 10 ? 1 : (cv < 20 ? 2 : (cv < 30 ? 3 : (cv < 40 ? 4 : 5)));
+
+                // Pass-through other specific fields requested to ensure they are added to payload
+                const additionalFields = {
+                    chronic_detail: data.chronic_detail || '',
+                    urine_detail: data.urine_detail || '',
+                    cbc_flag: data.cbc_flag || '',
+                    cbc_detail: data.cbc_detail || '',
+                    chemistry_flag: data.chemistry_flag || '',
+                    chemistry_detail: data.chemistry_detail || '',
+                    risk: data.risk || '',
+                    treatment: data.treatment || '',
+                    visit_date: data.visit_date || ''
                 };
 
-                const flagCodes = calculateFlagCodes(data);
-                const payload = { ...data, ...flagCodes, bmi, cvrisk_score: cvRisk };
+                const payload = { ...data, ...codes, ...additionalFields, bmi, cvrisk_score: cvRisk };
                 
                 try {
                     await callGAS('saveHealthData', { payload });
                     alert('บันทึกสำเร็จ');
-                    setIsNewYear(false); setSynced(true); setIsHisWait(false);
+                    setIsNewYear(false);
                 } catch { alert('บันทึกผิดพลาด'); }
                 setLoading(false);
             };
@@ -849,134 +935,104 @@
                         
                         <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} /></div>
 
-                        {/* Choice Panel */}
-                        {isNewYear && !synced && (
-                            <div className="glass-panel p-6 rounded-2xl flex flex-col items-center justify-center space-y-4 border border-indigo-500/30">
-                                <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mb-2"><Icon name="database" className="text-indigo-400 w-8 h-8" /></div>
-                                <div className="text-center"><h3 className="text-white font-bold text-lg">เชื่อมต่อข้อมูล HIS</h3><p className="text-slate-400 text-xs mt-1">ดึงผลตรวจร่างกายและผลเลือดจากโรงพยาบาล</p></div>
-                                <div className="flex gap-3 w-full">
-                                    <button onClick={handleSyncHIS} className="btn-primary flex-1 py-3 shadow-xl shadow-indigo-500/20"><Icon name="download-cloud" className="w-4 h-4 mr-2" /> ดึงข้อมูล</button>
-                                    <button onClick={() => setSynced(true)} className="btn-secondary flex-1 py-3">กรอกเอง</button>
+                        <Card title="1. สัญญาณชีพ & ร่างกาย">
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} />
+                                <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
+                                <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} />
+                            </div>
+                            <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50"><span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>{flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}</div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} />
+                                <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} />
+                            </div>
+                            <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
+                                <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
+                                <div className="flex gap-2 items-center">
+                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
+                                    <span className="text-slate-500">/</span>
+                                    <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
+                                    <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
+                                </div>
+                                {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
+                                <div className="clear-both"></div>
+                            </div>
+                        </Card>
+
+                        <Card title="2. ผลเลือด & เคมีคลินิก">
+                            <div className="space-y-4">
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
+                                    <div className="grid grid-cols-2 gap-3"><Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} /><Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} /></div>
+                                </div>
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} />
+                                        <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} />
+                                        <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} />
+                                        <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} />
+                                        <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} /></div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
+                                    <div className="grid grid-cols-2 gap-3"><Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} /><Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} /><Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} /><Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} /><Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} /><Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} /></div>
                                 </div>
                             </div>
-                        )}
+                        </Card>
 
-                        {/* HIS Wait Banner */}
-                        {isHisWait && (
-                            <div className="bg-blue-900/30 border-l-4 border-blue-500 p-4 rounded-r flex items-center animate-pulse">
-                                <Icon name="loader" className="w-5 h-5 text-blue-400 mr-3 animate-spin" />
-                                <div><p className="text-sm text-blue-200 font-bold">กำลังรอข้อมูลจาก HIS...</p><p className="text-xs text-blue-400/80">ระบบจะแจ้งเตือนเมื่อข้อมูลมาถึง (กรุณากรอกส่วนล่างรอ)</p></div>
+                        <Card title="3. การตรวจปัสสาวะ (Urine)">
+                            <div className="grid grid-cols-2 gap-3"><Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} /><Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} /></div>
+                            <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5"><label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label><div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} /></div>{data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} />}</div>
+                        </Card>
+
+                        <Card title="4. ประวัติ & การคัดกรอง">
+                            <FlagInput label="โรคประจำตัว" name="has_chronic" val={data.has_chronic} detail={data.chronic_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
+                            <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
+                            <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
+                        </Card>
+
+                        <Card title="5. พฤติกรรมสุขภาพ">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']} onChange={v=>handleChange('smoking',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={codebook['alcohol']} onChange={v=>handleChange('alcohol',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={[{code:1,label:'สวม'},{code:2,label:'ไม่สวม'}]} onChange={v=>handleChange('helmet',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={[{code:1,label:'คาด'},{code:2,label:'ไม่คาด'}]} onChange={v=>handleChange('belt',v)} /></div>
                             </div>
-                        )}
+                        </Card>
 
-                        {/* Numeric Cards (1-4) - Hidden if waiting for HIS */}
-                        {(!isHisWait && synced) && (
-                            <>
-                                <Card title="1. สัญญาณชีพ & ร่างกาย">
-                                    <div className="grid grid-cols-3 gap-2 mb-3">
-                                        <Field label="น้ำหนัก (kg)" val={data.weight_kg} onChange={v=>handleChange('weight_kg',v)} onChart={()=>openChart('weight_kg','น้ำหนัก', data.weight_kg)} />
-                                        <Field label="ส่วนสูง (cm)" val={data.height_cm} onChange={v=>handleChange('height_cm',v)} />
-                                        <Field label="อายุ (ปี)" val={data.age} onChange={v=>handleChange('age',v)} onChart={()=>openChart('age','อายุ', data.age)} />
+                        <Card title="6. วัคซีน & ภูมิคุ้มกัน">
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
+                            </div>
+                            {data.influenza == 1 && (
+                                <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
+                                    <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Icon name="check-circle" size={14} /> ข้อมูลวัคซีนไข้หวัดใหญ่</h4>
+                                    <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-300">
+                                        <div><span className="block text-[9px] text-slate-500">วันที่รับ</span>{vaccine?.date || '-'}</div>
+                                        <div><span className="block text-[9px] text-slate-500">Lot Number</span>{vaccine?.lot || '-'}</div>
                                     </div>
-                                    <div className="flex justify-between items-center bg-slate-800/50 p-2.5 rounded-lg mb-3 border border-slate-700/50"><span className="text-xs text-slate-400">BMI: <span className="text-white font-bold ml-1 text-sm">{bmi || '-'}</span></span>{flags.bmi && <span className={`badge ${flags.bmi.bg}`}>{flags.bmi.label}</span>}</div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <Field label="รอบเอว (cm)" val={data.waist_cm} onChange={v=>handleChange('waist_cm',v)} flag={flags.waist} onChart={()=>openChart('waist_cm','รอบเอว', data.waist_cm)} />
-                                        <Field label="ชีพจร (bpm)" val={data.pulse} onChange={v=>handleChange('pulse',v)} flag={flags.pulse} onChart={()=>openChart('pulse','ชีพจร', data.pulse)} />
-                                    </div>
-                                    <div className="mt-3 bg-slate-800/30 p-2 rounded-lg border border-white/5">
-                                        <label className="text-[10px] text-slate-400 block mb-1">ความดันโลหิต (SBP/DBP)</label>
-                                        <div className="flex gap-2 items-center">
-                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_systolic} onChange={e=>handleChange('bp_systolic',e.target.value)} />
-                                            <span className="text-slate-500">/</span>
-                                            <input className="glass-input text-center px-1" placeholder="" value={data.bp_diastolic} onChange={e=>handleChange('bp_diastolic',e.target.value)} />
-                                            <button onClick={()=>openChart('bp_systolic','ความดันโลหิต', data.bp_systolic)} className="p-2 text-indigo-400 bg-slate-800 rounded hover:bg-slate-700"><Icon name="bar-chart-2" size={16} /></button>
-                                        </div>
-                                        {flags.bp && <div className={`text-right mt-1.5 inline-block float-right badge ${flags.bp.bg}`}>{flags.bp.label}</div>}
-                                        <div className="clear-both"></div>
-                                    </div>
-                                </Card>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center p-2 bg-slate-800 rounded"><span className="text-xs text-slate-300">HBs Ag (ผลเลือด)</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} /></div>
+                        </Card>
 
-                                <Card title="2. ผลเลือด & เคมีคลินิก">
-                                    <div className="space-y-4">
-                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">CBC</span>
-                                            <div className="grid grid-cols-2 gap-3"><Field label="Hct (%)" val={data.hct} onChange={v=>handleChange('hct',v)} flag={flags.hct} onChart={()=>openChart('hct','Hct', data.hct)} /><Field label="Hgb (g/dL)" val={data.hgb} onChange={v=>handleChange('hgb',v)} flag={flags.hgb} onChart={()=>openChart('hgb','Hgb', data.hgb)} /></div>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Lipid & Sugar</span>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <Field label="FBS" val={data.fbs} onChange={v=>handleChange('fbs',v)} flag={flags.fbs} onChart={()=>openChart('fbs','ระดับน้ำตาล', data.fbs)} />
-                                                <Field label="Cholesterol" val={data.chol} onChange={v=>handleChange('chol',v)} flag={flags.chol} onChart={()=>openChart('chol','Cholesterol', data.chol)} />
-                                                <Field label="Triglyceride" val={data.trig} onChange={v=>handleChange('trig',v)} flag={flags.trig} onChart={()=>openChart('trig','Triglyceride', data.trig)} />
-                                                <Field label="HDL" val={data.hdl} onChange={v=>handleChange('hdl',v)} flag={flags.hdl} onChart={()=>openChart('hdl','HDL', data.hdl)} />
-                                                <div className="col-span-2"><Field label="LDL" val={data.ldl} onChange={v=>handleChange('ldl',v)} flag={flags.ldl} onChart={()=>openChart('ldl','LDL', data.ldl)} /></div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-slate-800/40 p-2 rounded-lg"><span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block mb-2">Kidney & Liver</span>
-                                            <div className="grid grid-cols-2 gap-3"><Field label="BUN" val={data.bun} onChange={v=>handleChange('bun',v)} flag={flags.bun} onChart={()=>openChart('bun','BUN', data.bun)} /><Field label="Creatinine" val={data.cr} onChange={v=>handleChange('cr',v)} flag={flags.cr} onChart={()=>openChart('cr','Creatinine', data.cr)} /><Field label="SGOT" val={data.sgot} onChange={v=>handleChange('sgot',v)} flag={flags.sgot} onChart={()=>openChart('sgot','SGOT', data.sgot)} /><Field label="SGPT" val={data.sgpt} onChange={v=>handleChange('sgpt',v)} flag={flags.sgpt} onChart={()=>openChart('sgpt','SGPT', data.sgpt)} /><Field label="Alk Phos" val={data.alk_phos} onChange={v=>handleChange('alk_phos',v)} /><Field label="Uric Acid" val={data.uric} onChange={v=>handleChange('uric',v)} flag={flags.uric} onChart={()=>openChart('uric','Uric Acid', data.uric)} /></div>
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                <Card title="3. การตรวจปัสสาวะ (Urine)">
-                                    <div className="grid grid-cols-2 gap-3"><Field label="RBC" val={data.rbc_ua} onChange={v=>handleChange('rbc_ua',v)} flag={flags.rbc} /><Field label="WBC" val={data.wbc_ua} onChange={v=>handleChange('wbc_ua',v)} flag={flags.wbc} /></div>
-                                    <div className="mt-3 bg-slate-800/30 p-2 rounded border border-white/5"><label className="text-[10px] text-slate-400 block mb-1">ผลปัสสาวะภาพรวม</label><div className="flex gap-2"><RadioBtn name="urine_flag" val={data.urine_flag} setVal={v=>handleChange('urine_flag',v)} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} /></div>{data.urine_flag==2 && <input className="glass-input mt-2 text-xs" placeholder="ระบุความผิดปกติ" value={data.urine_detail} onChange={e=>handleChange('urine_detail',e.target.value)} />}</div>
-                                </Card>
-
-                                <Card title="4. ประวัติ & การคัดกรอง">
-                                    <FlagInput label="โรคประจำตัว" name="has_chronic" val={data.has_chronic} detail={data.chronic_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
-                                    <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} />
-                                    <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} />
-                                </Card>
-                            </>
-                        )}
-
-                        {/* Always visible cards */}
-                        {synced && (
-                            <>
-                                <Card title="5. พฤติกรรมสุขภาพ">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">ออกกำลังกาย</label><Select val={data.exercise} options={[{code:1,label:'น้อย'},{code:3,label:'ปานกลาง'},{code:5,label:'หนัก'}]} onChange={v=>handleChange('exercise',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">สูบบุหรี่</label><Select val={data.smoking} options={codebook['smoking']} onChange={v=>handleChange('smoking',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">แอลกอฮอล์</label><Select val={data.alcohol} options={codebook['alcohol']} onChange={v=>handleChange('alcohol',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">หมวกกันน็อก</label><Select val={data.helmet} options={[{code:1,label:'สวม'},{code:2,label:'ไม่สวม'}]} onChange={v=>handleChange('helmet',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">เข็มขัดนิรภัย</label><Select val={data.belt} options={[{code:1,label:'คาด'},{code:2,label:'ไม่คาด'}]} onChange={v=>handleChange('belt',v)} /></div>
-                                    </div>
-                                </Card>
-
-                                <Card title="6. วัคซีน & ภูมิคุ้มกัน">
-                                    <div className="grid grid-cols-2 gap-3 mb-3">
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
-                                    </div>
-                                    {data.influenza == 1 && (
-                                        <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
-                                            <h4 className="text-xs font-bold text-green-400 flex items-center gap-1"><Icon name="check-circle" size={14} /> ข้อมูลวัคซีนไข้หวัดใหญ่</h4>
-                                            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-slate-300">
-                                                <div><span className="block text-[9px] text-slate-500">วันที่รับ</span>{vaccine?.date || '-'}</div>
-                                                <div><span className="block text-[9px] text-slate-500">Lot Number</span>{vaccine?.lot || '-'}</div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-center p-2 bg-slate-800 rounded"><span className="text-xs text-slate-300">HBs Ag (ผลเลือด)</span><RadioBtn name="hbs_flag" val={data.hbs_flag} setVal={v=>handleChange('hbs_flag',v)} opts={[{v:1,l:'Neg'},{v:2,l:'Pos'}]} /></div>
-                                </Card>
-
-                                <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
-                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
-                                        <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
-                                        <textarea className="glass-input h-24 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)}></textarea>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] text-slate-400">แพทย์ผู้ตรวจ</label>
-                                            <input className="glass-input h-9 text-sm" value={data.doctor_name} onChange={e=>handleChange('doctor_name',e.target.value)} />
-                                        </div>
-                                    </div>
-                                </Card>
-                            </>
-                        )}
+                        <Card title="7. สรุปผลแพทย์ & ความเสี่ยง">
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">CV Risk (10ปี)</div><div className="text-xl font-bold text-white">{cvRisk}%</div></div>
+                                <div className="bg-slate-800 p-3 rounded-lg text-center border border-slate-700 shadow-inner"><div className="text-[9px] text-slate-400 uppercase tracking-widest mb-1">Calorie/Day</div><div className="text-xl font-bold text-white">~{(data.weight_kg*22*30).toFixed(0)}</div></div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] text-slate-400">ความเห็นแพทย์</label>
+                                <textarea className="glass-input h-24 text-sm" value={data.doctor_summary} onChange={e=>handleChange('doctor_summary',e.target.value)}></textarea>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-slate-400">แพทย์ผู้ตรวจ</label>
+                                    <input className="glass-input h-9 text-sm" value={data.doctor_name} onChange={e=>handleChange('doctor_name',e.target.value)} />
+                                </div>
+                            </div>
+                        </Card>
                     </div>
 
                     {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
@@ -1494,7 +1550,7 @@
                     const saved = localStorage.getItem('ic_sw_user');
                     if(saved) {
                         setUser(JSON.parse(saved));
-                        setPage('form'); // Changed to form instead of menu as requested
+                        setPage('form'); 
                     }
 
                     // 3. Init LIFF (Optional based on requirements, but good to have)
@@ -1521,7 +1577,7 @@
                     if (res.found) {
                         setUser(res.data);
                         localStorage.setItem('ic_sw_user', JSON.stringify(res.data));
-                        setPage('form'); // Changed from 'menu' to 'form' as requested
+                        setPage('form'); 
                     } else {
                         alert('ไม่พบข้อมูลในระบบ หรือข้อมูลไม่ถูกต้อง');
                     }
