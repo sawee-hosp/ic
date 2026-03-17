@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sawee IT Service & Helpdesk</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18",
+                "react-dom/client": "https://esm.sh/react-dom@18/client",
+                "lucide-react": "https://esm.sh/lucide-react@0.344.0"
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { margin: 0; padding: 0; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #print-section, #print-section * { visibility: visible; }
+            #print-section { position: absolute; left: 0; top: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Monitor, LayoutDashboard, Settings, Server, PlusCircle, 
+            List, QrCode, Trash2, CheckCircle, XCircle, Wrench,
+            Search, Filter, AppWindow, Loader2, RefreshCw, Save,
+            Sparkles, Bot, Wifi, MessageSquare, Send, AlertTriangle, 
+            Clock, FileText, BarChart3, Database, Users, HardDrive, 
+            Layout, Zap, X, ChevronRight, Activity, Printer, Package, 
+            Edit, UserPlus, ArrowLeft, CheckSquare, ShieldCheck, Image as ImageIcon, Camera, ScanLine, LayoutList, Calendar
+        } from 'lucide-react';
+
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhmXHiFWbKcIbrQyNh800vbvoEcckcatqpywN1et4L14I7kXXT1Hel-U5kSLZaAS9_/exec';
+
+        const defaultBrands = ["HP", "Dell", "Lenovo", "Asus", "Acer", "Apple", "Cisco", "TP-Link", "Epson", "Canon", "Brother", "APC", "Syndome", "Logitech", "Other"];
+        const defaultCPUs = ["Intel Core i3", "Intel Core i5", "Intel Core i7", "Intel Core i9", "AMD Ryzen 3", "AMD Ryzen 5", "AMD Ryzen 7", "AMD Ryzen 9", "Apple M1", "Apple M2", "Other"];
+        const defaultOS = ["Windows 10 Pro", "Windows 11 Pro", "Windows 10 Home", "Windows 11 Home", "macOS", "Linux Ubuntu", "Windows Server 2019", "Windows Server 2022"];
+        const defaultSoftware = ["HOSxP", "Word", "Excel", "PowerPoint", "LINE"];
+        const colorPalette = ["bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-indigo-500", "bg-rose-500", "bg-cyan-500"];
+
+        const generate5DigitId = (currentList, idKey) => {
+            if (!Array.isArray(currentList) || currentList.length === 0) return "00001";
+            const maxId = Math.max(...currentList.map(item => parseInt(item[idKey], 10) || 0));
+            return String(maxId + 1).padStart(5, '0');
+        };
+
+        const generateTicketId = () => `TK-${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,'0')}-${Math.floor(Math.random() * 10000).toString().padStart(4,'0')}`;
+
+        const getTypePrefix = (typeName) => {
+            if(!typeName) return "EQP";
+            if(typeName.includes("คอม") || typeName.toUpperCase().includes("COM")) return "COM";
+            if(typeName.includes("ปริ้น") || typeName.toUpperCase().includes("PRN")) return "PRN";
+            if(typeName.includes("เน็ต") || typeName.includes("สวิตซ์") || typeName.toUpperCase().includes("NET")) return "NET";
+            if(typeName.includes("เซิร์ฟ") || typeName.toUpperCase().includes("SRV")) return "SRV";
+            const engMatch = typeName.match(/[A-Za-z]{3}/);
+            if(engMatch) return engMatch[0].toUpperCase();
+            return typeName.substring(0, 3).toUpperCase();
+        };
+
+        const generateEquipmentId = (typeName, currentEquipments) => {
+            const prefix = getTypePrefix(typeName);
+            const count = currentEquipments.filter(e => e.Id && e.Id.startsWith(prefix)).length + 1;
+            return `${prefix}-${String(count).padStart(4, '0')}`;
+        };
+
+        const safeJsonParse = (str, fallback) => {
+            if (!str) return fallback;
+            try {
+                return JSON.parse(str);
+            } catch (e) {
+                console.warn("Failed to parse JSON:", str, e);
+                return fallback;
+            }
+        };
+
+        // Component สำหรับ Scanner QR Code
+        const QRScannerModal = ({ onScan, onClose }) => {
+            useEffect(() => {
+                const scanner = new window.Html5QrcodeScanner(
+                    "qr-reader",
+                    { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+                    /* verbose= */ false
+                );
+                scanner.render(
+                    (decodedText) => {
+                        onScan(decodedText);
+                        scanner.clear();
+                    },
+                    (error) => {}
+                );
+                return () => {
+                    scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+                };
+            }, [onScan]);
+
+            return (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+                    <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold flex items-center gap-2"><ScanLine className="text-blue-600"/> สแกน QR Code ครุภัณฑ์</h3>
+                            <button onClick={onClose} className="p-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200 rounded-lg transition"><X size={20}/></button>
+                        </div>
+                        <div id="qr-reader" className="w-full rounded-xl overflow-hidden border-2 border-dashed border-gray-300"></div>
+                        <button onClick={onClose} className="mt-6 px-4 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 w-full font-bold transition">ยกเลิกการสแกน</button>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAdmin = urlParams.get('action') === 'admin';
+
+            const [activeTab, setActiveTab] = useState(isAdmin ? 'dashboard' : 'repair');
+            const [showNotification, setShowNotification] = useState(false);
+            const [notificationMsg, setNotificationMsg] = useState("");
+
+            const [departments, setDepartments] = useState([]);
+            const [types, setTypes] = useState([]);
+            const [equipments, setEquipments] = useState([]);
+            const [softwares, setSoftwares] = useState([]);
+            const [tickets, setTickets] = useState([]); 
+            const [staffList, setStaffList] = useState([]); 
+
+            const [qrModal, setQrModal] = useState({ isOpen: false, data: null });
+            const [aiModal, setAiModal] = useState({ isOpen: false, data: null, result: '', loading: false });
+            const [isLoading, setIsLoading] = useState(true);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [apiError, setApiError] = useState(null);
+
+            const handleNotify = (msg) => {
+                setNotificationMsg(msg);
+                setShowNotification(true);
+                setTimeout(() => setShowNotification(false), 3000);
+            };
+
+            const fetchAllData = async () => {
+                setIsLoading(true);
+                setApiError(null);
+                try {
+                    const getOptions = { method: 'GET', redirect: 'follow' };
+                    const [eqRes, swRes, depRes, typeRes, ticketsRes, staffRes] = await Promise.all([
+                        fetch(`${SCRIPT_URL}?sheet=Equipments`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Softwares`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Departments`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Types`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Tickets`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Staff`, getOptions).then(r => r.json())
+                    ]);
+
+                    setEquipments(Array.isArray(eqRes) ? eqRes.map(e => ({...e, Storage: typeof e.Storage === 'string' ? safeJsonParse(e.Storage, []) : (e.Storage || [])})) : []);
+                    setSoftwares(Array.isArray(swRes) ? swRes.map(s => ({...s, programs: typeof s.programs === 'string' ? safeJsonParse(s.programs, []) : (s.programs || [])})) : []);
+                    setDepartments(Array.isArray(depRes) ? depRes : []);
+                    setTypes(Array.isArray(typeRes) ? typeRes : []);
+                    setTickets(Array.isArray(ticketsRes) ? ticketsRes : []);
+                    setStaffList(Array.isArray(staffRes) ? staffRes : []);
+
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    setApiError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ โปรดลองใหม่อีกครั้ง");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            useEffect(() => { fetchAllData(); }, []);
+
+            const apiCall = async (sheetName, action, payload) => {
+                setIsSyncing(true);
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        redirect: 'follow', 
+                        body: JSON.stringify({ sheetName, action, payload }) 
+                    });
+                    const result = await response.json();
+                    
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                    }
+                    return result;
+                } catch (error) {
+                    console.error("API Error:", error);
+                    alert("ข้อผิดพลาดระบบ\n\n" + error.message);
+                    throw error; 
+                } finally {
+                    setIsSyncing(false);
+                }
+            };
+
+            const handleAIAnalysis = async (equipment) => {
+                setAiModal({ isOpen: true, data: equipment, result: '', loading: true });
+                setTimeout(() => {
+                    setAiModal(prev => ({ 
+                        ...prev, 
+                        result: "AI จำเป็นต้องใช้ API Key ของ Google Gemini เพื่อวิเคราะห์ข้อมูลจริง\n(จำลอง) อุปกรณ์นี้สเปคยังเพียงพอสำหรับการทำงานออฟฟิศทั่วไป แนะนำให้อัปเกรด RAM เป็น 16GB หากต้องเปิดหลายหน้าต่าง", 
+                        loading: false 
+                    }));
+                }, 1500);
+            };
+
+            const printSticker = (item) => {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${item.Id}&margin=0`; // QR สร้างจากระบบ Auto ID (COM-XXXX)
+                
+                const printWindow = window.open('', '_blank', 'width=400,height=300');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Print Sticker</title>
+                        <style>
+                            @page { margin: 0; size: 6cm 2.5cm; }
+                            body { 
+                                margin: 0; padding: 0; 
+                                width: 6cm; height: 2.5cm; 
+                                font-family: 'Sarabun', sans-serif;
+                                display: flex;
+                                background: white;
+                            }
+                            .sticker-container {
+                                width: 100%; height: 100%;
+                                display: flex;
+                                box-sizing: border-box;
+                                padding: 2px 4px;
+                                gap: 6px;
+                                border: 1px dashed #ccc; 
+                            }
+                            .qr-section {
+                                width: 1.8cm;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                align-items: center;
+                            }
+                            .qr-img {
+                                width: 1.6cm;
+                                height: 1.6cm;
+                            }
+                            .qr-code-text {
+                                font-size: 7.5px;
+                                font-weight: bold;
+                                margin-top: 1px;
+                                text-align: center;
+                            }
+                            .detail-section {
+                                flex: 1;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                line-height: 1.3;
+                                overflow: hidden;
+                            }
+                            .eq-name {
+                                font-size: 13px; 
+                                font-weight: bold;
+                                color: #000;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                margin-bottom: 2px;
+                            }
+                            .eq-dept, .eq-date {
+                                font-size: 8.5px;
+                                color: #333;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="sticker-container">
+                            <div class="qr-section">
+                                <img src="${qrUrl}" class="qr-img" />
+                                <div class="qr-code-text">${item.Id}</div>
+                            </div>
+                            <div class="detail-section">
+                                <div class="eq-name">${item.name || item.Type}</div>
+                                <div class="eq-dept">หน่วยงาน: ${item.department || '-'}</div>
+                                <div class="eq-date">วันที่: ${item.Date || '-'}</div>
+                            </div>
+                        </div>
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() {
+                                    window.print();
+                                    window.close();
+                                }, 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            };
+
+            if (isLoading) {
+                return (
+                <div className="flex h-screen w-full items-center justify-center bg-gray-50 flex-col">
+                    <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                    <h2 className="text-xl font-semibold text-gray-700">กำลังโหลดข้อมูลระบบ...</h2>
+                </div>
+                );
+            }
+
+            return (
+                <div className="flex h-screen bg-gray-100 font-sans relative">
+                
+                {isSyncing && (
+                    <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white p-4 rounded-xl shadow-lg flex items-center space-x-3 border border-blue-100">
+                        <RefreshCw className="w-6 h-6 text-blue-600 animate-spin" />
+                        <span className="font-medium text-gray-700">กำลังอัปเดตข้อมูลระบบ...</span>
+                    </div>
+                    </div>
+                )}
+
+                {/* Sidebar */}
+                <div className="w-64 bg-slate-800 text-white flex flex-col shadow-xl z-10 flex-shrink-0">
+                    <div className="p-5 flex items-center justify-between border-b border-slate-700">
+                        <div className="flex items-center space-x-3">
+                            <Server className="w-8 h-8 text-blue-400" />
+                            <h1 className="text-lg font-bold tracking-wide">IT Service Center</h1>
+                        </div>
+                    </div>
+                    <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                        
+                        {isAdmin && (
+                            <>
+                                <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                                <SidebarItem icon={<Monitor size={20} />} label="จัดการครุภัณฑ์" active={activeTab === 'equipments'} onClick={() => setActiveTab('equipments')} />
+                                <SidebarItem icon={<AppWindow size={20} />} label="จัดการซอฟต์แวร์" active={activeTab === 'softwares'} onClick={() => setActiveTab('softwares')} />
+                                
+                                <div className="my-4 border-t border-slate-700"></div>
+                                <div className="px-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Helpdesk Service</div>
+                            </>
+                        )}
+
+                        <SidebarItem icon={<Wrench size={20} />} label="แจ้งซ่อม IT" active={activeTab === 'repair'} onClick={() => setActiveTab('repair')} />
+                        <SidebarItem icon={<Database size={20} />} label="ขอข้อมูล / รายงาน" active={activeTab === 'data_request'} onClick={() => setActiveTab('data_request')} />
+                        <SidebarItem icon={<LayoutList size={20} />} label="ติดตามสถานะงาน" active={activeTab === 'ticket_tracking'} onClick={() => setActiveTab('ticket_tracking')} />
+                        
+                        {isAdmin && (
+                            <>
+                                <SidebarItem icon={<Users size={20} />} label="Admin Workload" active={activeTab === 'admin_workload'} onClick={() => setActiveTab('admin_workload')} />
+                                <div className="my-4 border-t border-slate-700"></div>
+                                <SidebarItem icon={<Settings size={20} />} label="ตั้งค่าระบบ / พนักงาน" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                            </>
+                        )}
+                    </nav>
+                    
+                    {!isAdmin && (
+                        <div className="p-4 border-t border-slate-700 text-center">
+                            <p className="text-xs text-slate-400">ระบบบริการผู้ใช้งาน</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <header className="bg-white shadow-sm h-16 flex items-center px-8 justify-between z-0 relative flex-shrink-0">
+                        <h2 className="text-xl font-semibold text-gray-800">
+                            {activeTab === 'dashboard' && 'ภาพรวมระบบ (Dashboard)'}
+                            {activeTab === 'equipments' && 'จัดการครุภัณฑ์คอมพิวเตอร์ (ทะเบียน/เพิ่มข้อมูล)'}
+                            {activeTab === 'softwares' && 'จัดการระบบซอฟต์แวร์'}
+                            {activeTab === 'repair' && 'แบบฟอร์มแจ้งปัญหา / ส่งซ่อม'}
+                            {activeTab === 'data_request' && 'แบบฟอร์มขอข้อมูล / รายงาน'}
+                            {activeTab === 'ticket_tracking' && 'ติดตามสถานะงานแจ้งซ่อม / ขอข้อมูล'}
+                            {activeTab === 'admin_workload' && 'กระดานบริหารงานทีม IT'}
+                            {activeTab === 'settings' && 'ตั้งค่าข้อมูลพื้นฐาน และ พนักงาน IT'}
+                        </h2>
+                        <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                            <RefreshCw size={16} className="mr-2" /> รีเฟรชข้อมูล
+                        </button>
+                    </header>
+                    
+                    {apiError && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-8 mt-6 rounded-lg shadow-sm flex-shrink-0">
+                            <h3 className="text-red-800 font-bold flex items-center"><XCircle size={18} className="mr-2"/> การเชื่อมต่อขัดข้อง</h3>
+                            <p className="text-red-700 text-sm mt-2">{apiError}</p>
+                        </div>
+                    )}
+
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8 custom-scrollbar">
+                        {activeTab === 'dashboard' && isAdmin && <DashboardView equipments={equipments} />}
+                        
+                        {activeTab === 'equipments' && isAdmin && <EquipmentManager 
+                            equipments={equipments} setEquipments={setEquipments}
+                            departments={departments} types={types} apiCall={apiCall}
+                            onPrintSticker={printSticker}
+                            onShowQR={(data) => setQrModal({ isOpen: true, data })}
+                            onAIAnalyze={handleAIAnalysis} notify={handleNotify}
+                        />}
+                        
+                        {activeTab === 'softwares' && isAdmin && <SoftwareManager 
+                            softwares={softwares} setSoftwares={setSoftwares}
+                            equipments={equipments} apiCall={apiCall} notify={handleNotify}
+                        />}
+                        
+                        {activeTab === 'repair' && <RepairForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} />}
+                        {activeTab === 'data_request' && <DataQueryForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} />}
+                        {activeTab === 'ticket_tracking' && <TicketTracker tickets={tickets} departments={departments} />}
+                        
+                        {activeTab === 'admin_workload' && isAdmin && <StaffWorkload notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} staffList={staffList} equipments={equipments} />}
+                        {activeTab === 'settings' && isAdmin && <SettingsView departments={departments} setDepartments={setDepartments} types={types} setTypes={setTypes} staffList={staffList} setStaffList={setStaffList} apiCall={apiCall} notify={handleNotify} />}
+                    </main>
+                </div>
+
+                {/* QR Code Modal (for printing) */}
+                {qrModal.isOpen && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full">
+                            <h3 className="text-lg font-bold mb-4">QR Code สำหรับพิมพ์</h3>
+                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrModal.data?.Id}`} alt="QR Code" className="mb-4 border p-2 rounded" />
+                            <p className="font-semibold text-gray-700 text-lg">{qrModal.data?.Id}</p>
+                            <p className="text-sm text-gray-500 mb-6">{qrModal.data?.Type} - {qrModal.data?.Computer_Name || qrModal.data?.Brand}</p>
+                            <button onClick={() => setQrModal({ isOpen: false, data: null })} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 w-full font-medium transition-colors">ปิดหน้าต่าง</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* AI Modal */}
+                {aiModal.isOpen && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col max-w-lg w-full max-h-[90vh]">
+                            <div className="flex items-center space-x-3 mb-6 border-b pb-4 border-gray-100">
+                            <div className="bg-purple-100 p-3 rounded-full text-purple-600 shadow-sm"><Sparkles size={24} /></div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-800">✨ AI วิเคราะห์สเปคอุปกรณ์</h3>
+                                <p className="text-sm text-gray-500 font-medium mt-0.5">{aiModal.data?.Computer_Name || aiModal.data?.Brand}</p>
+                            </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto mb-6 pr-2 custom-scrollbar">
+                                {aiModal.loading ? (
+                                    <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-purple-400 animate-spin" /><p className="mt-4 text-gray-600 font-medium animate-pulse">กำลังวิเคราะห์...</p></div>
+                                ) : (
+                                    <div className="text-sm text-gray-700 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-6 rounded-xl border border-purple-100 whitespace-pre-line shadow-inner">{aiModal.result}</div>
+                                )}
+                            </div>
+                            <button onClick={() => setAiModal({ isOpen: false, data: null, result: '', loading: false })} className="px-4 py-3 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 w-full font-semibold transition-colors">ปิดหน้าต่าง</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Notification */}
+                {showNotification && (
+                    <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 transition-opacity duration-300">
+                        <CheckCircle className="w-6 h-6 text-emerald-400" />
+                        <p className="text-sm font-semibold">{notificationMsg}</p>
+                    </div>
+                )}
+                </div>
+            );
+        }
+
+        const SidebarItem = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}>
+                {icon} <span className="font-medium text-sm">{label}</span>
+            </button>
+        );
+
+        // --- MANAGERS ---
+        
+        const EquipmentManager = ({ equipments, setEquipments, departments, types, apiCall, onPrintSticker, onShowQR, onAIAnalyze, notify }) => {
+            const [view, setView] = useState('list'); 
+            const [editingItem, setEditingItem] = useState(null);
+
+            const handleSave = async (data) => {
+                if (editingItem) {
+                    const success = await apiCall('Equipments', 'update', data);
+                    if (success) {
+                        setEquipments(equipments.map(e => e.Id === data.Id ? data : e));
+                        notify("อัปเดตข้อมูลครุภัณฑ์สำเร็จ");
+                        setView('list');
+                        setEditingItem(null);
+                    }
+                } else {
+                    const success = await apiCall('Equipments', 'append', data);
+                    if (success) {
+                        setEquipments([...equipments, data]);
+                        notify("บันทึกข้อมูลครุภัณฑ์สำเร็จ");
+                        setView('list');
+                    }
+                }
+            };
+
+            const handleEdit = (item) => {
+                setEditingItem(item);
+                setView('form');
+            };
+
+            const handleDelete = async (id) => {
+                if(confirm('ยืนยันการลบข้อมูลครุภัณฑ์นี้?')) {
+                    const success = await apiCall('Equipments', 'delete', { Id: id });
+                    if (success) {
+                        setEquipments(equipments.filter(e => e.Id !== id));
+                        notify("ลบข้อมูลครุภัณฑ์สำเร็จ");
+                    }
+                }
+            };
+
+            return (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {view === 'list' ? 'รายการครุภัณฑ์ทั้งหมด' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'แบบฟอร์มลงทะเบียนครุภัณฑ์')}
+                        </h3>
+                        {view === 'list' ? (
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center gap-2 transition">
+                                <PlusCircle size={16} /> ลงทะเบียนครุภัณฑ์ใหม่
+                            </button>
+                        ) : (
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition">
+                                <ArrowLeft size={16} /> กลับหน้ารายการ
+                            </button>
+                        )}
+                    </div>
+                    {view === 'list' ? (
+                        <EquipmentList equipments={equipments} onEdit={handleEdit} onDelete={handleDelete} onShowQR={onShowQR} onPrintSticker={onPrintSticker} onAIAnalyze={onAIAnalyze} departments={departments} types={types} />
+                    ) : (
+                        <EquipmentForm initialData={editingItem} departments={departments} types={types} onSave={handleSave} currentEquipments={equipments} apiCall={apiCall} notify={notify} />
+                    )}
+                </div>
+            );
+        };
+
+        const SoftwareManager = ({ softwares, setSoftwares, equipments, apiCall, notify }) => {
+            const [view, setView] = useState('list');
+            const [editingItem, setEditingItem] = useState(null);
+
+            const handleSave = async (data) => {
+                if (editingItem) {
+                    const success = await apiCall('Softwares', 'update', data);
+                    if (success) {
+                        setSoftwares(softwares.map(s => s.id === data.id ? data : s));
+                        notify("อัปเดตข้อมูลซอฟต์แวร์สำเร็จ");
+                        setView('list');
+                        setEditingItem(null);
+                    }
+                } else {
+                    const success = await apiCall('Softwares', 'append', data);
+                    if (success) {
+                        setSoftwares([...softwares, data]);
+                        notify("บันทึกข้อมูลซอฟต์แวร์สำเร็จ");
+                        setView('list');
+                    }
+                }
+            };
+
+            const handleEdit = (item) => {
+                setEditingItem(item);
+                setView('form');
+            }
+
+            const handleDelete = async (id) => {
+                if(confirm('ยืนยันการลบข้อมูลนี้?')) {
+                    const success = await apiCall('Softwares', 'delete', { id: id });
+                    if (success) {
+                        setSoftwares(softwares.filter(s => s.id !== id));
+                        notify("ลบข้อมูลสำเร็จ");
+                    }
+                }
+            };
+
+            return (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem ? 'แก้ไขซอฟต์แวร์' : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
+                        </h3>
+                        {view === 'list' ? (
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center gap-2 transition">
+                                <PlusCircle size={16} /> ลงทะเบียนซอฟต์แวร์ใหม่
+                            </button>
+                        ) : (
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition">
+                                <ArrowLeft size={16} /> กลับหน้ารายการ
+                            </button>
+                        )}
+                    </div>
+                    {view === 'list' ? (
+                        <SoftwareList softwares={softwares} onEdit={handleEdit} onDelete={handleDelete} />
+                    ) : (
+                        <SoftwareForm initialData={editingItem} equipments={equipments} onSave={handleSave} currentSoftwares={softwares} />
+                    )}
+                </div>
+            );
+        };
+
+        // --- COMPONENTS --- //
+
+        const DashboardView = ({ equipments }) => {
+            const stats = {
+                total: equipments.length,
+                ready: equipments.filter(e => e.Status === 'พร้อมใช้งาน').length,
+                repair: equipments.filter(e => e.Status === 'ส่งซ่อม').length,
+                broken: equipments.filter(e => e.Status === 'แทงชำรุด').length,
+            };
+
+            const typeCount = equipments.reduce((acc, eq) => {
+                acc[eq.Type] = (acc[eq.Type] || 0) + 1;
+                return acc;
+            }, {});
+
+            return (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-500"></div>
+                    <div><p className="text-sm text-gray-500 font-semibold mb-1">ครุภัณฑ์ทั้งหมด</p><p className="text-4xl font-bold text-gray-800">{stats.total}</p></div>
+                    <Monitor className="text-blue-100 w-14 h-14" />
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-green-100 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-green-500"></div>
+                    <div><p className="text-sm text-gray-500 font-semibold mb-1">พร้อมใช้งาน</p><p className="text-4xl font-bold text-green-600">{stats.ready}</p></div>
+                    <CheckCircle className="text-green-100 w-14 h-14" />
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-orange-100 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-orange-500"></div>
+                    <div><p className="text-sm text-gray-500 font-semibold mb-1">ส่งซ่อม</p><p className="text-4xl font-bold text-orange-500">{stats.repair}</p></div>
+                    <Wrench className="text-orange-100 w-14 h-14" />
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-red-100 flex items-center justify-between relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-red-500"></div>
+                    <div><p className="text-sm text-gray-500 font-semibold mb-1">แทงชำรุด</p><p className="text-4xl font-bold text-red-600">{stats.broken}</p></div>
+                    <XCircle className="text-red-100 w-14 h-14" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center"><List className="mr-2 text-blue-500" size={20}/> สรุปตามชนิดอุปกรณ์</h3>
+                    {Object.keys(typeCount).length === 0 ? (
+                        <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
+                        <p className="text-gray-400 text-sm">ยังไม่มีข้อมูลครุภัณฑ์</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 mt-4">
+                        {Object.entries(typeCount).map(([type, count]) => (
+                            <div key={type} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span className="text-gray-700 font-medium">{type}</span>
+                            <span className="font-bold bg-white text-blue-600 px-3 py-1 rounded-full shadow-sm border border-blue-100">{count} เครื่อง</span>
+                            </div>
+                        ))}
+                        </div>
+                    )}
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl shadow-sm border border-green-200 flex flex-col justify-center">
+                    <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                        <CheckCircle className="text-green-500 w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-green-800 mb-2">เชื่อมต่อระบบสำเร็จ</h3>
+                    <p className="text-green-600 text-sm">ระบบพร้อมใช้งาน โหลดข้อมูลเสร็จสิ้นเรียบร้อยแล้ว</p>
+                    </div>
+                </div>
+                </div>
+            );
+        };
+
+        const EquipmentForm = ({ initialData, departments, types, onSave, currentEquipments, apiCall, notify }) => {
+            const today = new Date().toISOString().split('T')[0];
+
+            const [formData, setFormData] = useState(initialData || {
+                Id: '', // จะโดน Gen ทันทีเมื่อเลือก Type
+                department: '',
+                name: '',
+                Status: 'พร้อมใช้งาน',
+                Type: '',
+                Id_equipment: '', // Manual Input
+                Computer_Name: '',
+                Brand: '',
+                CPU: '',
+                RAM: '',
+                OS: '',
+                Storage: [{ type: 'SSD', capacity: '' }],
+                Port: '',
+                Location: '',
+                Date: today,
+                Image_URL: ''
+            });
+
+            useEffect(() => {
+                if (initialData) setFormData(initialData);
+            }, [initialData]);
+
+            const [imagePreview, setImagePreview] = useState(null);
+            const [isUploading, setIsUploading] = useState(false);
+
+            const isComputerGroup = ["ชุดเครื่องคอมพิวเตอร์", "คอมพิวเตอร์แม่ข่าย", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา"].some(t => formData.Type.includes(t));
+            const isNetworkGroup = ["switch", "router", "hub", "เครือข่าย"].some(t => formData.Type.toLowerCase().includes(t));
+
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                let updates = { [name]: value };
+                
+                if (name === 'Type' && value !== '') {
+                    if (!initialData) {
+                        updates.Id = generateEquipmentId(value, currentEquipments);
+                    }
+                    if (!formData.name || formData.name === formData.Type) {
+                        updates.name = value; 
+                    }
+                }
+
+                setFormData(prev => ({ ...prev, ...updates }));
+            };
+            
+            const handleStorageChange = (index, field, value) => {
+                const newStorage = [...formData.Storage];
+                newStorage[index][field] = value;
+                setFormData({ ...formData, Storage: newStorage });
+            };
+
+            const addStorage = () => setFormData({ ...formData, Storage: [...formData.Storage, { type: 'SSD', capacity: '' }] });
+            const removeStorage = (index) => setFormData({ ...formData, Storage: formData.Storage.filter((_, i) => i !== index) });
+
+            const handleImageChange = (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                        setImagePreview(compressedBase64);
+                        
+                        uploadToDrive(compressedBase64, file.name);
+                    }
+                }
+            };
+
+            const uploadToDrive = async (base64String, filename) => {
+                setIsUploading(true);
+                try {
+                    const res = await apiCall('Equipments', 'uploadImage', {
+                        base64: base64String,
+                        filename: `EQ_${Date.now()}_${filename}`
+                    });
+                    if(res && res.url) {
+                        setFormData(prev => ({ ...prev, Image_URL: res.url }));
+                        notify("อัปโหลดรูปภาพสำเร็จ");
+                    }
+                } catch(e) {
+                    alert("อัปโหลดรูปล้มเหลว: " + e.message);
+                } finally {
+                    setIsUploading(false);
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (departments.length === 0 || types.length === 0) {
+                    alert("กรุณาตั้งค่า 'หน่วยงาน' และ 'ชนิดอุปกรณ์' ในเมนูตั้งค่าก่อนบันทึก");
+                    return;
+                }
+                if(isUploading) {
+                    alert("กรุณารอรูปภาพอัปโหลดเสร็จสิ้นก่อนบันทึก");
+                    return;
+                }
+                onSave(formData);
+            };
+
+            return (
+                <div className="max-w-4xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex items-center"><Monitor className="mr-2" size={20}/> ข้อมูลหลักครุภัณฑ์</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">ชนิดอุปกรณ์ <span className="text-red-500">*</span></label><select name="Type" value={formData.Type} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"><option value="">-- เลือกชนิด --</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select></div>
+
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">รหัสระบบ (Auto ID)</label><input type="text" name="Id" value={formData.Id} readOnly className="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed font-mono" placeholder="เลือกชนิดเพื่อ Gen ID" /></div>
+                        
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">ชื่ออุปกรณ์ (Name) <span className="text-red-500">*</span></label><input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none" placeholder="เช่น คอมพิวเตอร์ส่วนบุคคล, จอภาพ" /></div>
+                        
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">เลขครุภัณฑ์ รพ. (Manual Input) <span className="text-red-500">*</span></label><input type="text" name="Id_equipment" value={formData.Id_equipment} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white font-mono text-blue-700" placeholder="ระบุเลขทะเบียนรพ. 7440-xxx..." /></div>
+
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">หน่วยงาน <span className="text-red-500">*</span></label><select name="department" value={formData.department} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="">-- เลือกหน่วยงาน --</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select></div>
+                        
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">จุดติดตั้ง / สถานที่ (Location)</label><input type="text" name="Location" value={formData.Location || ''} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white" placeholder="เช่น ห้องตรวจ 1, เคาน์เตอร์พยาบาล" /></div>
+
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">สถานะ <span className="text-red-500">*</span></label><select name="Status" value={formData.Status} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ส่งซ่อม">ส่งซ่อม</option><option value="แทงชำรุด">แทงชำรุด</option></select></div>
+                        
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">วันที่ลงทะเบียน <span className="text-red-500">*</span></label><input type="date" name="Date" value={formData.Date} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none" /></div>
+
+                        {/* Image Upload Section */}
+                        <div className="md:col-span-2 mt-4 p-5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-6 items-start">
+                            <div className="flex-1 w-full">
+                                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><Camera size={16}/> ภาพถ่ายอุปกรณ์</label>
+                                <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none" />
+                                <p className="text-xs text-gray-400 mt-2">รองรับการถ่ายรูปจากมือถือ หรืออัปโหลดไฟล์ ระบบจะย่อขนาดให้อัตโนมัติและเก็บบนคลาวด์</p>
+                                {isUploading && <p className="text-sm font-bold text-orange-500 mt-2 flex items-center"><Loader2 size={14} className="animate-spin mr-1"/> กำลังอัปโหลด...</p>}
+                                {!isUploading && formData.Image_URL && <p className="text-sm font-bold text-emerald-600 mt-2 flex items-center"><CheckCircle size={14} className="mr-1"/> รูปภาพพร้อมบันทึก</p>}
+                            </div>
+                            {(imagePreview || formData.Image_URL) && (
+                                <div className="w-32 h-32 rounded-lg border border-gray-300 overflow-hidden shadow-sm flex-shrink-0 bg-white">
+                                    <img src={imagePreview || formData.Image_URL} alt="Preview" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
+
+                    </div>
+                    </div>
+
+                    {formData.Type && (
+                    <div className="animate-in fade-in duration-300">
+                        <h3 className="text-lg font-bold text-gray-800 mt-8 mb-4 border-b pb-2 flex items-center"><Save className="mr-2" size={20}/> รายละเอียดทางเทคนิค (ถ้ามี)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">แบรนด์ / ยี่ห้อ <span className="text-red-500">*</span></label><select name="Brand" value={formData.Brand} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="">-- เลือกแบรนด์ --</option>{defaultBrands.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
+
+                        {isComputerGroup && (
+                            <>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">ชื่อเครื่อง (Computer Name)</label><input type="text" name="Computer_Name" value={formData.Computer_Name} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none" placeholder="เช่น IT-PC-01" /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">ซีพียู (CPU)</label><select name="CPU" value={formData.CPU} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg bg-white"><option value="">-- เลือก CPU --</option>{defaultCPUs.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">หน่วยความจำ (RAM) - GB</label><input type="number" name="RAM" value={formData.RAM} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg" placeholder="เช่น 8, 16" /></div>
+                            <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">ระบบปฏิบัติการ (OS)</label><select name="OS" value={formData.OS} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg bg-white"><option value="">-- เลือก OS --</option>{defaultOS.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+                            <div className="md:col-span-2 mt-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">พื้นที่จัดเก็บข้อมูล (Storage)</label>
+                                <div className="space-y-2">
+                                {formData.Storage.map((st, index) => (
+                                    <div key={index} className="flex space-x-2 items-center">
+                                    <select value={st.type} onChange={(e) => handleStorageChange(index, 'type', e.target.value)} className="w-1/3 p-2.5 border border-gray-300 rounded-lg bg-white"><option value="SSD">SSD</option><option value="HDD">HDD</option></select>
+                                    <input type="number" value={st.capacity} onChange={(e) => handleStorageChange(index, 'capacity', e.target.value)} placeholder="ความจุ (GB)" className="flex-1 p-2.5 border border-gray-300 rounded-lg" />
+                                    {index > 0 && (<button type="button" onClick={() => removeStorage(index)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={20}/></button>)}
+                                    </div>
+                                ))}
+                                </div>
+                                <button type="button" onClick={addStorage} className="text-sm text-blue-600 font-medium mt-2 flex items-center"><PlusCircle size={16} className="mr-1"/> เพิ่ม Storage</button>
+                            </div>
+                            </>
+                        )}
+
+                        {isNetworkGroup && (<div><label className="block text-sm font-medium text-gray-700 mb-1">จำนวน Port</label><input type="number" name="Port" value={formData.Port} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg" placeholder="เช่น 8, 16, 24" /></div>)}
+                        </div>
+                    </div>
+                    )}
+
+                    <div className="pt-6 mt-4 border-t flex justify-end">
+                        <button type="submit" disabled={isUploading} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center disabled:opacity-50">
+                            <Save className="w-5 h-5 mr-2" /> 
+                            {initialData ? "อัปเดตข้อมูล" : "บันทึกข้อมูล"}
+                        </button>
+                    </div>
+                </form>
+                </div>
+            );
+        };
+
+        const EquipmentList = ({ equipments, onEdit, onDelete, onShowQR, onPrintSticker, onAIAnalyze, departments, types }) => {
+            const [filterDept, setFilterDept] = useState('');
+            const [filterType, setFilterType] = useState('');
+            const [filterStatus, setFilterStatus] = useState('');
+
+            const filteredData = equipments.filter(e => {
+                return (filterDept === '' || e.department === filterDept) && (filterType === '' || e.Type === filterType) && (filterStatus === '' || e.Status === filterStatus);
+            });
+
+            const getStatusBadge = (status) => {
+                switch(status) {
+                case 'พร้อมใช้งาน': return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold flex items-center w-max"><CheckCircle size={12} className="mr-1"/> พร้อมใช้งาน</span>;
+                case 'ส่งซ่อม': return <span className="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold flex items-center w-max"><Wrench size={12} className="mr-1"/> ส่งซ่อม</span>;
+                case 'แทงชำรุด': return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold flex items-center w-max"><XCircle size={12} className="mr-1"/> แทงชำรุด</span>;
+                default: return <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-[10px] font-bold">{status}</span>;
+                }
+            };
+
+            return (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center text-gray-600 font-medium mr-2"><Filter size={18} className="mr-2"/> กรองข้อมูล:</div>
+                    <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกหน่วยงาน</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select>
+                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกชนิดอุปกรณ์</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select>
+                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกสถานะ</option><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ส่งซ่อม">ส่งซ่อม</option><option value="แทงชำรุด">แทงชำรุด</option></select>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                        <tr><th className="p-4 font-semibold w-16">รูป</th><th className="p-4 font-semibold">รหัสระบบ</th><th className="p-4 font-semibold">ชื่อ / ชนิด / เลขรพ.</th><th className="p-4 font-semibold">หน่วยงาน (สถานที่)</th><th className="p-4 font-semibold">สถานะ</th><th className="p-4 font-semibold text-center">จัดการ</th></tr>
+                    </thead>
+                    <tbody className="text-sm">
+                        {filteredData.length === 0 ? (<tr><td colSpan="6" className="p-12 text-center text-gray-500 bg-white">ยังไม่มีข้อมูลในระบบ</td></tr>) : filteredData.slice().reverse().map(eq => (
+                        <tr key={eq.Id} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition">
+                            <td className="p-4">
+                                {eq.Image_URL ? (
+                                    <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Image_URL} alt="eq" className="w-full h-full object-cover" /></div>
+                                ) : (
+                                    <div className="w-12 h-12 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
+                                )}
+                            </td>
+                            <td className="p-4 font-medium text-blue-700 font-mono">{eq.Id}</td>
+                            <td className="p-4">
+                                <div className="font-bold text-gray-800">{eq.name || '-'}</div>
+                                <div className="text-xs text-gray-500 mt-1">{eq.Type} • {eq.Id_equipment}</div>
+                            </td>
+                            <td className="p-4">
+                                <div className="text-gray-700 font-medium">{eq.department}</div>
+                                <div className="text-xs text-gray-400 mt-1">{eq.Location || '-'}</div>
+                            </td>
+                            <td className="p-4">{getStatusBadge(eq.Status)}</td>
+                            <td className="p-4 text-right">
+                            <div className="flex justify-end space-x-2">
+                                {["ชุดเครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา", "คอมพิวเตอร์แม่ข่าย"].some(t => eq.Type.includes(t)) && (
+                                    <button onClick={() => onAIAnalyze(eq)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 shadow-sm" title="AI วิเคราะห์"><Sparkles size={16}/></button>
+                                )}
+                                <button onClick={() => onEdit(eq)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไขข้อมูล"><Edit size={16}/></button>
+                                <button onClick={() => onPrintSticker(eq)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 shadow-sm" title="พิมพ์สติกเกอร์"><Printer size={16}/></button>
+                                <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={16}/></button>
+                            </div>
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                    </table>
+                </div>
+                </div>
+            );
+        };
+
+        const SoftwareForm = ({ initialData, equipments, onSave, currentSoftwares }) => {
+            const pcList = equipments.filter(eq => ["ชุดเครื่องคอมพิวเตอร์", "คอมพิวเตอร์แม่ข่าย", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา"].some(t=>eq.Type.includes(t)));
+            
+            const [formData, setFormData] = useState(initialData || { id: generate5DigitId(currentSoftwares, 'id'), Computer_Name: '', programs: [], customProgram: '' });
+
+            useEffect(() => {
+                if (initialData) setFormData(initialData);
+            }, [initialData]);
+
+            const handleCheck = (prog) => {
+                let newProgs = [...formData.programs];
+                if (newProgs.includes(prog)) newProgs = newProgs.filter(p => p !== prog); else newProgs.push(prog);
+                setFormData({ ...formData, programs: newProgs });
+            };
+
+            const addCustomProgram = () => {
+                if (formData.customProgram.trim() && !formData.programs.includes(formData.customProgram.trim())) {
+                    setFormData({ ...formData, programs: [...formData.programs, formData.customProgram.trim()], customProgram: '' });
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if(!formData.Computer_Name) return alert('กรุณาเลือกเครื่องคอมพิวเตอร์');
+                onSave({ id: formData.id, Computer_Name: formData.Computer_Name, programs: formData.programs });
+            };
+
+            return (
+                <div className="max-w-3xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเครื่องคอมพิวเตอร์ <span className="text-red-500">*</span></label>
+                    <select value={formData.Computer_Name} onChange={(e) => setFormData({...formData, Computer_Name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-white" required disabled={initialData}>
+                        <option value="">-- เลือกจากฐานข้อมูลครุภัณฑ์ --</option>
+                        {pcList.map(pc => <option key={pc.Id} value={pc.Id}>{pc.Id} - {pc.name || pc.Type} ({pc.department})</option>)}
+                    </select>
+                    {pcList.length === 0 && <p className="text-sm text-red-500 mt-2 flex items-center"><XCircle size={14} className="mr-1"/> ไม่มีข้อมูลคอมพิวเตอร์ในระบบ กรุณาลงทะเบียนครุภัณฑ์ก่อน</p>}
+                    </div>
+
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">โปรแกรมหลัก (Checklist)</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                        {defaultSoftware.map(prog => (
+                        <label key={prog} className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-slate-100">
+                            <input type="checkbox" checked={formData.programs.includes(prog)} onChange={() => handleCheck(prog)} className="w-5 h-5 text-blue-600 rounded border-gray-300" />
+                            <span className="text-gray-700 font-medium">{prog}</span>
+                        </label>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">เพิ่มโปรแกรมอื่นๆ</label>
+                    <div className="flex space-x-2">
+                        <input type="text" value={formData.customProgram || ''} onChange={e => setFormData({...formData, customProgram: e.target.value})} onKeyDown={e => e.key === 'Enter' ? (e.preventDefault(), addCustomProgram()) : null} placeholder="พิมพ์ชื่อโปรแกรม..." className="flex-1 p-3 border border-gray-300 rounded-xl outline-none" />
+                        <button type="button" onClick={addCustomProgram} className="bg-slate-800 text-white px-6 py-3 rounded-xl hover:bg-slate-700 font-medium">เพิ่ม</button>
+                    </div>
+                    {formData.programs.filter(p => !defaultSoftware.includes(p)).length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                        {formData.programs.filter(p => !defaultSoftware.includes(p)).map(prog => (
+                            <span key={prog} className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-medium flex items-center">
+                            {prog} <button type="button" onClick={() => handleCheck(prog)} className="ml-2 text-blue-400 hover:text-red-500"><XCircle size={16}/></button>
+                            </span>
+                        ))}
+                        </div>
+                    )}
+                    </div>
+
+                    <div className="pt-6 mt-4 border-t flex justify-end">
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center">
+                        <Save className="w-5 h-5 mr-2" /> 
+                        {initialData ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
+                    </button>
+                    </div>
+                </form>
+                </div>
+            );
+        };
+
+        const SoftwareList = ({ softwares, onEdit, onDelete }) => (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                    <tr><th className="p-4 font-semibold">รหัสอ้างอิงระบบเครื่อง</th><th className="p-4 font-semibold">รายการโปรแกรมที่ติดตั้ง</th><th className="p-4 font-semibold text-center w-24">จัดการ</th></tr>
+                </thead>
+                <tbody className="text-sm">
+                    {softwares.length === 0 ? (<tr><td colSpan="3" className="p-12 text-center text-gray-500 bg-white">ไม่มีข้อมูลซอฟต์แวร์</td></tr>) : softwares.map(sw => (
+                    <tr key={sw.id} className="border-b border-gray-100 hover:bg-blue-50/50 bg-white transition">
+                        <td className="p-4 font-semibold text-blue-700 text-base">{sw.Computer_Name}</td>
+                        <td className="p-4"><div className="flex flex-wrap gap-2">{Array.isArray(sw.programs) && sw.programs.map((p, idx) => (<span key={idx} className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200">{p}</span>))}</div></td>
+                        <td className="p-4 flex justify-center space-x-2">
+                            <button onClick={() => onEdit(sw)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไข"><Edit size={18}/></button>
+                            <button onClick={() => onDelete(sw.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={18}/></button>
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+            </div>
+            </div>
+        );
+
+        const SettingsView = ({ departments, setDepartments, types, setTypes, staffList, setStaffList, apiCall, notify }) => {
+            const [newDept, setNewDept] = useState('');
+            const [newType, setNewType] = useState('');
+            const [newStaff, setNewStaff] = useState({ name: '', role: '' });
+            
+            const addDept = async (e) => {
+                e.preventDefault();
+                if(newDept.trim()) {
+                    const newData = { dep_Id: generate5DigitId(departments, 'dep_Id'), dep_name: newDept.trim() };
+                    const success = await apiCall('Departments', 'append', newData);
+                    if(success) { setDepartments([...departments, newData]); setNewDept(''); notify("เพิ่มหน่วยงานสำเร็จ"); }
+                }
+            };
+
+            const removeDept = async (id) => {
+                if(confirm('ลบหน่วยงานนี้?')) {
+                    const success = await apiCall('Departments', 'delete', { dep_Id: id });
+                    if(success) { setDepartments(departments.filter(d => d.dep_Id !== id)); notify("ลบข้อมูลสำเร็จ"); }
+                }
+            };
+
+            const addType = async (e) => {
+                e.preventDefault();
+                if(newType.trim()) {
+                    const newData = { Type_id: generate5DigitId(types, 'Type_id'), Type_name: newType.trim() };
+                    const success = await apiCall('Types', 'append', newData);
+                    if(success) { setTypes([...types, newData]); setNewType(''); notify("เพิ่มชนิดอุปกรณ์สำเร็จ"); }
+                }
+            };
+
+            const removeType = async (id) => {
+                if(confirm('ลบชนิดอุปกรณ์นี้?')) {
+                    const success = await apiCall('Types', 'delete', { Type_id: id });
+                    if(success) { setTypes(types.filter(t => t.Type_id !== id)); notify("ลบข้อมูลสำเร็จ"); }
+                }
+            };
+
+            const addStaff = async (e) => {
+                e.preventDefault();
+                if(newStaff.name.trim() && newStaff.role.trim()) {
+                    const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                    const newData = { 
+                        Staff_ID: generate5DigitId(staffList, 'Staff_ID'), 
+                        Name: newStaff.name.trim(), 
+                        Role: newStaff.role.trim(), 
+                        Avatar_Color: color 
+                    };
+                    const success = await apiCall('Staff', 'append', newData);
+                    if(success) { setStaffList([...staffList, newData]); setNewStaff({name:'', role:''}); notify("เพิ่มพนักงานไอทีสำเร็จ"); }
+                }
+            };
+
+            const removeStaff = async (id) => {
+                if(confirm('ลบรายชื่อพนักงานนี้?')) {
+                    const success = await apiCall('Staff', 'delete', { Staff_ID: id });
+                    if(success) { setStaffList(staffList.filter(s => s.Staff_ID !== id)); notify("ลบข้อมูลสำเร็จ"); }
+                }
+            };
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
+                    <h3 className="text-lg font-bold mb-4 flex items-center text-gray-800"><Search className="mr-2 text-blue-500" size={20}/> ตั้งค่าหน่วยงาน (Departments)</h3>
+                    <form onSubmit={addDept} className="flex space-x-2 mb-4">
+                    <input type="text" value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="เพิ่มชื่อหน่วยงานใหม่..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700"><PlusCircle size={20}/></button>
+                    </form>
+                    <div className="border border-gray-200 rounded-xl flex-1 overflow-y-auto bg-slate-50">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-white sticky top-0 shadow-sm"><tr><th className="p-3 border-b text-gray-500 font-semibold">รหัส</th><th className="p-3 border-b text-gray-500 font-semibold">ชื่อหน่วยงาน</th><th className="p-3 border-b w-12"></th></tr></thead>
+                        <tbody>
+                        {departments.length === 0 && <tr><td colSpan="3" className="p-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>}
+                        {departments.map(d => (
+                            <tr key={d.dep_Id} className="border-b last:border-0 hover:bg-blue-50/50 bg-white"><td className="p-3 text-gray-400 font-mono text-xs">{d.dep_Id}</td><td className="p-3 font-medium text-gray-700">{d.dep_name}</td><td className="p-3 text-right"><button onClick={() => removeDept(d.dep_Id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button></td></tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
+                    <h3 className="text-lg font-bold mb-4 flex items-center text-gray-800"><Monitor className="mr-2 text-blue-500" size={20}/> ชนิดอุปกรณ์ (Types)</h3>
+                    <form onSubmit={addType} className="flex space-x-2 mb-4">
+                    <input type="text" value={newType} onChange={e => setNewType(e.target.value)} placeholder="เพิ่มชนิดอุปกรณ์ใหม่..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700"><PlusCircle size={20}/></button>
+                    </form>
+                    <div className="border border-gray-200 rounded-xl flex-1 overflow-y-auto bg-slate-50">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-white sticky top-0 shadow-sm"><tr><th className="p-3 border-b text-gray-500 font-semibold">รหัส</th><th className="p-3 border-b text-gray-500 font-semibold">ชนิดอุปกรณ์</th><th className="p-3 border-b w-12"></th></tr></thead>
+                        <tbody>
+                        {types.length === 0 && <tr><td colSpan="3" className="p-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>}
+                        {types.map(t => (
+                            <tr key={t.Type_id} className="border-b last:border-0 hover:bg-blue-50/50 bg-white"><td className="p-3 text-gray-400 font-mono text-xs">{t.Type_id}</td><td className="p-3 font-medium text-gray-700">{t.Type_name}</td><td className="p-3 text-right"><button onClick={() => removeType(t.Type_id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button></td></tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px] md:col-span-2">
+                    <h3 className="text-lg font-bold mb-4 flex items-center text-gray-800"><Users className="mr-2 text-indigo-500" size={20}/> จัดการรายชื่อพนักงาน IT (Staff)</h3>
+                    <form onSubmit={addStaff} className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
+                        <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} placeholder="ชื่อ-สกุล (เช่น ศราวุฒิ)..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
+                        <input type="text" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value})} placeholder="หน้าที่ (เช่น Network/HW)..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
+                        <button type="submit" className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 flex items-center justify-center"><PlusCircle size={20} className="mr-2"/> เพิ่มพนักงาน</button>
+                    </form>
+                    <div className="border border-gray-200 rounded-xl flex-1 overflow-y-auto bg-slate-50">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-white sticky top-0 shadow-sm"><tr><th className="p-3 border-b text-gray-500 font-semibold">รหัสพนักงาน</th><th className="p-3 border-b text-gray-500 font-semibold">ชื่อ-สกุล</th><th className="p-3 border-b text-gray-500 font-semibold">ตำแหน่ง / หน้าที่</th><th className="p-3 border-b w-12"></th></tr></thead>
+                        <tbody>
+                        {staffList.length === 0 && <tr><td colSpan="4" className="p-4 text-center text-gray-500">ไม่มีข้อมูลพนักงาน (โปรดเพิ่มข้อมูล)</td></tr>}
+                        {staffList.map(s => (
+                            <tr key={s.Staff_ID} className="border-b last:border-0 hover:bg-indigo-50/50 bg-white">
+                                <td className="p-3 text-gray-400 font-mono text-xs">{s.Staff_ID}</td>
+                                <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
+                                    <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] ${s.Avatar_Color || 'bg-slate-500'}`}>{s.Name.charAt(0)}</div>
+                                    {s.Name}
+                                </td>
+                                <td className="p-3 text-gray-600">{s.Role}</td>
+                                <td className="p-3 text-right"><button onClick={() => removeStaff(s.Staff_ID)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button></td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                </div>
+            );
+        };
+
+        // ฟอร์มแจ้งซ่อมสำหรับ User (เห็นเฉพาะข้อมูลพื้นฐาน)
+        function RepairForm({ notify, apiCall, tickets, setTickets, departments }) {
+            const [description, setDescription] = useState('');
+            const [selectedDevice, setSelectedDevice] = useState('Hardware');
+            const [assetId, setAssetId] = useState('');
+            const [showScanner, setShowScanner] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const ticketData = {
+                    Ticket_ID: generateTicketId(),
+                    Type: "แจ้งซ่อม",
+                    Requester: form.requester.value,
+                    Department: form.department.value,
+                    Asset_ID: assetId || "-",
+                    Device_Type: selectedDevice,
+                    Description: description,
+                    Urgency: form.urgency.value,
+                    Status: "Pending",
+                    Assignee: "-",
+                    Device_Status: "-",
+                    Repair: "-",
+                    Reason: "-",
+                    Buy: "[]",
+                    Cost: 0,
+                    Estimate: "-",
+                    Created_At: new Date().toLocaleString('th-TH'),
+                    Finished_At: "-"
+                };
+
+                const success = await apiCall('Tickets', 'append', ticketData);
+                if(success) {
+                    setTickets([...tickets, ticketData]);
+                    notify(`ส่งเรื่องแจ้งซ่อมสำเร็จ (Ticket ID: ${ticketData.Ticket_ID})`);
+                    form.reset();
+                    setDescription('');
+                    setAssetId('');
+                }
+            };
+
+            const handleScanQR = (scannedText) => {
+                setAssetId(scannedText);
+                setShowScanner(false);
+            };
+
+            return (
+                <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+                <div className="bg-blue-600 px-8 py-5 text-white flex items-center gap-3"><Wrench className="w-6 h-6 text-blue-200" /><h2 className="text-xl font-bold">แจ้งปัญหา / ส่งซ่อม IT</h2></div>
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้แจ้ง <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500" required /></div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700">หน่วยงาน <span className="text-red-500">*</span></label>
+                        <select name="department" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none bg-white" required>
+                            <option value="">-- เลือกหน่วยงาน --</option>
+                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
+                        </select>
+                    </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700">รหัสระบบครุภัณฑ์ (Asset ID)</label>
+                        <div className="flex gap-3">
+                            <input type="text" name="asset_id" value={assetId} onChange={(e)=>setAssetId(e.target.value)} className="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none font-mono text-blue-700" placeholder="ระบุเลขระบบ (COM-0001) หรือสแกน QR" />
+                            <button type="button" onClick={() => setShowScanner(true)} className="bg-slate-50 p-2.5 rounded-xl border border-slate-300 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition" title="สแกน QR Code">
+                                <QrCode size={22} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700">ประเภทอุปกรณ์ <span className="text-red-500">*</span></label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[{ id: 'Hardware', icon: <Monitor size={20}/>, label: 'คอมพิวเตอร์ / จอ' }, { id: 'Software', icon: <AppWindow size={20}/>, label: 'โปรแกรม / ระบบ' }, { id: 'Printer', icon: <Printer size={20}/>, label: 'ปริ้นเตอร์' }, { id: 'Network', icon: <Wifi size={20}/>, label: 'อินเทอร์เน็ต / เครือข่าย' }].map((item) => (
+                        <label key={item.id} className={`border-2 rounded-xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${selectedDevice === item.id ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`} onClick={() => setSelectedDevice(item.id)}>
+                            <div className={selectedDevice === item.id ? 'text-blue-600' : 'text-slate-400'}>{item.icon}</div><span className="text-xs font-bold text-center">{item.label}</span>
+                        </label>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700">รายละเอียดปัญหา <span className="text-red-500">*</span></label>
+                    <textarea rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none resize-none focus:border-blue-500" placeholder="ระบุอาการที่พบ หรือข้อความ Error" required value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                    </div>
+
+                    <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700">ระดับความเร่งด่วน <span className="text-red-500">*</span></label>
+                    <div className="flex flex-col gap-3">
+                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 hover:bg-slate-50 transition">
+                            <input type="radio" name="urgency" value="ทั่วไป" className="w-4 h-4" defaultChecked />
+                            <div><span className="text-sm font-bold text-slate-700">ทั่วไป</span> <span className="text-xs text-slate-500 ml-2">(สามารถใช้งานได้ พอมีทางเลี่ยงอื่นได้)</span></div>
+                        </label>
+                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-orange-50 has-[:checked]:border-orange-500 hover:bg-slate-50 transition">
+                            <input type="radio" name="urgency" value="เร่งด่วน" className="w-4 h-4" />
+                            <div><span className="text-sm font-bold text-orange-600">เร่งด่วน</span> <span className="text-xs text-orange-500/80 ml-2">(กระทบคนกลุ่มใหญ่ ต้องแก้ภายใน 1-8 ชั่วโมง)</span></div>
+                        </label>
+                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-rose-50 has-[:checked]:border-rose-500 hover:bg-slate-50 transition">
+                            <input type="radio" name="urgency" value="วิกฤต" className="w-4 h-4" />
+                            <div><span className="text-sm font-bold text-rose-600 flex items-center gap-1"><Zap size={14}/> วิกฤต</span> <span className="text-xs text-rose-500/80 ml-2">(ระบบหลักทำงานไม่ได้ ล่มทั้ง รพ. ต้องแก้ไขทันที)</span></div>
+                        </label>
+                    </div>
+                    </div>
+
+                    <div className="pt-4 border-t"><button type="submit" className="w-full bg-blue-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-blue-700 flex items-center justify-center gap-2"><Send className="w-5 h-5" /> ส่งเรื่องแจ้งซ่อม</button></div>
+                </form>
+
+                {showScanner && <QRScannerModal onScan={handleScanQR} onClose={() => setShowScanner(false)} />}
+                </div>
+            );
+        }
+
+        function DataQueryForm({ notify, apiCall, tickets, setTickets, departments }) {
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const ticketData = {
+                    Ticket_ID: generateTicketId(),
+                    Type: "ขอข้อมูล/รายงาน",
+                    Requester: form.requester.value,
+                    Department: form.department.value,
+                    Asset_ID: "-",
+                    Device_Type: "Data",
+                    Description: `เรื่อง: ${form.topic.value}\nเงื่อนไข: ${form.criteria.value}`,
+                    Urgency: "ทั่วไป",
+                    Status: "Pending",
+                    Assignee: "-",
+                    Device_Status: "-", Repair: "-", Reason: "-", Buy: "[]", Cost: 0, Estimate: "-", Finished_At: "-",
+                    Created_At: new Date().toLocaleString('th-TH')
+                };
+
+                const success = await apiCall('Tickets', 'append', ticketData);
+                if(success) {
+                    setTickets([...tickets, ticketData]);
+                    notify(`ส่งคำร้องขอข้อมูลสำเร็จ (Ticket ID: ${ticketData.Ticket_ID})`);
+                    form.reset();
+                }
+            };
+
+            return (
+                <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+                <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-8 py-5 text-white flex items-center gap-3"><Database className="w-6 h-6 text-purple-200" /><h2 className="text-xl font-bold">แบบฟอร์มขอข้อมูล / รายงาน (Data Query)</h2></div>
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้ขอข้อมูล <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-bold text-slate-700">หน่วยงาน <span className="text-red-500">*</span></label>
+                        <select name="department" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none bg-white" required>
+                            <option value="">-- เลือกหน่วยงาน --</option>
+                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
+                        </select>
+                    </div>
+                    </div>
+                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">หัวข้อรายงานที่ต้องการ <span className="text-red-500">*</span></label><input type="text" name="topic" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
+                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">รายละเอียดเงื่อนไข (Criteria) <span className="text-red-500">*</span></label><textarea name="criteria" rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 resize-none" placeholder="ระบุเงื่อนไข เช่น ช่วงเวลา, ฟิลด์ที่ต้องการ" required></textarea></div>
+                    <div className="pt-4 border-t"><button type="submit" className="w-full bg-purple-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-purple-700 flex items-center justify-center gap-2"><Send className="w-5 h-5" /> ส่งคำขอข้อมูล</button></div>
+                </form>
+                </div>
+            );
+        }
+
+        // Modal สำหรับให้ Admin อัปเดต Ticket แบบละเอียด
+        const TicketUpdateModal = ({ ticket, onClose, onSave }) => {
+            const [status, setStatus] = useState(ticket.Status);
+            const [deviceStatus, setDeviceStatus] = useState(ticket.Device_Status !== "-" ? ticket.Device_Status : "พร้อมใช้งาน");
+            const [repair, setRepair] = useState(ticket.Repair !== "-" ? ticket.Repair : "");
+            const [reason, setReason] = useState(ticket.Reason !== "-" ? ticket.Reason : "");
+            const [estimate, setEstimate] = useState(ticket.Estimate !== "-" ? ticket.Estimate : "");
+            
+            const [buyItems, setBuyItems] = useState(typeof ticket.Buy === 'string' ? safeJsonParse(ticket.Buy, []) : (ticket.Buy || []));
+
+            const handleAddBuyItem = () => setBuyItems([...buyItems, { item: '', price: 0 }]);
+            const handleBuyChange = (index, field, value) => {
+                const newItems = [...buyItems];
+                newItems[index][field] = value;
+                setBuyItems(newItems);
+            };
+            const handleRemoveBuyItem = (index) => setBuyItems(buyItems.filter((_, i) => i !== index));
+
+            const totalCost = buyItems.reduce((sum, current) => sum + Number(current.price || 0), 0);
+
+            const handleSave = () => {
+                const updatedTicket = {
+                    ...ticket,
+                    Status: status,
+                    Device_Status: deviceStatus,
+                    Repair: repair || "-",
+                    Reason: reason || "-",
+                    Buy: JSON.stringify(buyItems),
+                    Cost: totalCost,
+                    Estimate: estimate || "-",
+                    Finished_At: status === "Completed" ? new Date().toLocaleString('th-TH') : ticket.Finished_At
+                };
+                onSave(updatedTicket);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-2xl max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Edit className="text-blue-600"/> อัปเดตใบงาน {ticket.Ticket_ID}</h3>
+                                <p className="text-sm text-slate-500 mt-1">{ticket.Description.split('\n')[0]}</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-white rounded-lg border hover:bg-slate-100 transition"><X size={20}/></button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-700">สถานะงาน (Job Status)</label>
+                                    <select value={status} onChange={e=>setStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                        <option value="Pending">รอรับเรื่อง (Pending)</option>
+                                        <option value="In Progress">กำลังดำเนินการ (In Progress)</option>
+                                        <option value="Completed">เสร็จสิ้น (Completed)</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-bold text-slate-700">สถานะอุปกรณ์ปัจจุบัน</label>
+                                    <select value={deviceStatus} onChange={e=>setDeviceStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                        <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+                                        <option value="ส่งซ่อม">ส่งซ่อม</option>
+                                        <option value="แทงชำรุด">แทงชำรุด</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 border-t pt-4">
+                                <label className="text-sm font-bold text-slate-700">การดำเนินการของช่าง (Repair Detail)</label>
+                                <select value={repair} onChange={e=>setRepair(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                    <option value="">-- เลือกการดำเนินการ --</option>
+                                    <option value="ซ่อมได้ไม่เสียค่าใช้จ่าย">ซ่อมได้ไม่เสียค่าใช้จ่าย</option>
+                                    <option value="ซ่อมไม่ได้แจ้งชำรุด">ซ่อมไม่ได้แจ้งชำรุด</option>
+                                    <option value="ซ่อมได้/ใช้งบวัสดุซื้อดังนี้">ซ่อมได้ / ใช้งบวัสดุซื้อ</option>
+                                    <option value="เห็นควรจ้างซ่อม/จัดทำเนื่องจาก">เห็นควรจ้างซ่อม / จัดทำเนื่องจาก</option>
+                                    <option value="กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน">กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน</option>
+                                </select>
+                            </div>
+
+                            {repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' && (
+                                <div className="space-y-1.5 animate-in fade-in">
+                                    <label className="text-sm font-bold text-slate-700">เหตุผลที่เห็นควรจ้างซ่อม</label>
+                                    <textarea value={reason} onChange={e=>setReason(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none resize-none" rows="3"></textarea>
+                                </div>
+                            )}
+
+                            {repair === 'กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน' && (
+                                <div className="space-y-1.5 animate-in fade-in">
+                                    <label className="text-sm font-bold text-slate-700">วันที่แจ้งบริษัท / คาดการณ์แล้วเสร็จ</label>
+                                    <input type="date" value={estimate} onChange={e=>setEstimate(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none" />
+                                </div>
+                            )}
+
+                            {repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' && (
+                                <div className="space-y-3 animate-in fade-in bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                    <label className="text-sm font-bold text-slate-700 flex justify-between items-center">
+                                        รายการขอซื้ออะไหล่/วัสดุ
+                                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">รวม: {totalCost} ฿</span>
+                                    </label>
+                                    {buyItems.map((b, i) => (
+                                        <div key={i} className="flex gap-2 items-center">
+                                            <input type="text" placeholder="ชื่ออุปกรณ์" value={b.item} onChange={e=>handleBuyChange(i, 'item', e.target.value)} className="flex-1 border rounded p-2 text-sm" />
+                                            <input type="number" placeholder="ราคา" value={b.price} onChange={e=>handleBuyChange(i, 'price', e.target.value)} className="w-24 border rounded p-2 text-sm" />
+                                            <button onClick={()=>handleRemoveBuyItem(i)} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+                                        </div>
+                                    ))}
+                                    <button onClick={handleAddBuyItem} className="text-xs text-blue-600 font-bold flex items-center mt-2"><PlusCircle size={14} className="mr-1"/> เพิ่มรายการอะไหล่</button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-slate-100 flex gap-3 bg-slate-50 rounded-b-2xl">
+                            <button onClick={onClose} className="px-6 py-2.5 border bg-white rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
+                            <button onClick={handleSave} className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center shadow-sm transition"><Save size={18} className="mr-2"/> บันทึกการอัปเดต</button>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        function TicketTracker({ tickets, departments }) {
+            const [filterDept, setFilterDept] = useState('');
+            const filteredTickets = tickets.filter(t => filterDept === '' || t.Department === filterDept);
+
+            const pending = filteredTickets.filter(t => t.Status === 'Pending');
+            const inProgress = filteredTickets.filter(t => t.Status === 'In Progress');
+            const completed = filteredTickets.filter(t => t.Status === 'Completed');
+
+            return (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LayoutList className="text-blue-600"/> กระดานติดตามสถานะงาน</h2>
+                        <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500 w-full sm:w-64 bg-slate-50 cursor-pointer">
+                            <option value="">-- ดูทุกหน่วยงาน --</option>
+                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <TicketColumn title="รอดำเนินการ (Pending)" tickets={pending} bgColor="bg-orange-50" borderColor="border-orange-200" titleColor="text-orange-800" icon={<AlertTriangle size={18}/>} />
+                        <TicketColumn title="กำลังดำเนินการ (In Progress)" tickets={inProgress} bgColor="bg-blue-50" borderColor="border-blue-200" titleColor="text-blue-800" icon={<RefreshCw size={18} className="animate-spin-slow"/>} />
+                        <TicketColumn title="เสร็จสิ้น (Completed)" tickets={completed} bgColor="bg-emerald-50" borderColor="border-emerald-200" titleColor="text-emerald-800" icon={<CheckCircle size={18}/>} />
+                    </div>
+                </div>
+            );
+        }
+
+        function TicketColumn({ title, tickets, bgColor, borderColor, titleColor, icon }) {
+            return (
+                <div className={`rounded-2xl border ${borderColor} flex flex-col h-full overflow-hidden bg-white shadow-sm`}>
+                    <div className={`p-4 ${bgColor} border-b ${borderColor} flex justify-between items-center`}>
+                        <h3 className={`font-bold flex items-center gap-2 ${titleColor}`}>{icon} {title}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-white shadow-sm ${titleColor}`}>{tickets.length}</span>
+                    </div>
+                    <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-50/50 max-h-[600px] custom-scrollbar">
+                        {tickets.length === 0 ? (
+                            <div className="text-center text-slate-400 py-8 text-sm">ไม่มีข้อมูล</div>
+                        ) : (
+                            tickets.slice().reverse().map(t => (
+                                <div key={t.Ticket_ID} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition relative">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.Ticket_ID}</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : t.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{t.Urgency}</span>
+                                    </div>
+                                    <h4 className="font-bold text-sm text-slate-800 mb-1">{t.Type}</h4>
+                                    <p className="text-xs text-slate-600 line-clamp-2 mb-3">{t.Description.split('\n')[0]}</p>
+                                    <div className="flex justify-between items-end border-t border-slate-100 pt-2 mt-2">
+                                        <div>
+                                            <p className="text-[10px] text-slate-500 font-medium">{t.Requester}</p>
+                                            <p className="text-[10px] text-slate-400 truncate w-32">{t.Department}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock size={10}/> {t.Created_At.split(' ')[0]}</p>
+                                            <p className="text-[10px] font-bold text-indigo-600 mt-0.5 whitespace-nowrap">ช่าง: {t.Assignee !== '-' ? t.Assignee : 'รอรับงาน'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function StaffWorkload({ notify, apiCall, tickets, setTickets, staffList, equipments }) {
+            const unassignedTickets = tickets.filter(t => t.Assignee === "-" || !t.Assignee);
+            const activeTickets = tickets.filter(t => t.Assignee !== "-" && t.Status !== "Completed");
+            const completedTickets = tickets.filter(t => t.Status === "Completed");
+
+            const [selectedTicketForUpdate, setSelectedTicketForUpdate] = useState(null);
+
+            const staffWorkloads = staffList.map(staff => {
+                const myActive = tickets.filter(t => t.Assignee === staff.Name && t.Status === "In Progress").length;
+                const myQueue = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Pending").length;
+                const myCompleted = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Completed").length;
+                return {
+                    ...staff,
+                    activeJobs: myActive,
+                    queue: myQueue,
+                    completed: myCompleted,
+                    status: (myActive + myQueue) > 0 ? "Busy" : "Available"
+                };
+            });
+
+            const handleAssign = async (staffName, ticket) => {
+                const updatedTicket = { ...ticket, Assignee: staffName, Status: "Pending" };
+                const success = await apiCall('Tickets', 'update', updatedTicket);
+                if(success) {
+                    setTickets(tickets.map(t => t.Ticket_ID === ticket.Ticket_ID ? updatedTicket : t));
+                    notify(`มอบหมายงาน ${ticket.Ticket_ID} ให้คุณ ${staffName} เรียบร้อย`);
+                }
+            };
+
+            const handleSaveUpdate = async (updatedTicket) => {
+                const success = await apiCall('Tickets', 'update', updatedTicket);
+                if(success) {
+                    setTickets(tickets.map(t => t.Ticket_ID === updatedTicket.Ticket_ID ? updatedTicket : t));
+                    notify(`อัปเดตใบงาน ${updatedTicket.Ticket_ID} เรียบร้อย`);
+                    
+                    // หากมีการอัปเดต Device_Status ให้ไปอัปเดตในตาราง Equipments ด้วยแบบเนียนๆ
+                    if (updatedTicket.Asset_ID && updatedTicket.Asset_ID !== "-") {
+                        const eqToUpdate = equipments.find(e => e.Id === updatedTicket.Asset_ID || e.Id_equipment === updatedTicket.Asset_ID);
+                        if (eqToUpdate && eqToUpdate.Status !== updatedTicket.Device_Status) {
+                            await apiCall('Equipments', 'update', { ...eqToUpdate, Status: updatedTicket.Device_Status });
+                            // แจ้งเตือนเงียบๆ ใน console ก็พอเพื่อไม่ให้ UI รก
+                        }
+                    }
+                    setSelectedTicketForUpdate(null);
+                }
+            };
+
+            if(staffList.length === 0) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-sm border border-slate-200">
+                        <Users className="w-12 h-12 text-slate-300 mb-4" />
+                        <h3 className="text-lg font-bold text-slate-700">ยังไม่มีรายชื่อพนักงานในระบบ</h3>
+                        <p className="text-slate-500 text-sm mt-2">โปรดไปที่เมนู "ตั้งค่า" เพื่อเพิ่มรายชื่อทีม IT ก่อนใช้งานกระดานรับงานครับ</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-8 max-w-5xl">
+                <div className="flex items-center gap-3"><Users className="text-blue-600 w-7 h-7" /><h2 className="text-2xl font-bold text-slate-800">Admin Dashboard: IT Team Workload</h2></div>
+                
+                {/* 1. Unassigned Tickets */}
+                <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
+                    <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center"><div className="flex items-center gap-3"><AlertTriangle className="text-orange-600" /><h3 className="font-bold text-orange-800">งานใหม่รอจ่าย (Unassigned)</h3></div><span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-orange-600 border border-orange-200">{unassignedTickets.length} Waiting</span></div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">จ่ายงานให้ (Assign)</th></tr></thead>
+                        <tbody className="divide-y divide-orange-50">
+                            {unassignedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานใหม่รอจ่าย</td></tr>) : unassignedTickets.map(ticket => (
+                            <tr key={ticket.Ticket_ID} className="hover:bg-orange-50/50">
+                            <td className="px-6 py-4">
+                                <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
+                                <div className="font-bold text-slate-800">{ticket.Type}</div>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block ${ticket.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : ticket.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{ticket.Urgency}</span>
+                            </td>
+                            <td className="px-6 py-4"><div className="font-bold text-blue-700 font-mono text-xs">{ticket.Asset_ID}</div><div className="text-xs text-slate-600 line-clamp-2 mt-1">{ticket.Description}</div></td>
+                            <td className="px-6 py-4"><span className="text-slate-800 font-medium">{ticket.Requester}</span><div className="text-xs text-gray-500">{ticket.Department}</div></td>
+                            <td className="px-6 py-4 text-right">
+                                <div className="flex justify-end gap-1 flex-wrap w-48 ml-auto">
+                                    {staffWorkloads.map(s => (
+                                        <button key={s.Staff_ID} title={`จ่ายให้ ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
+                                            {s.Name.charAt(0)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </td>
+                            </tr>
+                        ))}</tbody></table>
+                    </div>
+                </div>
+
+                {/* 2. Staff Workload Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {staffWorkloads.map(staff => (
+                    <div key={staff.Staff_ID} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 relative overflow-hidden">
+                        <div className="flex items-center gap-4 mb-4 z-10 relative">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm ${staff.Avatar_Color}`}>{staff.Name.charAt(0)}</div>
+                            <div><h3 className="font-bold text-slate-800">{staff.Name}</h3><p className="text-xs text-slate-500">{staff.Role}</p></div>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 z-10 relative">
+                            <div className="flex justify-between text-sm mb-2"><span className="text-slate-600">กำลังทำ: <b className="text-blue-600">{staff.activeJobs}</b></span><span className="text-slate-600">รอดำเนินการ: <b className="text-orange-500">{staff.queue}</b></span></div>
+                            <div className="w-full bg-slate-200 rounded-full h-2 mb-3"><div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{width: `${Math.min((staff.activeJobs+staff.queue)*20, 100)}%`}}></div></div>
+                            <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-semibold text-emerald-600"><span className="flex items-center gap-1"><CheckSquare size={14}/> งานที่ทำเสร็จแล้ว</span><span>{staff.completed} งาน</span></div>
+                        </div>
+                    </div>
+                    ))}
+                </div>
+
+                {/* 3. Active Jobs */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center"><h3 className="font-bold text-slate-800">งานที่กำลังดำเนินการ (Active Jobs)</h3></div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-slate-200"><tr><th className="px-6 py-3">ID / สถานะปัจจุบัน</th><th className="px-6 py-3">เรื่อง / อุปกรณ์</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3 text-center">อัปเดตใบงาน</th></tr></thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {activeTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานที่กำลังดำเนินการ</td></tr>) : activeTickets.map(ticket => (
+                            <tr key={ticket.Ticket_ID} className="hover:bg-slate-50">
+                            <td className="px-6 py-4">
+                                <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ticket.Status === 'Pending' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{ticket.Status}</span>
+                            </td>
+                            <td className="px-6 py-4"><div className="font-bold text-slate-800">{ticket.Type} <span className="text-blue-600 font-mono text-xs ml-1">[{ticket.Asset_ID}]</span></div><div className="text-xs text-slate-500 mt-1">{ticket.Requester} ({ticket.Department})</div></td>
+                            <td className="px-6 py-4 text-slate-800 font-medium flex items-center gap-2"><div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] ${staffList.find(s => s.Name === ticket.Assignee)?.Avatar_Color || 'bg-gray-400'}`}>{ticket.Assignee.charAt(0)}</div>{ticket.Assignee}</td>
+                            <td className="px-6 py-4 text-center">
+                                <button onClick={() => setSelectedTicketForUpdate(ticket)} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm transition flex items-center justify-center gap-1.5 w-full mx-auto"><Edit size={14}/> จัดการงาน</button>
+                            </td>
+                            </tr>
+                        ))}</tbody></table>
+                    </div>
+                </div>
+
+                {/* 4. Completed Jobs */}
+                <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+                    <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2"><ShieldCheck className="text-emerald-600 w-5 h-5"/><h3 className="font-bold text-emerald-800">ประวัติงานที่เสร็จสิ้นแล้ว (Completed Jobs)</h3></div>
+                    <div className="overflow-x-auto max-h-64 overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-emerald-100 sticky top-0 shadow-sm"><tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">เรื่อง</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3">การซ่อมแซม</th></tr></thead>
+                        <tbody className="divide-y divide-emerald-50">
+                            {completedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ยังไม่มีประวัติงานที่เสร็จสิ้น</td></tr>) : completedTickets.slice().reverse().map(ticket => (
+                            <tr key={ticket.Ticket_ID} className="hover:bg-emerald-50/50">
+                            <td className="px-6 py-3 font-mono text-slate-500 text-xs">{ticket.Ticket_ID}</td>
+                            <td className="px-6 py-3"><div className="font-bold text-slate-700">{ticket.Type}</div><div className="text-xs text-slate-400">{ticket.Requester}</div></td>
+                            <td className="px-6 py-3 text-slate-600 text-sm">{ticket.Assignee}</td>
+                            <td className="px-6 py-3"><div className="text-xs font-bold text-emerald-700 mb-0.5">{ticket.Repair}</div><div className="text-[10px] text-slate-400">ปิดงาน: {ticket.Finished_At}</div></td>
+                            </tr>
+                        ))}</tbody></table>
+                    </div>
+                </div>
+
+                {/* Modal สำหรับการอัปเดตงาน */}
+                {selectedTicketForUpdate && <TicketUpdateModal ticket={selectedTicketForUpdate} onClose={() => setSelectedTicketForUpdate(null)} onSave={handleSaveUpdate} />}
+
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
