@@ -47,7 +47,7 @@
             Sparkles, Bot, Wifi, MessageSquare, Send, AlertTriangle, 
             Clock, FileText, BarChart3, Database, Users, HardDrive, 
             Layout, Zap, X, ChevronRight, Activity, Printer, Package, 
-            Edit, UserPlus, ArrowLeft, CheckSquare, ShieldCheck, Image as ImageIcon, Camera, ScanLine, LayoutList, Calendar
+            Edit, UserPlus, ArrowLeft, CheckSquare, ShieldCheck, Image as ImageIcon, Camera, ScanLine, LayoutList, Calendar, Menu
         } from 'lucide-react';
 
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhmXHiFWbKcIbrQyNh800vbvoEcckcatqpywN1et4L14I7kXXT1Hel-U5kSLZaAS9_/exec';
@@ -64,11 +64,10 @@
             return String(maxId + 1).padStart(5, '0');
         };
 
-        // ระบบรันเลขแจ้งซ่อม xxxx/ปีพ.ศ.
         const generateTicketId = (tickets = []) => {
             const year = new Date().getFullYear() + 543;
             const yearStr = year.toString();
-            const count = tickets.filter(t => t.Ticket_ID && t.Ticket_ID.endsWith(`/${yearStr}`)).length + 1;
+            const count = tickets.filter(t => t.Ticket_ID && String(t.Ticket_ID).endsWith(`/${yearStr}`)).length + 1;
             return `${count}/${yearStr}`;
         };
 
@@ -107,13 +106,12 @@
             }
         };
 
-        // Component สำหรับ Scanner QR Code
         const QRScannerModal = ({ onScan, onClose }) => {
             useEffect(() => {
                 const scanner = new window.Html5QrcodeScanner(
                     "qr-reader",
                     { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
-                    /* verbose= */ false
+                    false
                 );
                 scanner.render(
                     (decodedText) => {
@@ -146,6 +144,7 @@
             const isAdmin = urlParams.get('action') === 'admin';
 
             const [activeTab, setActiveTab] = useState(isAdmin ? 'dashboard' : 'repair');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true); // เปิดตอนโหลดครั้งแรก
             const [showNotification, setShowNotification] = useState(false);
             const [notificationMsg, setNotificationMsg] = useState("");
 
@@ -166,6 +165,11 @@
                 setNotificationMsg(msg);
                 setShowNotification(true);
                 setTimeout(() => setShowNotification(false), 3000);
+            };
+
+            const handleTabChange = (tab) => {
+                setActiveTab(tab);
+                setIsSidebarOpen(false); // ซ่อน sidebar อัตโนมัติเมื่อมีการเลือกเมนู
             };
 
             const fetchAllData = async () => {
@@ -338,7 +342,7 @@
             }
 
             return (
-                <div className="flex h-screen bg-gray-100 font-sans relative">
+                <div className="flex h-screen bg-gray-100 font-sans relative overflow-hidden">
                 
                 {isSyncing && (
                     <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex items-center justify-center">
@@ -349,73 +353,90 @@
                     </div>
                 )}
 
-                {/* Sidebar */}
-                <div className="w-64 bg-slate-800 text-white flex flex-col shadow-xl z-10 flex-shrink-0">
-                    <div className="p-5 flex items-center justify-between border-b border-slate-700">
-                        <div className="flex items-center space-x-3">
-                            <Server className="w-8 h-8 text-blue-400" />
-                            <h1 className="text-lg font-bold tracking-wide">IT Service Center</h1>
-                        </div>
-                    </div>
-                    <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-                        
-                        {isAdmin && (
-                            <>
-                                <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-                                <SidebarItem icon={<Monitor size={20} />} label="จัดการครุภัณฑ์" active={activeTab === 'equipments'} onClick={() => setActiveTab('equipments')} />
-                                <SidebarItem icon={<AppWindow size={20} />} label="จัดการซอฟต์แวร์" active={activeTab === 'softwares'} onClick={() => setActiveTab('softwares')} />
-                                
-                                <div className="my-4 border-t border-slate-700"></div>
-                                <div className="px-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Helpdesk Service</div>
-                            </>
-                        )}
+                {/* Mobile Backdrop Overlay */}
+                <div 
+                    className={`fixed inset-0 bg-black/50 z-20 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+                    onClick={() => setIsSidebarOpen(false)}>
+                </div>
 
-                        <SidebarItem icon={<Wrench size={20} />} label="แจ้งซ่อม IT" active={activeTab === 'repair'} onClick={() => setActiveTab('repair')} />
-                        <SidebarItem icon={<Database size={20} />} label="ขอข้อมูล / รายงาน" active={activeTab === 'data_request'} onClick={() => setActiveTab('data_request')} />
-                        <SidebarItem icon={<LayoutList size={20} />} label="ติดตามสถานะงาน" active={activeTab === 'ticket_tracking'} onClick={() => setActiveTab('ticket_tracking')} />
-                        
-                        {isAdmin && (
-                            <>
-                                <SidebarItem icon={<Users size={20} />} label="Admin Workload" active={activeTab === 'admin_workload'} onClick={() => setActiveTab('admin_workload')} />
-                                <div className="my-4 border-t border-slate-700"></div>
-                                <SidebarItem icon={<Settings size={20} />} label="ตั้งค่าระบบ / พนักงาน" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                            </>
-                        )}
-                    </nav>
-                    
-                    {!isAdmin && (
-                        <div className="p-4 border-t border-slate-700 text-center">
-                            <p className="text-xs text-slate-400">ระบบบริการผู้ใช้งาน</p>
+                {/* Animated Sidebar */}
+                <div className={`fixed md:relative z-30 h-full bg-slate-800 text-white shadow-xl flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-64' : 'w-0'}`}>
+                    <div className="w-64 h-full flex flex-col">
+                        <div className="p-5 flex items-center justify-between border-b border-slate-700">
+                            <div className="flex items-center space-x-3">
+                                <Server className="w-8 h-8 text-blue-400 shrink-0" />
+                                <h1 className="text-lg font-bold tracking-wide truncate">IT Service Center</h1>
+                            </div>
+                            {/* Close button for mobile */}
+                            <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+                                <X size={20} />
+                            </button>
                         </div>
-                    )}
+                        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                            
+                            {isAdmin && (
+                                <>
+                                    <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                                    <SidebarItem icon={<Monitor size={20} />} label="จัดการครุภัณฑ์" active={activeTab === 'equipments'} onClick={() => handleTabChange('equipments')} />
+                                    <SidebarItem icon={<AppWindow size={20} />} label="จัดการซอฟต์แวร์" active={activeTab === 'softwares'} onClick={() => handleTabChange('softwares')} />
+                                    
+                                    <div className="my-4 border-t border-slate-700"></div>
+                                    <div className="px-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Helpdesk Service</div>
+                                </>
+                            )}
+
+                            <SidebarItem icon={<Wrench size={20} />} label="แจ้งซ่อม IT" active={activeTab === 'repair'} onClick={() => handleTabChange('repair')} />
+                            <SidebarItem icon={<Database size={20} />} label="ขอข้อมูล / รายงาน" active={activeTab === 'data_request'} onClick={() => handleTabChange('data_request')} />
+                            <SidebarItem icon={<LayoutList size={20} />} label="ติดตามสถานะงาน" active={activeTab === 'ticket_tracking'} onClick={() => handleTabChange('ticket_tracking')} />
+                            
+                            {isAdmin && (
+                                <>
+                                    <SidebarItem icon={<Users size={20} />} label="Admin Workload" active={activeTab === 'admin_workload'} onClick={() => handleTabChange('admin_workload')} />
+                                    <div className="my-4 border-t border-slate-700"></div>
+                                    <SidebarItem icon={<Settings size={20} />} label="ตั้งค่าระบบ / พนักงาน" active={activeTab === 'settings'} onClick={() => handleTabChange('settings')} />
+                                </>
+                            )}
+                        </nav>
+                        
+                        {!isAdmin && (
+                            <div className="p-4 border-t border-slate-700 text-center">
+                                <p className="text-xs text-slate-400">ระบบบริการผู้ใช้งาน</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <header className="bg-white shadow-sm h-16 flex items-center px-8 justify-between z-0 relative flex-shrink-0">
-                        <h2 className="text-xl font-semibold text-gray-800">
-                            {activeTab === 'dashboard' && 'ภาพรวมระบบ (Dashboard)'}
-                            {activeTab === 'equipments' && 'จัดการครุภัณฑ์คอมพิวเตอร์ (ทะเบียน/เพิ่มข้อมูล)'}
-                            {activeTab === 'softwares' && 'จัดการระบบซอฟต์แวร์'}
-                            {activeTab === 'repair' && 'แบบฟอร์มแจ้งปัญหา / ส่งซ่อม'}
-                            {activeTab === 'data_request' && 'แบบฟอร์มขอข้อมูล / รายงาน'}
-                            {activeTab === 'ticket_tracking' && 'ติดตามสถานะงานแจ้งซ่อม / ขอข้อมูล'}
-                            {activeTab === 'admin_workload' && 'กระดานบริหารงานทีม IT'}
-                            {activeTab === 'settings' && 'ตั้งค่าข้อมูลพื้นฐาน และ พนักงาน IT'}
-                        </h2>
-                        <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
-                            <RefreshCw size={16} className="mr-2" /> รีเฟรชข้อมูล
+                <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+                    <header className="bg-white shadow-sm h-16 flex items-center px-4 md:px-8 justify-between z-10 relative flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-gray-50 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors">
+                                <Menu size={20} />
+                            </button>
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 truncate hidden sm:block">
+                                {activeTab === 'dashboard' && 'ภาพรวมระบบ (Dashboard)'}
+                                {activeTab === 'equipments' && 'จัดการครุภัณฑ์คอมพิวเตอร์ (ทะเบียน/เพิ่มข้อมูล)'}
+                                {activeTab === 'softwares' && 'จัดการระบบซอฟต์แวร์'}
+                                {activeTab === 'repair' && 'แบบฟอร์มแจ้งปัญหา / ส่งซ่อม'}
+                                {activeTab === 'data_request' && 'แบบฟอร์มขอข้อมูล / รายงาน'}
+                                {activeTab === 'ticket_tracking' && 'ติดตามสถานะงานแจ้งซ่อม / ขอข้อมูล'}
+                                {activeTab === 'admin_workload' && 'กระดานบริหารงานทีม IT'}
+                                {activeTab === 'settings' && 'ตั้งค่าข้อมูลพื้นฐาน และ พนักงาน IT'}
+                            </h2>
+                        </div>
+                        <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 ml-2">
+                            <RefreshCw size={16} className="mr-2" /> <span className="hidden sm:inline">รีเฟรชข้อมูล</span>
                         </button>
                     </header>
                     
                     {apiError && (
-                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-8 mt-6 rounded-lg shadow-sm flex-shrink-0">
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-4 md:mx-8 mt-6 rounded-lg shadow-sm flex-shrink-0">
                             <h3 className="text-red-800 font-bold flex items-center"><XCircle size={18} className="mr-2"/> การเชื่อมต่อขัดข้อง</h3>
                             <p className="text-red-700 text-sm mt-2">{apiError}</p>
                         </div>
                     )}
 
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8 custom-scrollbar">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-8 custom-scrollbar">
                         {activeTab === 'dashboard' && isAdmin && <DashboardView equipments={equipments} />}
                         
                         {activeTab === 'equipments' && isAdmin && <EquipmentManager 
@@ -431,7 +452,7 @@
                             equipments={equipments} apiCall={apiCall} notify={handleNotify}
                         />}
                         
-                        {activeTab === 'repair' && <RepairForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} />}
+                        {activeTab === 'repair' && <RepairForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} equipments={equipments} />}
                         {activeTab === 'data_request' && <DataQueryForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} />}
                         {activeTab === 'ticket_tracking' && <TicketTracker tickets={tickets} departments={departments} />}
                         
@@ -443,7 +464,7 @@
                 {/* QR Code Modal (for viewing only) */}
                 {qrModal.isOpen && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-                        <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4">
                             <h3 className="text-lg font-bold mb-4">QR Code ประจำเครื่อง</h3>
                             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrModal.data?.Id}`} alt="QR Code" className="mb-4 border p-2 rounded" />
                             <p className="font-semibold text-gray-700 text-lg">{qrModal.data?.Id}</p>
@@ -489,7 +510,7 @@
 
         const SidebarItem = ({ icon, label, active, onClick }) => (
             <button onClick={onClick} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}>
-                {icon} <span className="font-medium text-sm">{label}</span>
+                {icon} <span className="font-medium text-sm truncate">{label}</span>
             </button>
         );
 
@@ -535,16 +556,16 @@
 
             return (
                 <div className="space-y-4 animate-in fade-in duration-300">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
                         <h3 className="text-lg font-bold text-gray-800">
                             {view === 'list' ? 'รายการครุภัณฑ์ทั้งหมด' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'แบบฟอร์มลงทะเบียนครุภัณฑ์')}
                         </h3>
                         {view === 'list' ? (
-                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center gap-2 transition">
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
                                 <PlusCircle size={16} /> ลงทะเบียนครุภัณฑ์ใหม่
                             </button>
                         ) : (
-                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition">
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
                                 <ArrowLeft size={16} /> กลับหน้ารายการ
                             </button>
                         )}
@@ -598,16 +619,16 @@
 
             return (
                 <div className="space-y-4 animate-in fade-in duration-300">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
                         <h3 className="text-lg font-bold text-gray-800">
                             {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem ? 'แก้ไขซอฟต์แวร์' : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
                         </h3>
                         {view === 'list' ? (
-                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center gap-2 transition">
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
                                 <PlusCircle size={16} /> ลงทะเบียนซอฟต์แวร์ใหม่
                             </button>
                         ) : (
-                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 transition">
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
                                 <ArrowLeft size={16} /> กลับหน้ารายการ
                             </button>
                         )}
@@ -638,7 +659,7 @@
 
             return (
                 <div className="space-y-6 animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between relative overflow-hidden">
                     <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-500"></div>
                     <div><p className="text-sm text-gray-500 font-semibold mb-1">ครุภัณฑ์ทั้งหมด</p><p className="text-4xl font-bold text-gray-800">{stats.total}</p></div>
@@ -681,11 +702,11 @@
                     </div>
                     
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl shadow-sm border border-green-200 flex flex-col justify-center">
-                    <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                    <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-sm mx-auto md:mx-0">
                         <CheckCircle className="text-green-500 w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-bold text-green-800 mb-2">เชื่อมต่อระบบสำเร็จ</h3>
-                    <p className="text-green-600 text-sm">ระบบพร้อมใช้งาน โหลดข้อมูลเสร็จสิ้นเรียบร้อยแล้ว</p>
+                    <h3 className="text-xl font-bold text-green-800 mb-2 text-center md:text-left">เชื่อมต่อระบบสำเร็จ</h3>
+                    <p className="text-green-600 text-sm text-center md:text-left">ระบบพร้อมใช้งาน โหลดข้อมูลเสร็จสิ้นเรียบร้อยแล้ว</p>
                     </div>
                 </div>
                 </div>
@@ -808,11 +829,11 @@
             };
 
             return (
-                <div className="max-w-4xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="max-w-4xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                     <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex items-center"><Monitor className="mr-2" size={20}/> ข้อมูลหลักครุภัณฑ์</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">ชนิดอุปกรณ์ <span className="text-red-500">*</span></label><select name="Type" value={formData.Type} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"><option value="">-- เลือกชนิด --</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select></div>
 
@@ -852,7 +873,7 @@
                     {formData.Type && (
                     <div className="animate-in fade-in duration-300">
                         <h3 className="text-lg font-bold text-gray-800 mt-8 mb-4 border-b pb-2 flex items-center"><Save className="mr-2" size={20}/> รายละเอียดทางเทคนิค (ถ้ามี)</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border border-slate-100">
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">แบรนด์ / ยี่ห้อ <span className="text-red-500">*</span></label><select name="Brand" value={formData.Brand} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="">-- เลือกแบรนด์ --</option>{defaultBrands.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
 
                         {isComputerGroup && (
@@ -883,7 +904,7 @@
                     )}
 
                     <div className="pt-6 mt-4 border-t flex justify-end">
-                        <button type="submit" disabled={isUploading} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center disabled:opacity-50">
+                        <button type="submit" disabled={isUploading} className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center justify-center disabled:opacity-50">
                             <Save className="w-5 h-5 mr-2" /> 
                             {initialData ? "อัปเดตข้อมูล" : "บันทึกข้อมูล"}
                         </button>
@@ -912,7 +933,7 @@
             };
 
             return (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div className="flex items-center text-gray-600 font-medium mr-2"><Filter size={18} className="mr-2"/> กรองข้อมูล:</div>
                     <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกหน่วยงาน</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select>
@@ -921,7 +942,7 @@
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-gray-200">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
                         <tr><th className="p-4 font-semibold w-16">รูป</th><th className="p-4 font-semibold">รหัสระบบ</th><th className="p-4 font-semibold">ชื่อ / ชนิด / เลขรพ.</th><th className="p-4 font-semibold">หน่วยงาน (สถานที่)</th><th className="p-4 font-semibold">สถานะ</th><th className="p-4 font-semibold text-center">จัดการ</th></tr>
                     </thead>
@@ -993,7 +1014,7 @@
             };
 
             return (
-                <div className="max-w-3xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเครื่องคอมพิวเตอร์ <span className="text-red-500">*</span></label>
@@ -1018,7 +1039,7 @@
 
                     <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">เพิ่มโปรแกรมอื่นๆ</label>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                         <input type="text" value={formData.customProgram || ''} onChange={e => setFormData({...formData, customProgram: e.target.value})} onKeyDown={e => e.key === 'Enter' ? (e.preventDefault(), addCustomProgram()) : null} placeholder="พิมพ์ชื่อโปรแกรม..." className="flex-1 p-3 border border-gray-300 rounded-xl outline-none" />
                         <button type="button" onClick={addCustomProgram} className="bg-slate-800 text-white px-6 py-3 rounded-xl hover:bg-slate-700 font-medium">เพิ่ม</button>
                     </div>
@@ -1034,7 +1055,7 @@
                     </div>
 
                     <div className="pt-6 mt-4 border-t flex justify-end">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center">
+                    <button type="submit" className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center justify-center">
                         <Save className="w-5 h-5 mr-2" /> 
                         {initialData ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
                     </button>
@@ -1047,7 +1068,7 @@
         const SoftwareList = ({ softwares, onEdit, onDelete }) => (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="overflow-x-auto rounded-xl border border-gray-200">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
                     <tr><th className="p-4 font-semibold">รหัสอ้างอิงระบบเครื่อง</th><th className="p-4 font-semibold">รายการโปรแกรมที่ติดตั้ง</th><th className="p-4 font-semibold text-center w-24">จัดการ</th></tr>
                 </thead>
@@ -1172,10 +1193,10 @@
                     <form onSubmit={addStaff} className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
                         <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} placeholder="ชื่อ-สกุล (เช่น ศราวุฒิ)..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
                         <input type="text" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value})} placeholder="หน้าที่ (เช่น Network/HW)..." className="flex-1 p-2.5 border border-gray-300 rounded-xl outline-none" required />
-                        <button type="submit" className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 flex items-center justify-center"><PlusCircle size={20} className="mr-2"/> เพิ่มพนักงาน</button>
+                        <button type="submit" className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl hover:bg-indigo-700 flex items-center justify-center shrink-0"><PlusCircle size={20} className="mr-2"/> เพิ่มพนักงาน</button>
                     </form>
                     <div className="border border-gray-200 rounded-xl flex-1 overflow-y-auto bg-slate-50">
-                    <table className="w-full text-left text-sm">
+                    <table className="w-full text-left text-sm min-w-[500px]">
                         <thead className="bg-white sticky top-0 shadow-sm"><tr><th className="p-3 border-b text-gray-500 font-semibold">รหัสพนักงาน</th><th className="p-3 border-b text-gray-500 font-semibold">ชื่อ-สกุล</th><th className="p-3 border-b text-gray-500 font-semibold">ตำแหน่ง / หน้าที่</th><th className="p-3 border-b w-12"></th></tr></thead>
                         <tbody>
                         {staffList.length === 0 && <tr><td colSpan="4" className="p-4 text-center text-gray-500">ไม่มีข้อมูลพนักงาน (โปรดเพิ่มข้อมูล)</td></tr>}
@@ -1183,7 +1204,7 @@
                             <tr key={s.Staff_ID} className="border-b last:border-0 hover:bg-indigo-50/50 bg-white">
                                 <td className="p-3 text-gray-400 font-mono text-xs">{s.Staff_ID}</td>
                                 <td className="p-3 font-medium text-gray-700 flex items-center gap-2">
-                                    <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] ${s.Avatar_Color || 'bg-slate-500'}`}>{s.Name.charAt(0)}</div>
+                                    <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] shrink-0 ${s.Avatar_Color || 'bg-slate-500'}`}>{s.Name.charAt(0)}</div>
                                     {s.Name}
                                 </td>
                                 <td className="p-3 text-gray-600">{s.Role}</td>
@@ -1199,11 +1220,37 @@
             );
         };
 
-        function RepairForm({ notify, apiCall, tickets, setTickets, departments }) {
+        function RepairForm({ notify, apiCall, tickets, setTickets, departments, equipments = [] }) {
             const [description, setDescription] = useState('');
+            const [aiSuggestion, setAiSuggestion] = useState(null);
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
             const [selectedDevice, setSelectedDevice] = useState('Hardware');
+            
             const [assetId, setAssetId] = useState('');
+            const [filteredEqs, setFilteredEqs] = useState([]);
+            const [showEqSuggestions, setShowEqSuggestions] = useState(false);
             const [showScanner, setShowScanner] = useState(false);
+
+            const handleAssetIdChange = (e) => {
+                const val = e.target.value;
+                setAssetId(val);
+                if (val.trim() === '') {
+                    setShowEqSuggestions(false);
+                } else {
+                    const matches = equipments.filter(eq => 
+                        (eq.Id_equipment && eq.Id_equipment.toLowerCase().includes(val.toLowerCase())) ||
+                        (eq.name && eq.name.toLowerCase().includes(val.toLowerCase())) ||
+                        (eq.Id && eq.Id.toLowerCase().includes(val.toLowerCase()))
+                    ).slice(0, 5); 
+                    setFilteredEqs(matches);
+                    setShowEqSuggestions(true);
+                }
+            };
+
+            const selectEquipment = (eq) => {
+                setAssetId(eq.Id_equipment || eq.Id);
+                setShowEqSuggestions(false);
+            };
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
@@ -1236,18 +1283,32 @@
                     form.reset();
                     setDescription('');
                     setAssetId('');
+                    setAiSuggestion(null);
                 }
             };
 
             const handleScanQR = (scannedText) => {
                 setAssetId(scannedText);
                 setShowScanner(false);
+                setShowEqSuggestions(false);
+            };
+
+            const handleGetAdvice = () => {
+                if (!description.trim()) return alert("กรุณาระบุรายละเอียดปัญหาก่อนขอคำแนะนำ");
+                setIsAnalyzing(true); setAiSuggestion(null);
+                setTimeout(() => {
+                    const lower = description.toLowerCase();
+                    let suggestion = "AI รับทราบปัญหาเบื้องต้น... \nแนะนำให้กด 'ส่งเรื่องแจ้งซ่อม' เพื่อส่งเรื่องให้เจ้าหน้าที่ IT ครับ";
+                    if (lower.includes('ปริ้น') || lower.includes('print')) suggestion = "แนะนำเบื้องต้น: \n1. ตรวจสอบกระดาษ หรือ สาย USB/LAN ว่าหลุดหรือไม่\n2. ลอง Restart เครื่องพิมพ์";
+                    else if (lower.includes('net') || lower.includes('lan') || lower.includes('เน็ต')) suggestion = "แนะนำเบื้องต้น: \n1. สังเกตไฟที่ช่อง LAN หลังเครื่องคอมฯ ว่ากระพริบหรือไม่\n2. ถอดสาย LAN แล้วเสียบใหม่";
+                    setAiSuggestion(suggestion); setIsAnalyzing(false);
+                }, 1000);
             };
 
             return (
-                <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
-                <div className="bg-blue-600 px-8 py-5 text-white flex items-center gap-3"><Wrench className="w-6 h-6 text-blue-200" /><h2 className="text-xl font-bold">แจ้งปัญหา / ส่งซ่อม IT</h2></div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+                <div className="bg-blue-600 px-4 md:px-8 py-5 text-white flex items-center gap-3 -mx-4 -mt-4 md:-mx-8 md:-mt-8 mb-6"><Wrench className="w-6 h-6 text-blue-200" /><h2 className="text-xl font-bold">แจ้งปัญหา / ส่งซ่อม IT</h2></div>
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้แจ้ง <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500" required /></div>
                     <div className="space-y-1.5">
@@ -1261,9 +1322,21 @@
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-bold text-slate-700">รหัสระบบครุภัณฑ์ (Asset ID)</label>
-                        <div className="flex gap-3">
-                            <input type="text" name="asset_id" value={assetId} onChange={(e)=>setAssetId(e.target.value)} className="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none font-mono text-blue-700" placeholder="ระบุเลขระบบ (COM-0001) หรือสแกน QR" />
-                            <button type="button" onClick={() => setShowScanner(true)} className="bg-slate-50 p-2.5 rounded-xl border border-slate-300 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition" title="สแกน QR Code">
+                        <div className="flex gap-2 relative">
+                            <div className="relative flex-1">
+                                <input type="text" name="asset_id" value={assetId} onChange={handleAssetIdChange} onFocus={() => {if(assetId) setShowEqSuggestions(true)}} onBlur={() => setTimeout(() => setShowEqSuggestions(false), 200)} className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none font-mono text-blue-700 focus:border-blue-500" placeholder="ระบุเลขระบบ (COM-0001) หรือสแกน QR" />
+                                {showEqSuggestions && filteredEqs.length > 0 && (
+                                    <div className="absolute z-10 w-full bg-white border border-slate-200 shadow-lg rounded-xl mt-1 max-h-48 overflow-y-auto">
+                                        {filteredEqs.map(eq => (
+                                            <div key={eq.Id} className="p-3 hover:bg-blue-50 cursor-pointer text-sm border-b last:border-0 transition" onClick={() => selectEquipment(eq)}>
+                                                <div className="font-bold text-blue-700">{eq.Id_equipment || eq.Id}</div>
+                                                <div className="text-xs text-slate-500">{eq.name || eq.Type} - {eq.department}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button type="button" onClick={() => setShowScanner(true)} className="bg-slate-50 p-2.5 rounded-xl border border-slate-300 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition shrink-0" title="สแกน QR Code">
                                 <QrCode size={22} />
                             </button>
                         </div>
@@ -1283,27 +1356,37 @@
                     <div className="space-y-1.5">
                     <label className="text-sm font-bold text-slate-700">รายละเอียดปัญหา <span className="text-red-500">*</span></label>
                     <textarea rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none resize-none focus:border-blue-500" placeholder="ระบุอาการที่พบ หรือข้อความ Error" required value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                    {aiSuggestion && (<div className="mt-3 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 p-4 rounded-xl flex gap-3"><Sparkles className="w-5 h-5 text-indigo-600 shrink-0" /><div className="flex-1"><p className="text-sm text-indigo-900 whitespace-pre-line font-medium">{aiSuggestion}</p><button type="button" onClick={() => setAiSuggestion(null)} className="text-xs text-indigo-500 underline mt-2">ปิดคำแนะนำ</button></div></div>)}
                     </div>
 
                     <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700">ระดับความเร่งด่วน <span className="text-red-500">*</span></label>
                     <div className="flex flex-col gap-3">
                         <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="ทั่วไป" className="w-4 h-4" defaultChecked />
-                            <div><span className="text-sm font-bold text-slate-700">ทั่วไป</span> <span className="text-xs text-slate-500 ml-2">(สามารถใช้งานได้ พอมีทางเลี่ยงอื่นได้)</span></div>
+                            <input type="radio" name="urgency" value="ทั่วไป" className="w-4 h-4 shrink-0" defaultChecked />
+                            <div><span className="text-sm font-bold text-slate-700">ทั่วไป</span> <span className="text-xs text-slate-500 ml-2 block sm:inline">(สามารถใช้งานได้ พอมีทางเลี่ยงอื่นได้)</span></div>
                         </label>
                         <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-orange-50 has-[:checked]:border-orange-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="เร่งด่วน" className="w-4 h-4" />
-                            <div><span className="text-sm font-bold text-orange-600">เร่งด่วน</span> <span className="text-xs text-orange-500/80 ml-2">(กระทบคนกลุ่มใหญ่ ต้องแก้ภายใน 1-8 ชั่วโมง)</span></div>
+                            <input type="radio" name="urgency" value="เร่งด่วน" className="w-4 h-4 shrink-0" />
+                            <div><span className="text-sm font-bold text-orange-600">เร่งด่วน</span> <span className="text-xs text-orange-500/80 ml-2 block sm:inline">(กระทบคนกลุ่มใหญ่ ต้องแก้ภายใน 1-8 ชั่วโมง)</span></div>
                         </label>
                         <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-rose-50 has-[:checked]:border-rose-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="วิกฤต" className="w-4 h-4" />
-                            <div><span className="text-sm font-bold text-rose-600 flex items-center gap-1"><Zap size={14}/> วิกฤต</span> <span className="text-xs text-rose-500/80 ml-2">(ระบบหลักทำงานไม่ได้ ล่มทั้ง รพ. ต้องแก้ไขทันที)</span></div>
+                            <input type="radio" name="urgency" value="วิกฤต" className="w-4 h-4 shrink-0" />
+                            <div><span className="text-sm font-bold text-rose-600 flex items-center gap-1 inline-flex"><Zap size={14}/> วิกฤต</span> <span className="text-xs text-rose-500/80 ml-2 block sm:inline">(ระบบหลักทำงานไม่ได้ ล่มทั้ง รพ. ต้องแก้ไขทันที)</span></div>
                         </label>
                     </div>
                     </div>
 
-                    <div className="pt-4 border-t"><button type="submit" className="w-full bg-blue-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-blue-700 flex items-center justify-center gap-2"><Send className="w-5 h-5" /> ส่งเรื่องแจ้งซ่อม</button></div>
+                    <div className="pt-4 border-t flex flex-col sm:flex-row gap-3">
+                        <button type="button" onClick={handleGetAdvice} disabled={isAnalyzing} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-sm font-bold py-3 px-4 hover:bg-indigo-100 flex items-center justify-center gap-2 transition shrink-0">
+                            {isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />} 
+                            <span className="hidden sm:inline">{isAnalyzing ? "กำลังวิเคราะห์..." : "วิธีแก้ไขเบื้องต้น"}</span>
+                            <span className="sm:hidden">{isAnalyzing ? "กำลังวิเคราะห์..." : "ขอคำแนะนำ AI"}</span>
+                        </button>
+                        <button type="submit" className="w-full sm:flex-1 bg-blue-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-blue-700 flex items-center justify-center gap-2 transition">
+                            <Send className="w-5 h-5" /> ส่งเรื่องแจ้งซ่อม
+                        </button>
+                    </div>
                 </form>
 
                 {showScanner && <QRScannerModal onScan={handleScanQR} onClose={() => setShowScanner(false)} />}
@@ -1339,9 +1422,9 @@
             };
 
             return (
-                <div className="max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
-                <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-8 py-5 text-white flex items-center gap-3"><Database className="w-6 h-6 text-purple-200" /><h2 className="text-xl font-bold">แบบฟอร์มขอข้อมูล / รายงาน (Data Query)</h2></div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+                <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-4 md:px-8 py-5 text-white flex items-center gap-3 -mx-4 -mt-4 md:-mx-8 md:-mt-8 mb-6"><Database className="w-6 h-6 text-purple-200 shrink-0" /><h2 className="text-xl font-bold">แบบฟอร์มขอข้อมูล / รายงาน (Data Query)</h2></div>
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้ขอข้อมูล <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
                     <div className="space-y-1.5">
@@ -1425,13 +1508,19 @@
         }
 
         const TicketUpdateModal = ({ ticket, onClose, onSave }) => {
-            const [status, setStatus] = useState(ticket.Status);
-            const [deviceStatus, setDeviceStatus] = useState(ticket.Device_Status !== "-" ? ticket.Device_Status : "พร้อมใช้งาน");
-            const [repair, setRepair] = useState(ticket.Repair !== "-" ? ticket.Repair : "");
-            const [reason, setReason] = useState(ticket.Reason !== "-" ? ticket.Reason : "");
-            const [estimate, setEstimate] = useState(ticket.Estimate !== "-" ? ticket.Estimate : "");
+            const [status, setStatus] = useState(ticket.Status || 'Pending');
+            const [deviceStatus, setDeviceStatus] = useState((ticket.Device_Status && ticket.Device_Status !== "-") ? ticket.Device_Status : "พร้อมใช้งาน");
+            const [repair, setRepair] = useState((ticket.Repair && ticket.Repair !== "-") ? ticket.Repair : "");
+            const [reason, setReason] = useState((ticket.Reason && ticket.Reason !== "-") ? ticket.Reason : "");
+            const [estimate, setEstimate] = useState((ticket.Estimate && ticket.Estimate !== "-") ? ticket.Estimate : "");
             
-            const [buyItems, setBuyItems] = useState(typeof ticket.Buy === 'string' ? safeJsonParse(ticket.Buy, []) : (ticket.Buy || []));
+            let initialBuyItems = [];
+            if (typeof ticket.Buy === 'string') {
+                initialBuyItems = safeJsonParse(ticket.Buy, []);
+            } else if (Array.isArray(ticket.Buy)) {
+                initialBuyItems = ticket.Buy;
+            }
+            const [buyItems, setBuyItems] = useState(initialBuyItems);
 
             const handleAddBuyItem = () => setBuyItems([...buyItems, { item: '', price: 0 }]);
             const handleBuyChange = (index, field, value) => {
@@ -1587,7 +1676,7 @@
                 }
             };
 
-            // ฟังก์ชันสำหรับสร้างเอกสารใบส่งซ่อม
+            // ฟังก์ชันสำหรับสร้างเอกสารใบส่งซ่อม PDF
             const generateRepairDoc = (ticket) => {
                 const eq = equipments.find(e => e.Id === ticket.Asset_ID || e.Id_equipment === ticket.Asset_ID) || {};
                 
@@ -1600,8 +1689,8 @@
                 ).sort((a,b) => new Date(b.Created_At.split(' ')[0].split('/').reverse().join('-')) - new Date(a.Created_At.split(' ')[0].split('/').reverse().join('-')));
                 
                 const lastTicket = pastTickets.length > 0 ? pastTickets[0] : null;
-                const lastDate = lastTicket ? (lastTicket.Finished_At?.split(' ')[0] || '-') : '-';
-                const lastReason = lastTicket ? lastTicket.Description : '-';
+                const lastDate = lastTicket && lastTicket.Finished_At && lastTicket.Finished_At !== '-' ? lastTicket.Finished_At.split(' ')[0] : '-';
+                const lastReason = lastTicket ? (lastTicket.Description || '-') : '-';
 
                 let buyItemsStr = "-";
                 if(ticket.Buy && ticket.Buy !== "-" && ticket.Buy !== "[]") {
@@ -1614,6 +1703,18 @@
                 }
 
                 const printWindow = window.open('', '_blank');
+                if(!printWindow) {
+                    alert("เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up เพื่อพิมพ์เอกสารครับ");
+                    return;
+                }
+
+                // แปลงข้อมูลที่อาจจะยังไม่มีให้เป็นช่องว่างเพื่อให้พิมพ์ออกมาสวยงาม
+                const repairText = ticket.Repair && ticket.Repair !== '-' ? ticket.Repair : '';
+                const reasonText = ticket.Reason && ticket.Reason !== '-' ? ticket.Reason : '';
+                const estimateText = ticket.Estimate && ticket.Estimate !== '-' ? ticket.Estimate : '';
+                const assigneeText = ticket.Assignee && ticket.Assignee !== '-' ? ticket.Assignee : '...................................................';
+                const finishedAtText = ticket.Finished_At && ticket.Finished_At !== '-' ? ticket.Finished_At.split(' ')[0] : '......./......./.......';
+
                 printWindow.document.write(`
                     <html>
                     <head>
@@ -1621,7 +1722,7 @@
                         <style>
                             @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
                             @page { size: A4; margin: 1.5cm 2cm; }
-                            body { font-family: 'Sarabun', sans-serif; font-size: 13pt; color: #000; line-height: 1.4; }
+                            body { font-family: 'Sarabun', sans-serif; font-size: 13pt; color: #000; line-height: 1.4; } /* ลดตัวอักษร 2px */
                             .container { max-width: 100%; margin: auto; }
                             .header { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
                             .right-align { text-align: right; }
@@ -1630,7 +1731,7 @@
                             .mt-8 { margin-top: 2rem; }
                             table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 12pt; }
                             th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
-                            th { text-align: center; font-weight: bold; }
+                            th { text-align: center; font-weight: bold; background: #f0f0f0; }
                             .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 12pt; }
                             .sig-col { width: 48%; }
                             .indent { padding-left: 2rem; }
@@ -1644,7 +1745,7 @@
                         <div class="container">
                             <div class="header">ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์</div>
                             <div class="right-align">เลขที่ <span class="bold">${ticket.Ticket_ID}</span></div>
-                            <div class="right-align">วันที่ <span class="bold">${ticket.Created_At?.split(' ')[0]}</span></div>
+                            <div class="right-align">วันที่ <span class="bold">${ticket.Created_At?.split(' ')[0] || '......./......./.......'}</span></div>
                             
                             <div class="mt-2"><span class="bold">ฝ่าย/กลุ่มงาน:</span> &nbsp;&nbsp;${ticket.Department}</div>
                             <div><span class="bold">เรื่อง:</span> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
@@ -1661,7 +1762,7 @@
                                 </tr>
                                 <tr>
                                     <td>${ticket.Device_Type}</td>
-                                    <td>${ticket.Description}</td>
+                                    <td>${(ticket.Description || '').split('\n')[0]}</td>
                                     <td>${ticket.Asset_ID}</td>
                                     <td>${eq.Location || '-'}</td>
                                 </tr>
@@ -1672,31 +1773,33 @@
                             <div class="right-align mt-4" style="padding-right: 2rem;">
                                 ลงชื่อ ........................................................... ผู้ส่งซ่อม<br>
                                 ( ${ticket.Requester} )<br>
-                                ${ticket.Created_At?.split(' ')[0]}
+                                ${ticket.Created_At?.split(' ')[0] || '......./......./.......'}
                             </div>
 
-                            <table>
+                            <table style="margin-top: 20px;">
                                 <tr>
-                                    <td colspan="2" class="bold border-none" style="border-bottom: 1px solid #000; background: #f9fafb;">บันทึกงานซ่อมบำรุง</td>
+                                    <td colspan="2" class="bold" style="background: #f0f0f0;">บันทึกงานซ่อมบำรุง (สำหรับเจ้าหน้าที่)</td>
                                 </tr>
                                 <tr>
-                                    <td colspan="2" style="border-bottom: 1px solid #000;">
-                                        <div><span class="bold">การดำเนินการ:</span> &nbsp;&nbsp;${ticket.Repair}</div>
-                                        ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><span class="bold">เหตุผล:</span> &nbsp;&nbsp;${ticket.Reason}</div>` : ''}
-                                        ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
-                                            <div><span class="bold">รายการวัสดุ/อะไหล่:</span> &nbsp;&nbsp;${buyItemsStr}</div>
-                                            <div><span class="bold">รวมเป็นเงิน:</span> &nbsp;&nbsp;<span class="bold">${ticket.Cost}</span> บาท</div>
-                                        ` : ''}
-                                        <div class="mt-2"><span class="bold">เวลาที่คาดว่าจะซ่อมเสร็จ:</span> &nbsp;&nbsp;${ticket.Estimate}</div>
-                                        <div class="mt-4 right-align" style="padding-right: 2rem;">
-                                            ลงชื่อ ........................................................... ช่างผู้ดำเนินการ<br>
-                                            ( ${ticket.Assignee} )<br>
-                                            ${ticket.Finished_At !== '-' ? ticket.Finished_At?.split(' ')[0] : '......./......./.......'}
+                                    <td colspan="2">
+                                        <div style="min-height: 80px;">
+                                            <div><span class="bold">การดำเนินการ:</span> &nbsp;&nbsp;${repairText}</div>
+                                            ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><span class="bold">เหตุผล:</span> &nbsp;&nbsp;${reasonText}</div>` : ''}
+                                            ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
+                                                <div><span class="bold">รายการวัสดุ/อะไหล่:</span> &nbsp;&nbsp;${buyItemsStr}</div>
+                                                <div><span class="bold">รวมเป็นเงิน:</span> &nbsp;&nbsp;<span class="bold">${ticket.Cost}</span> บาท</div>
+                                            ` : ''}
+                                            <div class="mt-2"><span class="bold">เวลาที่คาดว่าจะซ่อมเสร็จ:</span> &nbsp;&nbsp;${estimateText}</div>
+                                            <div class="mt-4 right-align" style="padding-right: 2rem;">
+                                                ลงชื่อ ........................................................... ช่างผู้ดำเนินการ<br>
+                                                ( ${assigneeText} )<br>
+                                                ${finishedAtText}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td width="50%" class="text-center" style="padding-top: 15px; border-right: 1px solid #000;">
+                                    <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px; border-right: 1px solid #000;">
                                         เรียน ผู้อำนวยการโรงพยาบาลสวี<br>เพื่อโปรดพิจารณา<br>
                                         (&nbsp;&nbsp;) ควรอนุมัติ/จัดซื้อวัสดุมาซ่อม/จัดทำอื่นๆ<br>
                                         ...................................................<br><br><br>
@@ -1704,7 +1807,7 @@
                                         หัวหน้ากลุ่มงานบริหารทั่วไป<br>
                                         ......./......./.......
                                     </td>
-                                    <td width="50%" class="text-center" style="padding-top: 15px;">
+                                    <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px;">
                                         <span class="bold">ความเห็น ผู้อำนวยการโรงพยาบาลสวี</span><br>
                                         (&nbsp;&nbsp;) ทราบ<br>
                                         (&nbsp;&nbsp;) อนุมัติให้ดำเนินการตามเสนอ<br>
@@ -1716,17 +1819,19 @@
                                 </tr>
                             </table>
 
-                            <table>
+                            <table style="margin-top: 20px;">
                                 <tr>
-                                    <td class="bold border-none" style="border-bottom: 1px solid #000; background: #f9fafb;">บันทึกประวัติการซ่อมครุภัณฑ์</td>
+                                    <td class="bold" style="background: #f0f0f0;">บันทึกประวัติการซ่อมครุภัณฑ์</td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <div><span class="bold">ครั้งสุดท้ายเมื่อ:</span> &nbsp;&nbsp;${lastDate}</div>
-                                        <div><span class="bold">เนื่องจาก:</span> &nbsp;&nbsp;${lastReason}</div>
+                                        <div style="min-height: 40px;">
+                                            <div><span class="bold">ครั้งสุดท้ายเมื่อ:</span> &nbsp;&nbsp;${lastDate}</div>
+                                            <div><span class="bold">เนื่องจาก:</span> &nbsp;&nbsp;${lastReason}</div>
+                                        </div>
                                         <div class="mt-2 right-align" style="padding-right: 2rem;">
                                             ลงชื่อ ........................................................... <br>
-                                            ( ${ticket.Assignee !== '-' ? ticket.Assignee : '.......................................'} )<br>
+                                            ( ${assigneeText} )<br>
                                         </div>
                                     </td>
                                 </tr>
@@ -1762,7 +1867,7 @@
                 <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
                     <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center"><div className="flex items-center gap-3"><AlertTriangle className="text-orange-600" /><h3 className="font-bold text-orange-800">งานใหม่รอจ่าย (Unassigned)</h3></div><span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-orange-600 border border-orange-200">{unassignedTickets.length} Waiting</span></div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">จ่ายงานให้ (Assign)</th></tr></thead>
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">การจัดการ</th></tr></thead>
                         <tbody className="divide-y divide-orange-50">
                             {unassignedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานใหม่รอจ่าย</td></tr>) : unassignedTickets.map(ticket => (
                             <tr key={ticket.Ticket_ID} className="hover:bg-orange-50/50">
@@ -1774,7 +1879,10 @@
                             <td className="px-6 py-4"><div className="font-bold text-blue-700 font-mono text-xs">{ticket.Asset_ID}</div><div className="text-xs text-slate-600 line-clamp-2 mt-1">{(ticket.Description || '').split('\n')[0]}</div></td>
                             <td className="px-6 py-4"><span className="text-slate-800 font-medium">{ticket.Requester}</span><div className="text-xs text-gray-500">{ticket.Department}</div></td>
                             <td className="px-6 py-4 text-right">
-                                <div className="flex justify-end gap-1 flex-wrap w-48 ml-auto">
+                                <div className="flex justify-end gap-2 flex-wrap w-48 ml-auto">
+                                    {ticket.Device_Type !== "Data" && (
+                                        <button onClick={() => generateRepairDoc(ticket)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 shadow-sm transition" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/></button>
+                                    )}
                                     {staffWorkloads.map(s => (
                                         <button key={s.Staff_ID} title={`จ่ายให้ ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
                                             {s.Name.charAt(0)}
@@ -1806,7 +1914,7 @@
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center"><h3 className="font-bold text-slate-800">งานที่กำลังดำเนินการ (Active Jobs)</h3></div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-slate-200"><tr><th className="px-6 py-3">ID / สถานะปัจจุบัน</th><th className="px-6 py-3">เรื่อง / อุปกรณ์</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3 text-center">อัปเดตใบงาน</th></tr></thead>
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-slate-200"><tr><th className="px-6 py-3">ID / สถานะปัจจุบัน</th><th className="px-6 py-3">เรื่อง / อุปกรณ์</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3 text-center">การจัดการ</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
                             {activeTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานที่กำลังดำเนินการ</td></tr>) : activeTickets.map(ticket => (
                             <tr key={ticket.Ticket_ID} className="hover:bg-slate-50">
@@ -1816,8 +1924,13 @@
                             </td>
                             <td className="px-6 py-4"><div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'} <span className="text-blue-600 font-mono text-xs ml-1">[{ticket.Asset_ID}]</span></div><div className="text-xs text-slate-500 mt-1">{ticket.Requester} ({ticket.Department})</div></td>
                             <td className="px-6 py-4 text-slate-800 font-medium flex items-center gap-2"><div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] ${staffList.find(s => s.Name === ticket.Assignee)?.Avatar_Color || 'bg-gray-400'}`}>{ticket.Assignee.charAt(0)}</div>{ticket.Assignee}</td>
-                            <td className="px-6 py-4 text-center">
-                                <button onClick={() => setSelectedTicketForUpdate(ticket)} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm transition flex items-center justify-center gap-1.5 w-full mx-auto"><Edit size={14}/> จัดการงาน</button>
+                            <td className="px-6 py-4">
+                                <div className="flex justify-center gap-2">
+                                    <button onClick={() => setSelectedTicketForUpdate(ticket)} className="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 shadow-sm transition flex items-center gap-1.5"><Edit size={14}/> จัดการงาน</button>
+                                    {ticket.Device_Type !== "Data" && (
+                                        <button onClick={() => generateRepairDoc(ticket)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 shadow-sm transition flex items-center gap-1" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/> พิมพ์</button>
+                                    )}
+                                </div>
                             </td>
                             </tr>
                         ))}</tbody></table>
@@ -1844,6 +1957,9 @@
                         ))}</tbody></table>
                     </div>
                 </div>
+
+                {/* Modal สำหรับการอัปเดตงาน */}
+                {selectedTicketForUpdate && <TicketUpdateModal ticket={selectedTicketForUpdate} onClose={() => setSelectedTicketForUpdate(null)} onSave={handleSaveUpdate} />}
 
                 </div>
             );
