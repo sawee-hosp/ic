@@ -84,7 +84,7 @@
         };
 
         const safeJsonParse = (str, fallback) => {
-            if (!str) return fallback;
+            if (!str || str === "-") return fallback;
             try {
                 return JSON.parse(str);
             } catch (e) {
@@ -220,7 +220,7 @@
             };
 
             const printSticker = (item) => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${item.Id}&margin=0`; // QR สร้างจากระบบ Auto ID (COM-XXXX)
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${item.Id}&margin=0`; 
                 
                 const printWindow = window.open('', '_blank', 'width=400,height=300');
                 printWindow.document.write(`
@@ -228,6 +228,7 @@
                     <head>
                         <title>Print Sticker</title>
                         <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
                             @page { margin: 0; size: 6cm 2.5cm; }
                             body { 
                                 margin: 0; padding: 0; 
@@ -425,11 +426,11 @@
                     </main>
                 </div>
 
-                {/* QR Code Modal (for printing) */}
+                {/* QR Code Modal (for viewing only) */}
                 {qrModal.isOpen && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
                         <div className="bg-white p-8 rounded-xl shadow-2xl flex flex-col items-center max-w-sm w-full">
-                            <h3 className="text-lg font-bold mb-4">QR Code สำหรับพิมพ์</h3>
+                            <h3 className="text-lg font-bold mb-4">QR Code ประจำเครื่อง</h3>
                             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrModal.data?.Id}`} alt="QR Code" className="mb-4 border p-2 rounded" />
                             <p className="font-semibold text-gray-700 text-lg">{qrModal.data?.Id}</p>
                             <p className="text-sm text-gray-500 mb-6">{qrModal.data?.Type} - {qrModal.data?.Computer_Name || qrModal.data?.Brand}</p>
@@ -936,6 +937,7 @@
                                     <button onClick={() => onAIAnalyze(eq)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 shadow-sm" title="AI วิเคราะห์"><Sparkles size={16}/></button>
                                 )}
                                 <button onClick={() => onEdit(eq)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไขข้อมูล"><Edit size={16}/></button>
+                                <button onClick={() => onShowQR(eq)} className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 shadow-sm" title="ดู QR Code"><QrCode size={16}/></button>
                                 <button onClick={() => onPrintSticker(eq)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 shadow-sm" title="พิมพ์สติกเกอร์"><Printer size={16}/></button>
                                 <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={16}/></button>
                             </div>
@@ -1345,7 +1347,70 @@
             );
         }
 
-        // Modal สำหรับให้ Admin อัปเดต Ticket แบบละเอียด
+        function TicketTracker({ tickets, departments }) {
+            const [filterDept, setFilterDept] = useState('');
+            const filteredTickets = tickets.filter(t => filterDept === '' || t.Department === filterDept);
+
+            const pending = filteredTickets.filter(t => t.Status === 'Pending');
+            const inProgress = filteredTickets.filter(t => t.Status === 'In Progress');
+            const completed = filteredTickets.filter(t => t.Status === 'Completed');
+
+            return (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LayoutList className="text-blue-600"/> กระดานติดตามสถานะงาน</h2>
+                        <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500 w-full sm:w-64 bg-slate-50 cursor-pointer">
+                            <option value="">-- ดูทุกหน่วยงาน --</option>
+                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <TicketColumn title="รอดำเนินการ (Pending)" tickets={pending} bgColor="bg-orange-50" borderColor="border-orange-200" titleColor="text-orange-800" icon={<AlertTriangle size={18}/>} />
+                        <TicketColumn title="กำลังดำเนินการ (In Progress)" tickets={inProgress} bgColor="bg-blue-50" borderColor="border-blue-200" titleColor="text-blue-800" icon={<RefreshCw size={18} className="animate-spin-slow"/>} />
+                        <TicketColumn title="เสร็จสิ้น (Completed)" tickets={completed} bgColor="bg-emerald-50" borderColor="border-emerald-200" titleColor="text-emerald-800" icon={<CheckCircle size={18}/>} />
+                    </div>
+                </div>
+            );
+        }
+
+        function TicketColumn({ title, tickets, bgColor, borderColor, titleColor, icon }) {
+            return (
+                <div className={`rounded-2xl border ${borderColor} flex flex-col h-full overflow-hidden bg-white shadow-sm`}>
+                    <div className={`p-4 ${bgColor} border-b ${borderColor} flex justify-between items-center`}>
+                        <h3 className={`font-bold flex items-center gap-2 ${titleColor}`}>{icon} {title}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-white shadow-sm ${titleColor}`}>{tickets.length}</span>
+                    </div>
+                    <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-50/50 max-h-[600px] custom-scrollbar">
+                        {tickets.length === 0 ? (
+                            <div className="text-center text-slate-400 py-8 text-sm">ไม่มีข้อมูล</div>
+                        ) : (
+                            tickets.slice().reverse().map(t => (
+                                <div key={t.Ticket_ID} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition relative">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.Ticket_ID}</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : t.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{t.Urgency}</span>
+                                    </div>
+                                    <h4 className="font-bold text-sm text-slate-800 mb-1">{t.Type}</h4>
+                                    <p className="text-xs text-slate-600 line-clamp-2 mb-3">{t.Description.split('\n')[0]}</p>
+                                    <div className="flex justify-between items-end border-t border-slate-100 pt-2 mt-2">
+                                        <div>
+                                            <p className="text-[10px] text-slate-500 font-medium">{t.Requester}</p>
+                                            <p className="text-[10px] text-slate-400 truncate w-32">{t.Department}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock size={10}/> {t.Created_At.split(' ')[0]}</p>
+                                            <p className="text-[10px] font-bold text-indigo-600 mt-0.5 whitespace-nowrap">ช่าง: {t.Assignee !== '-' ? t.Assignee : 'รอรับงาน'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         const TicketUpdateModal = ({ ticket, onClose, onSave }) => {
             const [status, setStatus] = useState(ticket.Status);
             const [deviceStatus, setDeviceStatus] = useState(ticket.Device_Status !== "-" ? ticket.Device_Status : "พร้อมใช้งาน");
@@ -1464,70 +1529,6 @@
             )
         }
 
-        function TicketTracker({ tickets, departments }) {
-            const [filterDept, setFilterDept] = useState('');
-            const filteredTickets = tickets.filter(t => filterDept === '' || t.Department === filterDept);
-
-            const pending = filteredTickets.filter(t => t.Status === 'Pending');
-            const inProgress = filteredTickets.filter(t => t.Status === 'In Progress');
-            const completed = filteredTickets.filter(t => t.Status === 'Completed');
-
-            return (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LayoutList className="text-blue-600"/> กระดานติดตามสถานะงาน</h2>
-                        <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500 w-full sm:w-64 bg-slate-50 cursor-pointer">
-                            <option value="">-- ดูทุกหน่วยงาน --</option>
-                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <TicketColumn title="รอดำเนินการ (Pending)" tickets={pending} bgColor="bg-orange-50" borderColor="border-orange-200" titleColor="text-orange-800" icon={<AlertTriangle size={18}/>} />
-                        <TicketColumn title="กำลังดำเนินการ (In Progress)" tickets={inProgress} bgColor="bg-blue-50" borderColor="border-blue-200" titleColor="text-blue-800" icon={<RefreshCw size={18} className="animate-spin-slow"/>} />
-                        <TicketColumn title="เสร็จสิ้น (Completed)" tickets={completed} bgColor="bg-emerald-50" borderColor="border-emerald-200" titleColor="text-emerald-800" icon={<CheckCircle size={18}/>} />
-                    </div>
-                </div>
-            );
-        }
-
-        function TicketColumn({ title, tickets, bgColor, borderColor, titleColor, icon }) {
-            return (
-                <div className={`rounded-2xl border ${borderColor} flex flex-col h-full overflow-hidden bg-white shadow-sm`}>
-                    <div className={`p-4 ${bgColor} border-b ${borderColor} flex justify-between items-center`}>
-                        <h3 className={`font-bold flex items-center gap-2 ${titleColor}`}>{icon} {title}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-white shadow-sm ${titleColor}`}>{tickets.length}</span>
-                    </div>
-                    <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-50/50 max-h-[600px] custom-scrollbar">
-                        {tickets.length === 0 ? (
-                            <div className="text-center text-slate-400 py-8 text-sm">ไม่มีข้อมูล</div>
-                        ) : (
-                            tickets.slice().reverse().map(t => (
-                                <div key={t.Ticket_ID} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition relative">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.Ticket_ID}</span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : t.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{t.Urgency}</span>
-                                    </div>
-                                    <h4 className="font-bold text-sm text-slate-800 mb-1">{t.Type}</h4>
-                                    <p className="text-xs text-slate-600 line-clamp-2 mb-3">{t.Description.split('\n')[0]}</p>
-                                    <div className="flex justify-between items-end border-t border-slate-100 pt-2 mt-2">
-                                        <div>
-                                            <p className="text-[10px] text-slate-500 font-medium">{t.Requester}</p>
-                                            <p className="text-[10px] text-slate-400 truncate w-32">{t.Department}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock size={10}/> {t.Created_At.split(' ')[0]}</p>
-                                            <p className="text-[10px] font-bold text-indigo-600 mt-0.5 whitespace-nowrap">ช่าง: {t.Assignee !== '-' ? t.Assignee : 'รอรับงาน'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
         function StaffWorkload({ notify, apiCall, tickets, setTickets, staffList, equipments }) {
             const unassignedTickets = tickets.filter(t => t.Assignee === "-" || !t.Assignee);
             const activeTickets = tickets.filter(t => t.Assignee !== "-" && t.Status !== "Completed");
@@ -1563,16 +1564,153 @@
                     setTickets(tickets.map(t => t.Ticket_ID === updatedTicket.Ticket_ID ? updatedTicket : t));
                     notify(`อัปเดตใบงาน ${updatedTicket.Ticket_ID} เรียบร้อย`);
                     
-                    // หากมีการอัปเดต Device_Status ให้ไปอัปเดตในตาราง Equipments ด้วยแบบเนียนๆ
                     if (updatedTicket.Asset_ID && updatedTicket.Asset_ID !== "-") {
                         const eqToUpdate = equipments.find(e => e.Id === updatedTicket.Asset_ID || e.Id_equipment === updatedTicket.Asset_ID);
                         if (eqToUpdate && eqToUpdate.Status !== updatedTicket.Device_Status) {
                             await apiCall('Equipments', 'update', { ...eqToUpdate, Status: updatedTicket.Device_Status });
-                            // แจ้งเตือนเงียบๆ ใน console ก็พอเพื่อไม่ให้ UI รก
                         }
                     }
                     setSelectedTicketForUpdate(null);
                 }
+            };
+
+            // ฟังก์ชันสำหรับสร้างเอกสารใบส่งซ่อม
+            const generateRepairDoc = (ticket) => {
+                // ค้นหาข้อมูล Location ของอุปกรณ์
+                const eq = equipments.find(e => e.Id === ticket.Asset_ID || e.Id_equipment === ticket.Asset_ID) || {};
+                
+                // ค้นหาประวัติการซ่อมครั้งล่าสุด
+                const pastTickets = tickets.filter(t => 
+                    (t.Asset_ID === ticket.Asset_ID) && 
+                    (t.Ticket_ID !== ticket.Ticket_ID) && 
+                    (t.Status === 'Completed') &&
+                    (new Date(t.Created_At.split(' ')[0].split('/').reverse().join('-')) < new Date(ticket.Created_At.split(' ')[0].split('/').reverse().join('-')))
+                ).sort((a,b) => new Date(b.Created_At.split(' ')[0].split('/').reverse().join('-')) - new Date(a.Created_At.split(' ')[0].split('/').reverse().join('-')));
+                
+                const lastTicket = pastTickets.length > 0 ? pastTickets[0] : null;
+                const lastDate = lastTicket ? lastTicket.Finished_At.split(' ')[0] : '-';
+                const lastReason = lastTicket ? lastTicket.Description : '-';
+
+                // จัดการข้อความรายการสั่งซื้อ
+                let buyItemsStr = "-";
+                if(ticket.Buy && ticket.Buy !== "-" && ticket.Buy !== "[]") {
+                    try {
+                        const parsed = JSON.parse(ticket.Buy);
+                        if(parsed.length > 0) {
+                            buyItemsStr = parsed.map(item => `${item.item} (${item.price} บาท)`).join(', ');
+                        }
+                    } catch(e){}
+                }
+
+                // สร้างหน้าต่างสำหรับพิมพ์
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์ - ${ticket.Ticket_ID}</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                            @page { size: A4; margin: 2cm; }
+                            body { font-family: 'Sarabun', sans-serif; font-size: 16pt; color: #000; line-height: 1.5; }
+                            .container { max-width: 800px; margin: auto; }
+                            .header { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 20px; }
+                            .right-align { text-align: right; }
+                            .mt-4 { margin-top: 1rem; }
+                            .mt-8 { margin-top: 2rem; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem; }
+                            th, td { border: 1px solid #000; padding: 8px 12px; text-align: left; }
+                            th { text-align: center; font-weight: bold; }
+                            .signature-box { display: flex; justify-content: space-between; margin-top: 3rem; text-align: center; }
+                            .indent { padding-left: 2.5rem; }
+                            .hr-dashed { border-top: 1px dashed #000; margin: 2rem 0; border-bottom: 0; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="header">ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์</div>
+                            <div class="right-align">เลขที่ <strong>${ticket.Ticket_ID}</strong></div>
+                            <div class="right-align">วันที่ <strong>${ticket.Created_At.split(' ')[0]}</strong></div>
+                            
+                            <div class="mt-4"><strong>ฝ่าย/กลุ่มงาน:</strong> &nbsp;&nbsp;${ticket.Department}</div>
+                            <div><strong>เรื่อง:</strong> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
+                            <div><strong>เรียน:</strong> &nbsp;&nbsp;ผู้อำนวยการโรงพยาบาลสวี</div>
+                            
+                            <div class="mt-4 indent">เนื่องด้วยฝ่าย/กลุ่มงาน <strong>${ticket.Department}</strong> มีความประสงค์ที่จะส่งซ่อมบำรุงดังนี้</div>
+                            
+                            <table>
+                                <tr>
+                                    <th width="25%">รายการ</th>
+                                    <th width="35%">เนื่องจาก</th>
+                                    <th width="20%">หมายเลขครุภัณฑ์</th>
+                                    <th width="20%">สถานที่ตั้ง</th>
+                                </tr>
+                                <tr>
+                                    <td>${ticket.Device_Type}</td>
+                                    <td>${ticket.Description}</td>
+                                    <td>${ticket.Asset_ID}</td>
+                                    <td>${eq.Location || '-'}</td>
+                                </tr>
+                            </table>
+                            
+                            <div class="indent">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและดำเนินการต่อไป</div>
+                            
+                            <div class="right-align mt-8">
+                                ลงชื่อ ........................................................... ผู้ส่งซ่อม<br>
+                                ( <strong>${ticket.Requester}</strong> )<br>
+                                <strong>${ticket.Created_At.split(' ')[0]}</strong>
+                            </div>
+
+                            <hr class="hr-dashed">
+
+                            <div style="font-weight: bold; text-decoration: underline;">บันทึกงานซ่อมบำรุง</div>
+                            <div><strong>การดำเนินการ:</strong> &nbsp;&nbsp;${ticket.Repair}</div>
+                            ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><strong>เหตุผล:</strong> &nbsp;&nbsp;${ticket.Reason}</div>` : ''}
+                            ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
+                                <div><strong>รายการวัสดุ/อะไหล่:</strong> &nbsp;&nbsp;${buyItemsStr}</div>
+                                <div><strong>รวมเป็นเงิน:</strong> &nbsp;&nbsp;<strong>${ticket.Cost}</strong> บาท</div>
+                            ` : ''}
+                            <div><strong>เวลาที่คาดว่าจะซ่อมเสร็จ:</strong> &nbsp;&nbsp;${ticket.Estimate}</div>
+                            
+                            <div class="signature-box">
+                                <div>
+                                    เรียน ผู้อำนวยการโรงพยาบาลสวี<br>เพื่อโปรดพิจารณา<br>
+                                    (&nbsp;&nbsp;) ควรอนุมัติ/จัดซื้อวัสดุมาซ่อม/จัดทำอื่นๆ<br>
+                                    ...................................................<br><br>
+                                    ลงชื่อ...................................................<br>
+                                    หัวหน้ากลุ่มงานบริหารทั่วไป<br>
+                                    ......./......./.......
+                                </div>
+                                <div>
+                                    <strong>ความเห็น ผู้อำนวยการโรงพยาบาลสวี</strong><br>
+                                    (&nbsp;&nbsp;) ทราบ<br>
+                                    (&nbsp;&nbsp;) อนุมัติให้ดำเนินการตามเสนอ<br>
+                                    (&nbsp;&nbsp;) อื่นๆ..........................................<br><br>
+                                    ลงชื่อ...................................................<br>
+                                    ผู้อำนวยการโรงพยาบาลสวี<br>
+                                    ......./......./.......
+                                </div>
+                            </div>
+
+                            <hr class="hr-dashed">
+                            
+                            <div style="font-weight: bold; text-decoration: underline;">บันทึกประวัติการซ่อมครุภัณฑ์</div>
+                            <div><strong>ครั้งสุดท้ายเมื่อ:</strong> &nbsp;&nbsp;${lastDate}</div>
+                            <div><strong>เนื่องจาก:</strong> &nbsp;&nbsp;${lastReason}</div>
+                            <div class="mt-4 right-align">
+                                <strong>ผู้บันทึก:</strong> ${ticket.Assignee}
+                            </div>
+                        </div>
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() {
+                                    window.print();
+                                }, 800);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
             };
 
             if(staffList.length === 0) {
@@ -1589,7 +1727,6 @@
                 <div className="space-y-8 max-w-5xl">
                 <div className="flex items-center gap-3"><Users className="text-blue-600 w-7 h-7" /><h2 className="text-2xl font-bold text-slate-800">Admin Dashboard: IT Team Workload</h2></div>
                 
-                {/* 1. Unassigned Tickets */}
                 <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
                     <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center"><div className="flex items-center gap-3"><AlertTriangle className="text-orange-600" /><h3 className="font-bold text-orange-800">งานใหม่รอจ่าย (Unassigned)</h3></div><span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-orange-600 border border-orange-200">{unassignedTickets.length} Waiting</span></div>
                     <div className="overflow-x-auto">
@@ -1618,7 +1755,6 @@
                     </div>
                 </div>
 
-                {/* 2. Staff Workload Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {staffWorkloads.map(staff => (
                     <div key={staff.Staff_ID} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 relative overflow-hidden">
@@ -1635,7 +1771,6 @@
                     ))}
                 </div>
 
-                {/* 3. Active Jobs */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center"><h3 className="font-bold text-slate-800">งานที่กำลังดำเนินการ (Active Jobs)</h3></div>
                     <div className="overflow-x-auto">
@@ -1657,18 +1792,22 @@
                     </div>
                 </div>
 
-                {/* 4. Completed Jobs */}
                 <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
                     <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2"><ShieldCheck className="text-emerald-600 w-5 h-5"/><h3 className="font-bold text-emerald-800">ประวัติงานที่เสร็จสิ้นแล้ว (Completed Jobs)</h3></div>
                     <div className="overflow-x-auto max-h-64 overflow-y-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-emerald-100 sticky top-0 shadow-sm"><tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">เรื่อง</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3">การซ่อมแซม</th></tr></thead>
+                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-emerald-100 sticky top-0 shadow-sm"><tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">เรื่อง</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3">การจัดการ</th></tr></thead>
                         <tbody className="divide-y divide-emerald-50">
                             {completedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ยังไม่มีประวัติงานที่เสร็จสิ้น</td></tr>) : completedTickets.slice().reverse().map(ticket => (
                             <tr key={ticket.Ticket_ID} className="hover:bg-emerald-50/50">
                             <td className="px-6 py-3 font-mono text-slate-500 text-xs">{ticket.Ticket_ID}</td>
                             <td className="px-6 py-3"><div className="font-bold text-slate-700">{ticket.Type}</div><div className="text-xs text-slate-400">{ticket.Requester}</div></td>
                             <td className="px-6 py-3 text-slate-600 text-sm">{ticket.Assignee}</td>
-                            <td className="px-6 py-3"><div className="text-xs font-bold text-emerald-700 mb-0.5">{ticket.Repair}</div><div className="text-[10px] text-slate-400">ปิดงาน: {ticket.Finished_At}</div></td>
+                            <td className="px-6 py-3 flex gap-2 items-center">
+                                <div><div className="text-xs font-bold text-emerald-700 mb-0.5">{ticket.Repair}</div><div className="text-[10px] text-slate-400">ปิดงาน: {ticket.Finished_At.split(' ')[0]}</div></div>
+                                {ticket.Type === "แจ้งซ่อม" && (
+                                    <button onClick={() => generateRepairDoc(ticket)} className="p-2 ml-auto bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="สร้างเอกสารใบส่งซ่อม"><FileText size={16}/></button>
+                                )}
+                            </td>
                             </tr>
                         ))}</tbody></table>
                     </div>
