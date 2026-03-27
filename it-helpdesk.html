@@ -83,12 +83,22 @@
             return `${prefix}-${String(count).padStart(4, '0')}`;
         };
 
+        // Helper function สำหรับการแปลง JSON ป้องกันการแครช
         const safeJsonParse = (str, fallback) => {
             if (!str || str === "-") return fallback;
             try {
                 return JSON.parse(str);
             } catch (e) {
-                console.warn("Failed to parse JSON:", str, e);
+                // สำหรับจัดการ String format ที่ผิดเพี้ยนที่อาจมาจาก Google Sheets
+                if (typeof str === 'string' && str.startsWith('{') && str.endsWith('}')) {
+                    try {
+                        let cleanStr = str.replace(/[{}]/g, '').split(',').map(pair => {
+                            let [k, v] = pair.split('=');
+                            return `"${k.trim()}":"${v ? v.trim() : ''}"`;
+                        }).join(',');
+                        return [JSON.parse(`{${cleanStr}}`)];
+                    } catch(err) {}
+                }
                 return fallback;
             }
         };
@@ -682,12 +692,12 @@
             const today = new Date().toISOString().split('T')[0];
 
             const [formData, setFormData] = useState(initialData || {
-                Id: '', // จะโดน Gen ทันทีเมื่อเลือก Type
+                Id: '', 
                 department: '',
                 name: '',
                 Status: 'พร้อมใช้งาน',
                 Type: '',
-                Id_equipment: '', // Manual Input
+                Id_equipment: '', 
                 Computer_Name: '',
                 Brand: '',
                 CPU: '',
@@ -1185,7 +1195,6 @@
             );
         };
 
-        // ฟอร์มแจ้งซ่อมสำหรับ User (เห็นเฉพาะข้อมูลพื้นฐาน)
         function RepairForm({ notify, apiCall, tickets, setTickets, departments }) {
             const [description, setDescription] = useState('');
             const [selectedDevice, setSelectedDevice] = useState('Hardware');
@@ -1576,10 +1585,8 @@
 
             // ฟังก์ชันสำหรับสร้างเอกสารใบส่งซ่อม
             const generateRepairDoc = (ticket) => {
-                // ค้นหาข้อมูล Location ของอุปกรณ์
                 const eq = equipments.find(e => e.Id === ticket.Asset_ID || e.Id_equipment === ticket.Asset_ID) || {};
                 
-                // ค้นหาประวัติการซ่อมครั้งล่าสุด
                 const pastTickets = tickets.filter(t => 
                     (t.Asset_ID === ticket.Asset_ID) && 
                     (t.Ticket_ID !== ticket.Ticket_ID) && 
@@ -1591,18 +1598,16 @@
                 const lastDate = lastTicket ? lastTicket.Finished_At.split(' ')[0] : '-';
                 const lastReason = lastTicket ? lastTicket.Description : '-';
 
-                // จัดการข้อความรายการสั่งซื้อ
                 let buyItemsStr = "-";
                 if(ticket.Buy && ticket.Buy !== "-" && ticket.Buy !== "[]") {
                     try {
                         const parsed = JSON.parse(ticket.Buy);
-                        if(parsed.length > 0) {
-                            buyItemsStr = parsed.map(item => `${item.item} (${item.price} บาท)`).join(', ');
+                        if(Array.isArray(parsed) && parsed.length > 0) {
+                            buyItemsStr = parsed.map(item => `${item.item} (${item.price} บ.)`).join(', ');
                         }
                     } catch(e){}
                 }
 
-                // สร้างหน้าต่างสำหรับพิมพ์
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
                     <html>
@@ -1610,37 +1615,41 @@
                         <title>ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์ - ${ticket.Ticket_ID}</title>
                         <style>
                             @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                            @page { size: A4; margin: 2cm; }
-                            body { font-family: 'Sarabun', sans-serif; font-size: 16pt; color: #000; line-height: 1.5; }
-                            .container { max-width: 800px; margin: auto; }
-                            .header { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 20px; }
+                            @page { size: A4; margin: 1.5cm 2cm; }
+                            body { font-family: 'Sarabun', sans-serif; font-size: 15pt; color: #000; line-height: 1.4; }
+                            .container { max-width: 100%; margin: auto; }
+                            .header { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 10px; }
                             .right-align { text-align: right; }
+                            .mt-2 { margin-top: 0.5rem; }
                             .mt-4 { margin-top: 1rem; }
                             .mt-8 { margin-top: 2rem; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem; }
-                            th, td { border: 1px solid #000; padding: 8px 12px; text-align: left; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 14pt; }
+                            th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
                             th { text-align: center; font-weight: bold; }
-                            .signature-box { display: flex; justify-content: space-between; margin-top: 3rem; text-align: center; }
-                            .indent { padding-left: 2.5rem; }
-                            .hr-dashed { border-top: 1px dashed #000; margin: 2rem 0; border-bottom: 0; }
+                            .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 14pt; }
+                            .sig-col { width: 48%; }
+                            .indent { padding-left: 2rem; }
+                            .hr-line { border-top: 1px solid #000; margin: 15px 0; border-bottom: 0; }
+                            .bold { font-weight: bold; }
+                            .underline { text-decoration: underline; }
                         </style>
                     </head>
                     <body>
                         <div class="container">
                             <div class="header">ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์</div>
-                            <div class="right-align">เลขที่ <strong>${ticket.Ticket_ID}</strong></div>
-                            <div class="right-align">วันที่ <strong>${ticket.Created_At.split(' ')[0]}</strong></div>
+                            <div class="right-align">เลขที่ <span class="bold">${ticket.Ticket_ID}</span></div>
+                            <div class="right-align">วันที่ <span class="bold">${ticket.Created_At.split(' ')[0]}</span></div>
                             
-                            <div class="mt-4"><strong>ฝ่าย/กลุ่มงาน:</strong> &nbsp;&nbsp;${ticket.Department}</div>
-                            <div><strong>เรื่อง:</strong> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
-                            <div><strong>เรียน:</strong> &nbsp;&nbsp;ผู้อำนวยการโรงพยาบาลสวี</div>
+                            <div class="mt-2"><span class="bold">ฝ่าย/กลุ่มงาน:</span> &nbsp;&nbsp;${ticket.Department}</div>
+                            <div><span class="bold">เรื่อง:</span> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
+                            <div><span class="bold">เรียน:</span> &nbsp;&nbsp;ผู้อำนวยการโรงพยาบาลสวี</div>
                             
-                            <div class="mt-4 indent">เนื่องด้วยฝ่าย/กลุ่มงาน <strong>${ticket.Department}</strong> มีความประสงค์ที่จะส่งซ่อมบำรุงดังนี้</div>
+                            <div class="mt-4 indent">เนื่องด้วยฝ่าย/กลุ่มงาน <span class="bold">${ticket.Department}</span> มีความประสงค์ที่จะส่งซ่อมบำรุงดังนี้</div>
                             
                             <table>
                                 <tr>
-                                    <th width="25%">รายการ</th>
-                                    <th width="35%">เนื่องจาก</th>
+                                    <th width="20%">รายการ</th>
+                                    <th width="40%">เนื่องจาก</th>
                                     <th width="20%">หมายเลขครุภัณฑ์</th>
                                     <th width="20%">สถานที่ตั้ง</th>
                                 </tr>
@@ -1654,25 +1663,30 @@
                             
                             <div class="indent">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและดำเนินการต่อไป</div>
                             
-                            <div class="right-align mt-8">
+                            <div class="right-align mt-4" style="padding-right: 2rem;">
                                 ลงชื่อ ........................................................... ผู้ส่งซ่อม<br>
-                                ( <strong>${ticket.Requester}</strong> )<br>
-                                <strong>${ticket.Created_At.split(' ')[0]}</strong>
+                                ( ${ticket.Requester} )<br>
+                                ${ticket.Created_At.split(' ')[0]}
                             </div>
 
-                            <hr class="hr-dashed">
+                            <hr class="hr-line">
 
-                            <div style="font-weight: bold; text-decoration: underline;">บันทึกงานซ่อมบำรุง</div>
-                            <div><strong>การดำเนินการ:</strong> &nbsp;&nbsp;${ticket.Repair}</div>
-                            ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><strong>เหตุผล:</strong> &nbsp;&nbsp;${ticket.Reason}</div>` : ''}
+                            <div class="bold underline">บันทึกงานซ่อมบำรุง (สำหรับเจ้าหน้าที่)</div>
+                            <div class="mt-2"><span class="bold">การดำเนินการ:</span> &nbsp;&nbsp;${ticket.Repair}</div>
+                            ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><span class="bold">เหตุผล:</span> &nbsp;&nbsp;${ticket.Reason}</div>` : ''}
                             ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
-                                <div><strong>รายการวัสดุ/อะไหล่:</strong> &nbsp;&nbsp;${buyItemsStr}</div>
-                                <div><strong>รวมเป็นเงิน:</strong> &nbsp;&nbsp;<strong>${ticket.Cost}</strong> บาท</div>
+                                <div><span class="bold">รายการวัสดุ/อะไหล่:</span> &nbsp;&nbsp;${buyItemsStr}</div>
+                                <div><span class="bold">รวมเป็นเงิน:</span> &nbsp;&nbsp;<span class="bold">${ticket.Cost}</span> บาท</div>
                             ` : ''}
-                            <div><strong>เวลาที่คาดว่าจะซ่อมเสร็จ:</strong> &nbsp;&nbsp;${ticket.Estimate}</div>
+                            <div><span class="bold">เวลาที่คาดว่าจะซ่อมเสร็จ:</span> &nbsp;&nbsp;${ticket.Estimate}</div>
+                            <div class="mt-2 right-align" style="padding-right: 2rem;">
+                                ลงชื่อ ........................................................... ช่างผู้ดำเนินการ<br>
+                                ( ${ticket.Assignee} )<br>
+                                ${ticket.Finished_At !== '-' ? ticket.Finished_At.split(' ')[0] : '......./......./.......'}
+                            </div>
                             
-                            <div class="signature-box">
-                                <div>
+                            <div class="signature-box mt-4">
+                                <div class="sig-col text-center">
                                     เรียน ผู้อำนวยการโรงพยาบาลสวี<br>เพื่อโปรดพิจารณา<br>
                                     (&nbsp;&nbsp;) ควรอนุมัติ/จัดซื้อวัสดุมาซ่อม/จัดทำอื่นๆ<br>
                                     ...................................................<br><br>
@@ -1680,8 +1694,8 @@
                                     หัวหน้ากลุ่มงานบริหารทั่วไป<br>
                                     ......./......./.......
                                 </div>
-                                <div>
-                                    <strong>ความเห็น ผู้อำนวยการโรงพยาบาลสวี</strong><br>
+                                <div class="sig-col text-center">
+                                    <span class="bold">ความเห็น ผู้อำนวยการโรงพยาบาลสวี</span><br>
                                     (&nbsp;&nbsp;) ทราบ<br>
                                     (&nbsp;&nbsp;) อนุมัติให้ดำเนินการตามเสนอ<br>
                                     (&nbsp;&nbsp;) อื่นๆ..........................................<br><br>
@@ -1691,14 +1705,11 @@
                                 </div>
                             </div>
 
-                            <hr class="hr-dashed">
+                            <hr class="hr-line">
                             
-                            <div style="font-weight: bold; text-decoration: underline;">บันทึกประวัติการซ่อมครุภัณฑ์</div>
-                            <div><strong>ครั้งสุดท้ายเมื่อ:</strong> &nbsp;&nbsp;${lastDate}</div>
-                            <div><strong>เนื่องจาก:</strong> &nbsp;&nbsp;${lastReason}</div>
-                            <div class="mt-4 right-align">
-                                <strong>ผู้บันทึก:</strong> ${ticket.Assignee}
-                            </div>
+                            <div class="bold underline">บันทึกประวัติการซ่อมครุภัณฑ์</div>
+                            <div class="mt-2"><span class="bold">ครั้งสุดท้ายเมื่อ:</span> &nbsp;&nbsp;${lastDate}</div>
+                            <div><span class="bold">เนื่องจาก:</span> &nbsp;&nbsp;${lastReason}</div>
                         </div>
                         <script>
                             window.onload = function() {
