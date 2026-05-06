@@ -25,6 +25,14 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         body { margin: 0; padding: 0; }
         
+        @keyframes blink-red {
+            0%, 100% { background-color: #fee2e2; } /* bg-red-100 */
+            50% { background-color: #fecaca; } /* bg-red-200 */
+        }
+        .animate-blink-red {
+            animation: blink-red 1.5s ease-in-out infinite;
+        }
+
         @media print {
             body * { visibility: hidden; }
             #print-section, #print-section * { visibility: visible; }
@@ -2405,7 +2413,7 @@
                     <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">การจัดการ</th></tr></thead>
                     <tbody className="divide-y divide-orange-50">
                         {unassignedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานใหม่รอจ่าย</td></tr>) : unassignedTickets.map(ticket => (
-                        <tr key={ticket.Ticket_ID} className="hover:bg-orange-50/50">
+                        <tr key={ticket.Ticket_ID} className={`${ticket.Urgency === 'วิกฤต' ? 'animate-blink-red border-b border-red-200' : 'hover:bg-orange-50/50 bg-white border-b border-orange-50'}`}>
                         <td className="px-6 py-4">
                             <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
                             <div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div>
