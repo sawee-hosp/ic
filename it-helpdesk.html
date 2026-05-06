@@ -16,7 +16,6 @@
         }
     </script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
@@ -110,20 +109,25 @@
 
         const QRScannerModal = ({ onScan, onClose }) => {
             useEffect(() => {
-                const scanner = new window.Html5QrcodeScanner(
-                    "qr-reader",
-                    { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
-                    false
-                );
-                scanner.render(
+                const html5QrCode = new window.Html5Qrcode("qr-reader");
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
                     (decodedText) => {
-                        onScan(decodedText);
-                        scanner.clear();
+                        html5QrCode.stop().then(() => {
+                            onScan(decodedText);
+                        }).catch(console.error);
                     },
-                    (error) => {}
-                );
+                    (errorMessage) => {}
+                ).catch((err) => {
+                    console.log("Camera start error", err);
+                    alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบการอนุญาตใช้งานกล้องของเบราว์เซอร์");
+                });
+
                 return () => {
-                    scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+                    if (html5QrCode.isScanning) {
+                        html5QrCode.stop().catch(console.error);
+                    }
                 };
             }, [onScan]);
 
@@ -131,11 +135,12 @@
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
                     <div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col w-full max-w-md">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><ScanLine className="text-blue-600"/> สแกน QR Code ครุภัณฑ์</h3>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><ScanLine className="text-blue-600"/> สแกน QR Code</h3>
                             <button onClick={onClose} className="p-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200 rounded-lg transition"><X size={20}/></button>
                         </div>
-                        <div id="qr-reader" className="w-full rounded-xl overflow-hidden border-2 border-dashed border-gray-300"></div>
-                        <button onClick={onClose} className="mt-6 px-4 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 w-full font-bold transition">ยกเลิกการสแกน</button>
+                        <div id="qr-reader" className="w-full rounded-xl overflow-hidden border-2 border-slate-200 bg-black"></div>
+                        <p className="text-xs text-center text-gray-500 mt-3">กรุณานำกล้องส่องไปที่ QR Code บนอุปกรณ์</p>
+                        <button onClick={onClose} className="mt-4 px-4 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 w-full font-bold transition">ยกเลิกการสแกน</button>
                     </div>
                 </div>
             );
@@ -148,12 +153,10 @@
             const inputRefs = useRef([]);
 
             useEffect(() => {
-                // เช็คว่ามีรหัสใน localStorage หรือไม่ ถ้ามีให้ลองล็อกอินอัตโนมัติ
                 const savedPin = localStorage.getItem('sawee_it_pin');
                 if (savedPin && savedPin.length === 5) {
                     verifyPin(savedPin, true);
                 } else {
-                    // Auto-focus ช่องแรกตอนโหลดหน้า
                     if (inputRefs.current[0]) {
                         inputRefs.current[0].focus();
                     }
@@ -192,11 +195,9 @@
                     const result = await response.json();
                     
                     if (result.status === 'success') {
-                        // บันทึกลง localStorage เมื่อสำเร็จ
                         localStorage.setItem('sawee_it_pin', fullPin);
                         onLogin();
                     } else {
-                        // เคลียร์ค่าที่บันทึกไว้ถ้ารหัสผิด
                         localStorage.removeItem('sawee_it_pin');
                         if (!isAutoLogin) {
                             setError(true);
@@ -248,7 +249,7 @@
 
             const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
             const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [activeTab, setActiveTab] = useState(initialIsAdmin ? 'dashboard' : 'repair');
+            const [activeTab, setActiveTab] = useState(initialIsAdmin ? 'equipments' : 'repair'); 
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [showNotification, setShowNotification] = useState(false);
             const [notificationMsg, setNotificationMsg] = useState("");
@@ -261,12 +262,13 @@
             const [staffList, setStaffList] = useState([]); 
 
             const [qrModal, setQrModal] = useState({ isOpen: false, data: null });
-            const [aiModal, setAiModal] = useState({ isOpen: false, data: null, result: '', loading: false });
             const [isLoading, setIsLoading] = useState(true);
             const [isSyncing, setIsSyncing] = useState(false);
             const [apiError, setApiError] = useState(null);
+            
+            const [prefillAsset, setPrefillAsset] = useState(null);
+            const [prefillSoftwareAsset, setPrefillSoftwareAsset] = useState(null);
 
-            // แจ้งเตือน Notification
             const handleNotify = (msg) => {
                 setNotificationMsg(msg);
                 setShowNotification(true);
@@ -278,7 +280,6 @@
                 setIsSidebarOpen(false); 
             };
 
-            // สร้างฟังก์ชัน fetch ไว้บนสุด เพื่อไม่ให้ติด Scope หากมีการ return Component ก่อน
             const fetchAllData = async () => {
                 setIsLoading(true);
                 setApiError(null);
@@ -335,17 +336,6 @@
                 } finally {
                     setIsSyncing(false);
                 }
-            };
-
-            const handleAIAnalysis = async (equipment) => {
-                setAiModal({ isOpen: true, data: equipment, result: '', loading: true });
-                setTimeout(() => {
-                    setAiModal(prev => ({ 
-                        ...prev, 
-                        result: "AI จำเป็นต้องใช้ API Key ของ Google Gemini เพื่อวิเคราะห์ข้อมูลจริง\n(จำลอง) อุปกรณ์นี้สเปคยังเพียงพอสำหรับการทำงานออฟฟิศทั่วไป แนะนำให้อัปเกรด RAM เป็น 16GB หากต้องเปิดหลายหน้าต่าง", 
-                        loading: false 
-                    }));
-                }, 1500);
             };
 
             const printSticker = (item) => {
@@ -472,13 +462,11 @@
                     </div>
                 )}
 
-                {/* Mobile Backdrop Overlay */}
                 <div 
                     className={`fixed inset-0 bg-black/50 z-20 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
                     onClick={() => setIsSidebarOpen(false)}>
                 </div>
 
-                {/* Animated Sidebar */}
                 <div className={`fixed md:relative z-30 h-full bg-slate-800 text-white shadow-xl flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-64' : 'w-0'}`}>
                     <div className="w-64 h-full flex flex-col">
                         <div className="p-5 flex items-center justify-between border-b border-slate-700">
@@ -486,7 +474,6 @@
                                 <Server className="w-8 h-8 text-blue-400 shrink-0" />
                                 <h1 className="text-lg font-bold tracking-wide truncate">IT Service Center</h1>
                             </div>
-                            {/* Close button for mobile */}
                             <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
                                 <X size={20} />
                             </button>
@@ -495,8 +482,7 @@
                             
                             {isAdmin && (
                                 <>
-                                    <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                                    <SidebarItem icon={<Monitor size={20} />} label="จัดการครุภัณฑ์" active={activeTab === 'equipments'} onClick={() => handleTabChange('equipments')} />
+                                    <SidebarItem icon={<Monitor size={20} />} label="จัดการครุภัณฑ์ & ภาพรวม" active={activeTab === 'equipments'} onClick={() => handleTabChange('equipments')} />
                                     <SidebarItem icon={<AppWindow size={20} />} label="จัดการซอฟต์แวร์" active={activeTab === 'softwares'} onClick={() => handleTabChange('softwares')} />
                                     
                                     <div className="my-4 border-t border-slate-700"></div>
@@ -513,7 +499,7 @@
 
                             {!isAdmin && (
                                 <>
-                                    <SidebarItem icon={<Settings size={20} />} label="Admin Login" active={false} onClick={() => { setIsAdmin(true); setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
+                                    <SidebarItem icon={<Settings size={20} />} label="Admin Login" active={false} onClick={() => { setIsAdmin(true); setActiveTab('equipments'); setIsSidebarOpen(false); }} />
                                 </>
                             )}
 
@@ -527,7 +513,6 @@
                             )}
                         </nav>
                         
-                        {/* สายด่วน Helpdesk โทร 503 */}
                         <div className="p-4 border-t border-slate-700">
                             <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 text-center shadow-inner relative overflow-hidden group hover:bg-blue-900/60 transition">
                                 <PhoneCall className="absolute -right-2 -bottom-2 w-16 h-16 text-blue-500/10 group-hover:scale-110 transition-transform" />
@@ -552,8 +537,7 @@
                                 <Menu size={20} />
                             </button>
                             <h2 className="text-lg md:text-xl font-semibold text-gray-800 truncate hidden sm:block">
-                                {activeTab === 'dashboard' && 'ภาพรวมระบบ (Dashboard)'}
-                                {activeTab === 'equipments' && 'จัดการครุภัณฑ์คอมพิวเตอร์ (ทะเบียน/เพิ่มข้อมูล)'}
+                                {activeTab === 'equipments' && 'จัดการครุภัณฑ์คอมพิวเตอร์ (ทะเบียน/ภาพรวม)'}
                                 {activeTab === 'softwares' && 'จัดการระบบซอฟต์แวร์'}
                                 {activeTab === 'repair' && 'แบบฟอร์มแจ้งปัญหา / ส่งซ่อม'}
                                 {activeTab === 'data_request' && 'แบบฟอร์มขอข้อมูล / รายงาน'}
@@ -583,22 +567,23 @@
                     )}
 
                     <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-8 custom-scrollbar">
-                        {activeTab === 'dashboard' && isAdmin && <DashboardView equipments={equipments} />}
                         
                         {activeTab === 'equipments' && isAdmin && <EquipmentManager 
                             equipments={equipments} setEquipments={setEquipments}
-                            departments={departments} types={types} apiCall={apiCall}
+                            departments={departments} types={types} tickets={tickets} softwares={softwares} apiCall={apiCall}
                             onPrintSticker={printSticker}
                             onShowQR={(data) => setQrModal({ isOpen: true, data })}
-                            onAIAnalyze={handleAIAnalysis} notify={handleNotify}
+                            notify={handleNotify}
+                            goToRepair={(assetId) => { setPrefillAsset(assetId); handleTabChange('repair'); }}
+                            goToSoftware={(assetId) => { setPrefillSoftwareAsset(assetId); handleTabChange('softwares'); }}
                         />}
                         
                         {activeTab === 'softwares' && isAdmin && <SoftwareManager 
                             softwares={softwares} setSoftwares={setSoftwares}
-                            equipments={equipments} apiCall={apiCall} notify={handleNotify}
+                            equipments={equipments} apiCall={apiCall} notify={handleNotify} prefillAsset={prefillSoftwareAsset} setPrefillAsset={setPrefillSoftwareAsset}
                         />}
                         
-                        {activeTab === 'repair' && <RepairForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} equipments={equipments} />}
+                        {activeTab === 'repair' && <RepairForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} equipments={equipments} prefillAsset={prefillAsset} setPrefillAsset={setPrefillAsset} />}
                         {activeTab === 'data_request' && <DataQueryForm notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} departments={departments} />}
                         {activeTab === 'ticket_tracking' && <TicketTracker tickets={tickets} departments={departments} />}
                         
@@ -617,29 +602,6 @@
                             <p className="font-semibold text-gray-700 text-lg">{qrModal.data?.Id}</p>
                             <p className="text-sm text-gray-500 mb-6">{qrModal.data?.Type} - {qrModal.data?.Computer_Name || qrModal.data?.Brand}</p>
                             <button onClick={() => setQrModal({ isOpen: false, data: null })} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 w-full font-medium transition-colors">ปิดหน้าต่าง</button>
-                        </div>
-                    </div>
-                )}
-
-                {/* AI Modal */}
-                {aiModal.isOpen && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col max-w-lg w-full max-h-[90vh]">
-                            <div className="flex items-center space-x-3 mb-6 border-b pb-4 border-gray-100">
-                            <div className="bg-purple-100 p-3 rounded-full text-purple-600 shadow-sm"><Sparkles size={24} /></div>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-800">✨ AI วิเคราะห์สเปคอุปกรณ์</h3>
-                                <p className="text-sm text-gray-500 font-medium mt-0.5">{aiModal.data?.Computer_Name || aiModal.data?.Brand}</p>
-                            </div>
-                            </div>
-                            <div className="flex-1 overflow-y-auto mb-6 pr-2 custom-scrollbar">
-                                {aiModal.loading ? (
-                                    <div className="flex flex-col items-center justify-center py-12"><Loader2 className="w-12 h-12 text-purple-400 animate-spin" /><p className="mt-4 text-gray-600 font-medium animate-pulse">กำลังวิเคราะห์...</p></div>
-                                ) : (
-                                    <div className="text-sm text-gray-700 bg-gradient-to-br from-purple-50 to-fuchsia-50 p-6 rounded-xl border border-purple-100 whitespace-pre-line shadow-inner">{aiModal.result}</div>
-                                )}
-                            </div>
-                            <button onClick={() => setAiModal({ isOpen: false, data: null, result: '', loading: false })} className="px-4 py-3 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 w-full font-semibold transition-colors">ปิดหน้าต่าง</button>
                         </div>
                     </div>
                 )}
@@ -709,7 +671,7 @@
                                     <h3 className="font-bold text-gray-800 text-lg mb-2">2.2 การติดตามสถานะงาน</h3>
                                     <p className="mb-2">ผู้ใช้งานสามารถตรวจสอบว่างานของท่านช่างดำเนินการถึงไหนแล้ว โดยคลิกที่เมนู <b>"ติดตามสถานะงาน"</b></p>
                                     <ul className="list-disc pl-6 space-y-1">
-                                        <li><b>คอลัมน์สีส้ม (Pending):</b> งานที่เพิ่งแจ้งเข้ามา และรอช่างรับเรื่อง</li>
+                                        <li><b>คอลัมน์สีแดง (Pending):</b> งานที่เพิ่งแจ้งเข้ามา และรอช่างรับเรื่อง</li>
                                         <li><b>คอลัมน์สีฟ้า (In Progress):</b> งานที่ช่างรับเรื่องแล้ว (มีชื่อช่างกำกับ) และกำลังดำเนินการแก้ไข</li>
                                         <li><b>คอลัมน์สีเขียว (Completed):</b> งานที่ซ่อมเสร็จสิ้นแล้ว จะระบุวันที่ปิดงานและการแก้ไข</li>
                                     </ul>
@@ -747,7 +709,7 @@
                                     <h3 className="font-bold text-gray-800 text-lg mb-2">3.3 การจัดการซอฟต์แวร์ (Software Manager)</h3>
                                     <p className="mb-2">เมนูนี้ใช้เพื่อบันทึกว่าคอมพิวเตอร์เครื่องใด (ดึงข้อมูลจากทะเบียนครุภัณฑ์) ติดตั้งโปรแกรมอะไรไว้บ้าง</p>
                                     <ul className="list-disc pl-6 space-y-1">
-                                        <li>เลือกรหัสเครื่องจาก Dropdown</li>
+                                        <li>สามารถเข้าถึงได้จากหน้ารายละเอียดของคอมพิวเตอร์แต่ละเครื่อง หรือผ่านเมนูหลัก</li>
                                         <li>ติ๊กเลือกโปรแกรมมาตรฐาน หรือพิมพ์ชื่อโปรแกรมเฉพาะทางเพิ่มเองได้</li>
                                         <li>ในหน้ารายการ จะมีฟิลเตอร์ค้นหาชื่อโปรแกรม ระบบจะสรุป(นับจำนวน) ให้ว่ามีกี่เครื่องที่ลงโปรแกรมนั้นอยู่</li>
                                     </ul>
@@ -767,7 +729,7 @@
 
                         <section className="bg-gray-800 text-white p-6 rounded-xl mt-8">
                             <h2 className="text-lg font-bold mb-2 flex items-center gap-2"><PhoneCall size={20}/> ช่องทางการติดต่อสอบถาม</h2>
-                            <p>หากพบปัญหาในการใช้งานระบบนี้ กรุณาติดต่อหน่วยงาน IT ของโรงพยาบาล<br/><br/>
+                            <p>หากพบปัญหาในการใช้งานระบบนี้ (เช่น เข้าสู่ระบบไม่ได้, ลืมรหัส PIN, ระบบไม่บันทึกข้อมูล) กรุณาติดต่อหน่วยงาน IT / ศูนย์ข้อมูลข่าวสารของโรงพยาบาล<br/><br/>
                             <span className="text-xl font-bold text-yellow-400">สายด่วนภายใน: ต่อ 503</span></p>
                         </section>
                     </div>
@@ -775,78 +737,115 @@
             );
         };
 
-        const DashboardView = ({ equipments }) => {
+        const EquipmentDetailModal = ({ equipment, historyTickets, softwares, onClose, onGoToRepair, onGoToSoftware }) => {
+            const isComputerGroup = ["ชุดเครื่องคอมพิวเตอร์", "คอมพิวเตอร์แม่ข่าย", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา"].some(t => equipment.Type?.includes(t));
+            const installedSoftware = softwares.find(sw => sw.Computer_Name === equipment.Id || sw.Computer_Name === equipment.Id_equipment);
+
+            return (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl flex flex-col w-full max-w-3xl max-h-[90vh] overflow-hidden animate-in fade-in">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 flex justify-between items-center text-white">
+                            <div>
+                                <h3 className="text-xl font-bold flex items-center gap-2"><Monitor size={24}/> ข้อมูลครุภัณฑ์: {equipment.Id}</h3>
+                                <p className="text-sm text-blue-100 mt-1">{equipment.name} • {equipment.Type}</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition"><X size={20}/></button>
+                        </div>
+                        
+                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                            <div className="flex flex-col md:flex-row gap-6 mb-8">
+                                <div className="w-full md:w-1/3 shrink-0">
+                                    {equipment.Image_URL ? (
+                                        <img src={equipment.Image_URL} alt="Equipment" className="w-full h-48 object-cover rounded-xl border border-gray-200 shadow-sm" />
+                                    ) : (
+                                        <div className="w-full h-48 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
+                                            <ImageIcon size={40} className="mb-2" />
+                                            <span className="text-sm">ไม่มีรูปภาพ</span>
+                                        </div>
+                                    )}
+                                    <div className="mt-4 flex gap-2">
+                                        <button onClick={() => onGoToRepair(equipment.Id || equipment.Id_equipment)} className="w-full bg-orange-100 text-orange-700 hover:bg-orange-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-sm border border-orange-200">
+                                            <Wrench size={16}/> สร้างใบแจ้งซ่อม
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                                        <div><span className="block text-gray-400 text-xs mb-1">รหัสโรงพยาบาล</span><span className="font-bold text-gray-800 bg-gray-100 px-2 py-1 rounded">{equipment.Id_equipment || '-'}</span></div>
+                                        <div><span className="block text-gray-400 text-xs mb-1">สถานะปัจจุบัน</span><span className={`font-bold px-2 py-1 rounded ${equipment.Status === 'พร้อมใช้งาน' ? 'bg-green-100 text-green-700' : equipment.Status === 'ส่งซ่อม' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>{equipment.Status}</span></div>
+                                        <div><span className="block text-gray-400 text-xs mb-1">หน่วยงาน</span><span className="font-semibold text-gray-700">{equipment.department}</span></div>
+                                        <div><span className="block text-gray-400 text-xs mb-1">สถานที่ตั้ง</span><span className="font-semibold text-gray-700">{equipment.Location || '-'}</span></div>
+                                        <div><span className="block text-gray-400 text-xs mb-1">ยี่ห้อ/แบรนด์</span><span className="font-semibold text-gray-700">{equipment.Brand || '-'}</span></div>
+                                        <div><span className="block text-gray-400 text-xs mb-1">รุ่น (Model)</span><span className="font-semibold text-gray-700">{equipment.Model || '-'}</span></div>
+                                        
+                                        {equipment.CPU && <div className="col-span-2 pt-3 border-t"><span className="block text-gray-400 text-xs mb-1">CPU</span><span className="font-semibold text-gray-700">{equipment.CPU}</span></div>}
+                                        {equipment.RAM && <div><span className="block text-gray-400 text-xs mb-1">RAM</span><span className="font-semibold text-gray-700">{equipment.RAM} GB</span></div>}
+                                        {equipment.OS && <div><span className="block text-gray-400 text-xs mb-1">OS</span><span className="font-semibold text-gray-700">{equipment.OS}</span></div>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ส่วนจัดการ Software เฉพาะเครื่องคอมพิวเตอร์ */}
+                            {isComputerGroup && (
+                                <div className="mb-8">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="font-bold text-lg text-gray-800 flex items-center gap-2"><AppWindow className="text-blue-500"/> ซอฟต์แวร์ที่ติดตั้ง</h4>
+                                        <button onClick={() => onGoToSoftware(equipment.Id)} className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-bold transition flex items-center">
+                                            <Edit size={12} className="mr-1"/> จัดการโปรแกรม
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        {installedSoftware && installedSoftware.programs && installedSoftware.programs.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {installedSoftware.programs.map((p, idx) => (
+                                                    <span key={idx} className="bg-white text-slate-700 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 shadow-sm">{p}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-slate-400 text-center py-2">ยังไม่มีการบันทึกข้อมูลซอฟต์แวร์ในเครื่องนี้</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <h4 className="font-bold text-lg text-gray-800 mb-4 flex items-center gap-2"><Clock className="text-indigo-500"/> ประวัติการส่งซ่อม</h4>
+                                <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-100 text-slate-600 text-xs uppercase">
+                                            <tr><th className="px-4 py-3">วันที่ / Ticket ID</th><th className="px-4 py-3">อาการที่แจ้ง</th><th className="px-4 py-3">การแก้ไข / ช่าง</th></tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            {historyTickets.length === 0 ? (
+                                                <tr><td colSpan="3" className="px-4 py-6 text-center text-slate-400">ยังไม่มีประวัติการส่งซ่อม</td></tr>
+                                            ) : historyTickets.slice().reverse().map(t => (
+                                                <tr key={t.Ticket_ID} className="bg-white">
+                                                    <td className="px-4 py-3"><div className="font-bold text-slate-700">{t.Created_At?.split(' ')[0]}</div><div className="text-xs text-slate-500 font-mono mt-0.5">{t.Ticket_ID}</div></td>
+                                                    <td className="px-4 py-3"><div className="text-slate-800 line-clamp-2">{(t.Description || '').split('\n')[0]}</div><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block ${t.Status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{t.Status}</span></td>
+                                                    <td className="px-4 py-3"><div className="text-slate-700 font-medium">{t.Repair !== '-' ? t.Repair : 'รอการตรวจสอบ'}</div><div className="text-xs text-indigo-600 mt-0.5">{t.Assignee !== '-' ? `ช่าง: ${t.Assignee}` : ''}</div></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EquipmentManager = ({ equipments, setEquipments, departments, types, tickets, softwares, apiCall, onPrintSticker, onShowQR, notify, goToRepair, goToSoftware }) => {
+            const [view, setView] = useState('list'); 
+            const [editingItem, setEditingItem] = useState(null);
+            const [selectedEquipmentDetail, setSelectedEquipmentDetail] = useState(null);
+
             const stats = {
                 total: equipments.length,
                 ready: equipments.filter(e => e.Status === 'พร้อมใช้งาน').length,
                 repair: equipments.filter(e => e.Status === 'ส่งซ่อม').length,
                 broken: equipments.filter(e => e.Status === 'แทงชำรุด').length,
             };
-
-            const typeCount = equipments.reduce((acc, eq) => {
-                acc[eq.Type] = (acc[eq.Type] || 0) + 1;
-                return acc;
-            }, {});
-
-            return (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-500"></div>
-                    <div><p className="text-sm text-gray-500 font-semibold mb-1">ครุภัณฑ์ทั้งหมด</p><p className="text-4xl font-bold text-gray-800">{stats.total}</p></div>
-                    <Monitor className="text-blue-100 w-14 h-14" />
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-green-100 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-green-500"></div>
-                    <div><p className="text-sm text-gray-500 font-semibold mb-1">พร้อมใช้งาน</p><p className="text-4xl font-bold text-green-600">{stats.ready}</p></div>
-                    <CheckCircle className="text-green-100 w-14 h-14" />
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-orange-100 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-orange-500"></div>
-                    <div><p className="text-sm text-gray-500 font-semibold mb-1">ส่งซ่อม</p><p className="text-4xl font-bold text-orange-500">{stats.repair}</p></div>
-                    <Wrench className="text-orange-100 w-14 h-14" />
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-red-100 flex items-center justify-between relative overflow-hidden">
-                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-red-500"></div>
-                    <div><p className="text-sm text-gray-500 font-semibold mb-1">แทงชำรุด</p><p className="text-4xl font-bold text-red-600">{stats.broken}</p></div>
-                    <XCircle className="text-red-100 w-14 h-14" />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center"><List className="mr-2 text-blue-500" size={20}/> สรุปตามชนิดอุปกรณ์</h3>
-                    {Object.keys(typeCount).length === 0 ? (
-                        <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
-                        <p className="text-gray-400 text-sm">ยังไม่มีข้อมูลครุภัณฑ์</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3 mt-4">
-                        {Object.entries(typeCount).map(([type, count]) => (
-                            <div key={type} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <span className="text-gray-700 font-medium">{type}</span>
-                            <span className="font-bold bg-white text-blue-600 px-3 py-1 rounded-full shadow-sm border border-blue-100">{count} เครื่อง</span>
-                            </div>
-                        ))}
-                        </div>
-                    )}
-                    </div>
-                    
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl shadow-sm border border-green-200 flex flex-col justify-center">
-                    <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mb-4 shadow-sm mx-auto md:mx-0">
-                        <CheckCircle className="text-green-500 w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-bold text-green-800 mb-2 text-center md:text-left">เชื่อมต่อระบบสำเร็จ</h3>
-                    <p className="text-green-600 text-sm text-center md:text-left">ระบบพร้อมใช้งาน โหลดข้อมูลเสร็จสิ้นเรียบร้อยแล้ว</p>
-                    </div>
-                </div>
-                </div>
-            );
-        };
-
-        const EquipmentManager = ({ equipments, setEquipments, departments, types, apiCall, onPrintSticker, onShowQR, onAIAnalyze, notify }) => {
-            const [view, setView] = useState('list'); 
-            const [editingItem, setEditingItem] = useState(null);
 
             const handleSave = async (data) => {
                 if (editingItem) {
@@ -883,25 +882,65 @@
             };
 
             return (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-800">
-                            {view === 'list' ? 'รายการครุภัณฑ์ทั้งหมด' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'แบบฟอร์มลงทะเบียนครุภัณฑ์')}
-                        </h3>
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    
+                    {/* Dashboard Stats */}
+                    {view === 'list' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between relative overflow-hidden">
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                                <div><p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">ครุภัณฑ์ทั้งหมด</p><p className="text-3xl font-black text-gray-800">{stats.total}</p></div>
+                                <Monitor className="text-blue-100 w-12 h-12" />
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-green-100 flex items-center justify-between relative overflow-hidden">
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
+                                <div><p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">พร้อมใช้งาน</p><p className="text-3xl font-black text-green-600">{stats.ready}</p></div>
+                                <CheckCircle className="text-green-100 w-12 h-12" />
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-orange-100 flex items-center justify-between relative overflow-hidden">
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-orange-500"></div>
+                                <div><p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">ส่งซ่อม</p><p className="text-3xl font-black text-orange-500">{stats.repair}</p></div>
+                                <Wrench className="text-orange-100 w-12 h-12" />
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-red-100 flex items-center justify-between relative overflow-hidden">
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-red-500"></div>
+                                <div><p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">แทงชำรุด</p><p className="text-3xl font-black text-red-600">{stats.broken}</p></div>
+                                <XCircle className="text-red-100 w-12 h-12" />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <LayoutDashboard className="text-blue-600"/> {view === 'list' ? 'ตารางจัดการครุภัณฑ์' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'ฟอร์มลงทะเบียนครุภัณฑ์')}
+                            </h3>
+                            {view === 'list' ? (
+                                <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 transition hover:-translate-y-0.5">
+                                    <PlusCircle size={18} /> ลงทะเบียนเครื่องใหม่
+                                </button>
+                            ) : (
+                                <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
+                                    <ArrowLeft size={18} /> กลับหน้ารายการ
+                                </button>
+                            )}
+                        </div>
                         {view === 'list' ? (
-                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
-                                <PlusCircle size={16} /> ลงทะเบียนครุภัณฑ์ใหม่
-                            </button>
+                            <EquipmentList equipments={equipments} onEdit={handleEdit} onDelete={handleDelete} onShowQR={onShowQR} onPrintSticker={onPrintSticker} departments={departments} types={types} onViewDetail={(eq) => setSelectedEquipmentDetail(eq)} />
                         ) : (
-                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
-                                <ArrowLeft size={16} /> กลับหน้ารายการ
-                            </button>
+                            <EquipmentForm initialData={editingItem} departments={departments} types={types} onSave={handleSave} currentEquipments={equipments} apiCall={apiCall} notify={notify} />
                         )}
                     </div>
-                    {view === 'list' ? (
-                        <EquipmentList equipments={equipments} onEdit={handleEdit} onDelete={handleDelete} onShowQR={onShowQR} onPrintSticker={onPrintSticker} onAIAnalyze={onAIAnalyze} departments={departments} types={types} />
-                    ) : (
-                        <EquipmentForm initialData={editingItem} departments={departments} types={types} onSave={handleSave} currentEquipments={equipments} apiCall={apiCall} notify={notify} />
+
+                    {selectedEquipmentDetail && (
+                        <EquipmentDetailModal 
+                            equipment={selectedEquipmentDetail} 
+                            historyTickets={tickets.filter(t => t.Asset_ID === selectedEquipmentDetail.Id || t.Asset_ID === selectedEquipmentDetail.Id_equipment)}
+                            softwares={softwares}
+                            onClose={() => setSelectedEquipmentDetail(null)} 
+                            onGoToRepair={(assetId) => { setSelectedEquipmentDetail(null); goToRepair(assetId); }} 
+                            onGoToSoftware={(assetId) => { setSelectedEquipmentDetail(null); goToSoftware(assetId); }} 
+                        />
                     )}
                 </div>
             );
@@ -1123,7 +1162,7 @@
             );
         };
 
-        const EquipmentList = ({ equipments, onEdit, onDelete, onShowQR, onPrintSticker, onAIAnalyze, departments, types }) => {
+        const EquipmentList = ({ equipments, onEdit, onDelete, onShowQR, onPrintSticker, departments, types, onViewDetail }) => {
             const [filterDept, setFilterDept] = useState('');
             const [filterType, setFilterType] = useState('');
             const [filterStatus, setFilterStatus] = useState('');
@@ -1142,7 +1181,7 @@
             };
 
             return (
-                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div>
                 <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div className="flex items-center text-gray-600 font-medium mr-2"><Filter size={18} className="mr-2"/> กรองข้อมูล:</div>
                     <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกหน่วยงาน</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select>
@@ -1157,7 +1196,7 @@
                     </thead>
                     <tbody className="text-sm">
                         {filteredData.length === 0 ? (<tr><td colSpan="6" className="p-12 text-center text-gray-500 bg-white">ยังไม่มีข้อมูลในระบบ</td></tr>) : filteredData.slice().reverse().map(eq => (
-                        <tr key={eq.Id} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition">
+                        <tr key={eq.Id} onClick={() => onViewDetail(eq)} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition cursor-pointer group">
                             <td className="p-4">
                                 {eq.Image_URL ? (
                                     <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Image_URL} alt="eq" className="w-full h-full object-cover" /></div>
@@ -1165,7 +1204,7 @@
                                     <div className="w-12 h-12 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
                                 )}
                             </td>
-                            <td className="p-4 font-medium text-blue-700 font-mono">{eq.Id}</td>
+                            <td className="p-4 font-bold text-blue-600 font-mono group-hover:underline">{eq.Id}</td>
                             <td className="p-4">
                                 <div className="font-bold text-gray-800">{eq.name || '-'}</div>
                                 <div className="text-xs text-gray-500 mt-1">{eq.Type} • {eq.Id_equipment}</div>
@@ -1175,15 +1214,12 @@
                                 <div className="text-xs text-gray-400 mt-1">{eq.Location || '-'}</div>
                             </td>
                             <td className="p-4">{getStatusBadge(eq.Status)}</td>
-                            <td className="p-4 text-right">
+                            <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-end space-x-2">
-                                {["ชุดเครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา", "คอมพิวเตอร์แม่ข่าย"].some(t => eq.Type.includes(t)) && (
-                                    <button onClick={() => onAIAnalyze(eq)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 shadow-sm" title="AI วิเคราะห์"><Sparkles size={16}/></button>
-                                )}
                                 <button onClick={() => onEdit(eq)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไขข้อมูล"><Edit size={16}/></button>
                                 <button onClick={() => onShowQR(eq)} className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 shadow-sm" title="ดู QR Code"><QrCode size={16}/></button>
                                 <button onClick={() => onPrintSticker(eq)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 shadow-sm" title="พิมพ์สติกเกอร์"><Printer size={16}/></button>
-                                <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={16}/></button>
+                                <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="ลบข้อมูล"><Trash2 size={16}/></button>
                             </div>
                             </td>
                         </tr>
@@ -1195,12 +1231,25 @@
             );
         };
 
-        const SoftwareManager = ({ softwares, setSoftwares, equipments, apiCall, notify }) => {
+        const SoftwareManager = ({ softwares, setSoftwares, equipments, apiCall, notify, prefillAsset, setPrefillAsset }) => {
             const [view, setView] = useState('list');
             const [editingItem, setEditingItem] = useState(null);
 
+            useEffect(() => {
+                if(prefillAsset) {
+                    const existing = softwares.find(sw => sw.Computer_Name === prefillAsset);
+                    if(existing) {
+                        setEditingItem(existing);
+                    } else {
+                        setEditingItem({ id: generate5DigitId(softwares, 'id'), Computer_Name: prefillAsset, programs: [], customProgram: '' });
+                    }
+                    setView('form');
+                    setPrefillAsset(null);
+                }
+            }, [prefillAsset, softwares, setPrefillAsset]);
+
             const handleSave = async (data) => {
-                if (editingItem) {
+                if (softwares.find(sw => sw.id === data.id)) {
                     const success = await apiCall('Softwares', 'update', data);
                     if (success) {
                         setSoftwares(softwares.map(s => s.id === data.id ? data : s));
@@ -1214,6 +1263,7 @@
                         setSoftwares([...softwares, data]);
                         notify("บันทึกข้อมูลซอฟต์แวร์สำเร็จ");
                         setView('list');
+                        setEditingItem(null);
                     }
                 }
             };
@@ -1237,7 +1287,7 @@
                 <div className="space-y-4 animate-in fade-in duration-300">
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
                         <h3 className="text-lg font-bold text-gray-800">
-                            {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem ? 'แก้ไขซอฟต์แวร์' : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
+                            {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem && editingItem.Computer_Name ? `จัดการซอฟต์แวร์: ${editingItem.Computer_Name}` : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
                         </h3>
                         {view === 'list' ? (
                             <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
@@ -1290,7 +1340,7 @@
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเครื่องคอมพิวเตอร์ <span className="text-red-500">*</span></label>
-                    <select value={formData.Computer_Name} onChange={(e) => setFormData({...formData, Computer_Name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-white" required disabled={initialData}>
+                    <select value={formData.Computer_Name} onChange={(e) => setFormData({...formData, Computer_Name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-white" required disabled={initialData && initialData.Computer_Name !== ''}>
                         <option value="">-- เลือกจากฐานข้อมูลครุภัณฑ์ --</option>
                         {pcList.map(pc => <option key={pc.Id} value={pc.Id}>{pc.Id} - {pc.name || pc.Type} ({pc.department})</option>)}
                     </select>
@@ -1329,7 +1379,7 @@
                     <div className="pt-6 mt-4 border-t flex justify-end">
                     <button type="submit" className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center justify-center">
                         <Save className="w-5 h-5 mr-2" /> 
-                        {initialData ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
+                        {initialData && initialData.Computer_Name ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
                     </button>
                     </div>
                 </form>
@@ -1543,7 +1593,7 @@
             );
         };
 
-        function RepairForm({ notify, apiCall, tickets, setTickets, departments, equipments = [] }) {
+        function RepairForm({ notify, apiCall, tickets, setTickets, departments, equipments = [], prefillAsset, setPrefillAsset }) {
             const [description, setDescription] = useState('');
             const [aiAdviceModal, setAiAdviceModal] = useState({ isOpen: false, text: '', isError: false });
             const [aiAdviceInlineError, setAiAdviceInlineError] = useState(null);
@@ -1558,6 +1608,13 @@
             const [filteredEqs, setFilteredEqs] = useState([]);
             const [showEqSuggestions, setShowEqSuggestions] = useState(false);
             const [showScanner, setShowScanner] = useState(false);
+
+            useEffect(() => {
+                if(prefillAsset) {
+                    setAssetId(prefillAsset);
+                    setPrefillAsset(null); 
+                }
+            }, [prefillAsset, setPrefillAsset]);
 
             const handleAssetIdChange = (e) => {
                 const val = e.target.value;
@@ -1799,604 +1856,620 @@
                                 </div>
                             </div>
                             <div className="p-6 bg-white border-t border-gray-100 flex gap-3">
-                                <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
-                                    ปิดหน้าต่าง
-                                </button>
-                                <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
-                                    <Send size={18}/> ดำเนินการส่งแจ้งซ่อมต่อ
-                                </button>
-                            </div>
+                            <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
+                                ปิดหน้าต่าง
+                            </button>
+                            <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); /* Trigger form submit is complex via ref, so user just clicks send themselves. */ }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
+                                <Send size={18}/> ทราบและดำเนินการซ่อมต่อ
+                            </button>
                         </div>
                     </div>
-                )}
                 </div>
-            );
-        }
+            )}
+            </div>
+        );
+    }
 
-        function DataQueryForm({ notify, apiCall, tickets, setTickets, departments }) {
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const ticketData = {
-                    Ticket_ID: generateTicketId(tickets),
-                    Type: "ขอข้อมูล/รายงาน",
-                    Requester: form.requester.value,
-                    Department: form.department.value,
-                    Asset_ID: "-",
-                    Device_Type: "Data",
-                    Description: `เรื่อง: ${form.topic.value}\nเงื่อนไข: ${form.criteria.value}`,
-                    Urgency: "ทั่วไป",
-                    Status: "Pending",
-                    Assignee: "-",
-                    Device_Status: "-", Repair: "-", Reason: "-", Buy: "[]", Cost: 0, Estimate: "-", Finished_At: "-",
-                    Created_At: new Date().toLocaleString('th-TH')
-                };
-
-                const success = await apiCall('Tickets', 'append', ticketData);
-                if(success) {
-                    setTickets([...tickets, ticketData]);
-                    notify(`ส่งคำร้องขอข้อมูลสำเร็จ (Ticket ID: ${ticketData.Ticket_ID})`);
-                    form.reset();
-                }
+    function DataQueryForm({ notify, apiCall, tickets, setTickets, departments }) {
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const ticketData = {
+                Ticket_ID: generateTicketId(tickets),
+                Type: "ขอข้อมูล/รายงาน",
+                Requester: form.requester.value,
+                Department: form.department.value,
+                Asset_ID: "-",
+                Device_Type: "Data",
+                Description: `เรื่อง: ${form.topic.value}\nเงื่อนไข: ${form.criteria.value}`,
+                Urgency: "ทั่วไป",
+                Status: "Pending",
+                Assignee: "-",
+                Device_Status: "-", Repair: "-", Reason: "-", Buy: "[]", Cost: 0, Estimate: "-", Finished_At: "-",
+                Created_At: new Date().toLocaleString('th-TH')
             };
 
-            return (
-                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
-                <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-4 md:px-8 py-5 text-white flex items-center gap-3 -mx-4 -mt-4 md:-mx-8 md:-mt-8 mb-6"><Database className="w-6 h-6 text-purple-200 shrink-0" /><h2 className="text-xl font-bold">แบบฟอร์มขอข้อมูล / รายงาน (Data Query)</h2></div>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้ขอข้อมูล <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700">หน่วยงาน <span className="text-red-500">*</span></label>
-                        <select name="department" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none bg-white" required>
-                            <option value="">-- เลือกหน่วยงาน --</option>
-                            {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
-                        </select>
-                    </div>
-                    </div>
-                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">หัวข้อรายงานที่ต้องการ <span className="text-red-500">*</span></label><input type="text" name="topic" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
-                    <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">รายละเอียดเงื่อนไข (Criteria) <span className="text-red-500">*</span></label><textarea name="criteria" rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 resize-none" placeholder="ระบุเงื่อนไข เช่น ช่วงเวลา, ฟิลด์ที่ต้องการ" required></textarea></div>
-                    <div className="pt-4 border-t"><button type="submit" className="w-full bg-purple-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-purple-700 flex items-center justify-center gap-2"><Send className="w-5 h-5" /> ส่งคำขอข้อมูล</button></div>
-                </form>
+            const success = await apiCall('Tickets', 'append', ticketData);
+            if(success) {
+                setTickets([...tickets, ticketData]);
+                notify(`ส่งคำร้องขอข้อมูลสำเร็จ (Ticket ID: ${ticketData.Ticket_ID})`);
+                form.reset();
+            }
+        };
+
+        return (
+            <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-300">
+            <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-4 md:px-8 py-5 text-white flex items-center gap-3 -mx-4 -mt-4 md:-mx-8 md:-mt-8 mb-6"><Database className="w-6 h-6 text-purple-200 shrink-0" /><h2 className="text-xl font-bold">แบบฟอร์มขอข้อมูล / รายงาน (Data Query)</h2></div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">ชื่อผู้ขอข้อมูล <span className="text-red-500">*</span></label><input type="text" name="requester" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
+                <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700">หน่วยงาน <span className="text-red-500">*</span></label>
+                    <select name="department" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none bg-white" required>
+                        <option value="">-- เลือกหน่วยงาน --</option>
+                        {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
+                    </select>
                 </div>
-            );
-        }
+                </div>
+                <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">หัวข้อรายงานที่ต้องการ <span className="text-red-500">*</span></label><input type="text" name="topic" className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500" required /></div>
+                <div className="space-y-1.5"><label className="text-sm font-bold text-slate-700">รายละเอียดเงื่อนไข (Criteria) <span className="text-red-500">*</span></label><textarea name="criteria" rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 resize-none" placeholder="ระบุเงื่อนไข เช่น ช่วงเวลา, ฟิลด์ที่ต้องการ" required></textarea></div>
+                <div className="pt-4 border-t"><button type="submit" className="w-full bg-purple-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-purple-700 flex items-center justify-center gap-2"><Send className="w-5 h-5" /> ส่งคำขอข้อมูล</button></div>
+            </form>
+            </div>
+        );
+    }
 
-        function TicketTracker({ tickets, departments }) {
-            const [filterDept, setFilterDept] = useState('');
-            const filteredTickets = tickets.filter(t => filterDept === '' || t.Department === filterDept);
+    function TicketTracker({ tickets, departments }) {
+        const [filterDept, setFilterDept] = useState('');
+        const [hasSearched, setHasSearched] = useState(false);
 
-            const pending = filteredTickets.filter(t => t.Status === 'Pending');
-            const inProgress = filteredTickets.filter(t => t.Status === 'In Progress');
-            const completed = filteredTickets.filter(t => t.Status === 'Completed');
+        const handleSearch = () => {
+            setHasSearched(true);
+        };
 
-            return (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LayoutList className="text-blue-600"/> กระดานติดตามสถานะงาน</h2>
-                        <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2.5 border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500 w-full sm:w-64 bg-slate-50 cursor-pointer">
+        const filteredTickets = tickets.filter(t => filterDept === '' || t.Department === filterDept);
+
+        const pending = filteredTickets.filter(t => t.Status === 'Pending');
+        const inProgress = filteredTickets.filter(t => t.Status === 'In Progress');
+        const completed = filteredTickets.filter(t => t.Status === 'Completed');
+
+        return (
+            <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><LayoutList className="text-blue-600"/> กระดานติดตามสถานะงาน</h2>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <select value={filterDept} onChange={e => { setFilterDept(e.target.value); setHasSearched(false); }} className="p-2.5 border border-slate-300 rounded-xl text-sm outline-none focus:border-blue-500 flex-1 sm:w-64 bg-slate-50 cursor-pointer">
                             <option value="">-- ดูทุกหน่วยงาน --</option>
                             {departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}
                         </select>
+                        <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-sm whitespace-nowrap">
+                            ค้นหา
+                        </button>
                     </div>
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <TicketColumn title="รอดำเนินการ (Pending)" tickets={pending} bgColor="bg-orange-50" borderColor="border-orange-200" titleColor="text-orange-800" icon={<AlertTriangle size={18}/>} />
+                {hasSearched ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in">
+                        <TicketColumn title="รอดำเนินการ (Pending)" tickets={pending} bgColor="bg-red-50" borderColor="border-red-200" titleColor="text-red-800" icon={<AlertTriangle size={18}/>} />
                         <TicketColumn title="กำลังดำเนินการ (In Progress)" tickets={inProgress} bgColor="bg-blue-50" borderColor="border-blue-200" titleColor="text-blue-800" icon={<RefreshCw size={18} className="animate-spin-slow"/>} />
                         <TicketColumn title="เสร็จสิ้น (Completed)" tickets={completed} bgColor="bg-emerald-50" borderColor="border-emerald-200" titleColor="text-emerald-800" icon={<CheckCircle size={18}/>} />
                     </div>
-                </div>
-            );
-        }
-
-        function TicketColumn({ title, tickets, bgColor, borderColor, titleColor, icon }) {
-            return (
-                <div className={`rounded-2xl border ${borderColor} flex flex-col h-full overflow-hidden bg-white shadow-sm`}>
-                    <div className={`p-4 ${bgColor} border-b ${borderColor} flex justify-between items-center`}>
-                        <h3 className={`font-bold flex items-center gap-2 ${titleColor}`}>{icon} {title}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-white shadow-sm ${titleColor}`}>{tickets.length}</span>
+                ) : (
+                    <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
+                        <Search className="w-12 h-12 text-slate-300 mb-4" />
+                        <p className="text-slate-500 font-medium">กรุณาเลือกหน่วยงานและกดปุ่ม "ค้นหา" เพื่อติดตามสถานะงานซ่อม</p>
                     </div>
-                    <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-50/50 max-h-[600px] custom-scrollbar">
-                        {tickets.length === 0 ? (
-                            <div className="text-center text-slate-400 py-8 text-sm">ไม่มีข้อมูล</div>
-                        ) : (
-                            tickets.slice().reverse().map(t => (
-                                <div key={t.Ticket_ID} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition relative">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.Ticket_ID}</span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : t.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{t.Urgency}</span>
+                )}
+            </div>
+        );
+    }
+
+    function TicketColumn({ title, tickets, bgColor, borderColor, titleColor, icon }) {
+        return (
+            <div className={`rounded-2xl border ${borderColor} flex flex-col h-full overflow-hidden bg-white shadow-sm`}>
+                <div className={`p-4 ${bgColor} border-b ${borderColor} flex justify-between items-center`}>
+                    <h3 className={`font-bold flex items-center gap-2 ${titleColor}`}>{icon} {title}</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-white shadow-sm ${titleColor}`}>{tickets.length}</span>
+                </div>
+                <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-slate-50/50 max-h-[600px] custom-scrollbar">
+                    {tickets.length === 0 ? (
+                        <div className="text-center text-slate-400 py-8 text-sm">ไม่มีข้อมูล</div>
+                    ) : (
+                        tickets.slice().reverse().map(t => (
+                            <div key={t.Ticket_ID} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition relative">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.Ticket_ID}</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : t.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{t.Urgency}</span>
+                                </div>
+                                <h4 className="font-bold text-sm text-slate-800 mb-1">{t.Device_Type !== 'Data' ? 'แจ้งซ่อม' : 'ขอข้อมูล/รายงาน'}</h4>
+                                <p className="text-xs text-slate-600 line-clamp-2 mb-3">{(t.Description || '').split('\n')[0]}</p>
+                                <div className="flex justify-between items-end border-t border-slate-100 pt-2 mt-2">
+                                    <div>
+                                        <p className="text-[10px] text-slate-500 font-medium">{t.Requester}</p>
+                                        <p className="text-[10px] text-slate-400 truncate w-32">{t.Department}</p>
                                     </div>
-                                    <h4 className="font-bold text-sm text-slate-800 mb-1">{t.Device_Type !== 'Data' ? 'แจ้งซ่อม' : 'ขอข้อมูล/รายงาน'}</h4>
-                                    <p className="text-xs text-slate-600 line-clamp-2 mb-3">{(t.Description || '').split('\n')[0]}</p>
-                                    <div className="flex justify-between items-end border-t border-slate-100 pt-2 mt-2">
-                                        <div>
-                                            <p className="text-[10px] text-slate-500 font-medium">{t.Requester}</p>
-                                            <p className="text-[10px] text-slate-400 truncate w-32">{t.Department}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock size={10}/> {t.Created_At?.split(' ')[0]}</p>
-                                            <p className="text-[10px] font-bold text-indigo-600 mt-0.5 whitespace-nowrap">ช่าง: {t.Assignee !== '-' ? t.Assignee : 'รอรับงาน'}</p>
-                                        </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock size={10}/> {t.Created_At?.split(' ')[0]}</p>
+                                        <p className="text-[10px] font-bold text-indigo-600 mt-0.5 whitespace-nowrap">ช่าง: {t.Assignee !== '-' ? t.Assignee : 'รอรับงาน'}</p>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        const TicketUpdateModal = ({ ticket, onClose, onSave }) => {
-            const [status, setStatus] = useState(ticket.Status || 'Pending');
-            const [deviceStatus, setDeviceStatus] = useState((ticket.Device_Status && ticket.Device_Status !== "-") ? ticket.Device_Status : "พร้อมใช้งาน");
-            const [repair, setRepair] = useState((ticket.Repair && ticket.Repair !== "-") ? ticket.Repair : "");
-            const [reason, setReason] = useState((ticket.Reason && ticket.Reason !== "-") ? ticket.Reason : "");
-            const [estimate, setEstimate] = useState((ticket.Estimate && ticket.Estimate !== "-") ? ticket.Estimate : "");
-            
-            let initialBuyItems = [];
-            if (typeof ticket.Buy === 'string') {
-                initialBuyItems = safeJsonParse(ticket.Buy, []);
-            } else if (Array.isArray(ticket.Buy)) {
-                initialBuyItems = ticket.Buy;
-            }
-            const [buyItems, setBuyItems] = useState(initialBuyItems);
-
-            const handleAddBuyItem = () => setBuyItems([...buyItems, { item: '', price: 0 }]);
-            const handleBuyChange = (index, field, value) => {
-                const newItems = [...buyItems];
-                newItems[index][field] = value;
-                setBuyItems(newItems);
-            };
-            const handleRemoveBuyItem = (index) => setBuyItems(buyItems.filter((_, i) => i !== index));
-
-            const totalCost = buyItems.reduce((sum, current) => sum + Number(current.price || 0), 0);
-
-            const handleSave = () => {
-                const updatedTicket = {
-                    ...ticket,
-                    Status: status,
-                    Device_Status: deviceStatus,
-                    Repair: repair || "-",
-                    Reason: reason || "-",
-                    Buy: JSON.stringify(buyItems),
-                    Cost: totalCost,
-                    Estimate: estimate || "-",
-                    Finished_At: status === "Completed" ? new Date().toLocaleString('th-TH') : ticket.Finished_At
-                };
-                onSave(updatedTicket);
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-2xl max-h-[90vh]">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Edit className="text-blue-600"/> อัปเดตใบงาน {ticket.Ticket_ID}</h3>
-                                <p className="text-sm text-slate-500 mt-1">{(ticket.Description || '').split('\n')[0]}</p>
                             </div>
-                            <button onClick={onClose} className="p-2 bg-white rounded-lg border hover:bg-slate-100 transition"><X size={20}/></button>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    const TicketUpdateModal = ({ ticket, onClose, onSave }) => {
+        const [status, setStatus] = useState(ticket.Status || 'Pending');
+        const [deviceStatus, setDeviceStatus] = useState((ticket.Device_Status && ticket.Device_Status !== "-") ? ticket.Device_Status : "พร้อมใช้งาน");
+        const [repair, setRepair] = useState((ticket.Repair && ticket.Repair !== "-") ? ticket.Repair : "");
+        const [reason, setReason] = useState((ticket.Reason && ticket.Reason !== "-") ? ticket.Reason : "");
+        const [estimate, setEstimate] = useState((ticket.Estimate && ticket.Estimate !== "-") ? ticket.Estimate : "");
+        
+        let initialBuyItems = [];
+        if (typeof ticket.Buy === 'string') {
+            initialBuyItems = safeJsonParse(ticket.Buy, []);
+        } else if (Array.isArray(ticket.Buy)) {
+            initialBuyItems = ticket.Buy;
+        }
+        const [buyItems, setBuyItems] = useState(initialBuyItems);
+
+        const handleAddBuyItem = () => setBuyItems([...buyItems, { item: '', price: 0 }]);
+        const handleBuyChange = (index, field, value) => {
+            const newItems = [...buyItems];
+            newItems[index][field] = value;
+            setBuyItems(newItems);
+        };
+        const handleRemoveBuyItem = (index) => setBuyItems(buyItems.filter((_, i) => i !== index));
+
+        const totalCost = buyItems.reduce((sum, current) => sum + Number(current.price || 0), 0);
+
+        const handleSave = () => {
+            const updatedTicket = {
+                ...ticket,
+                Status: status,
+                Device_Status: deviceStatus,
+                Repair: repair || "-",
+                Reason: reason || "-",
+                Buy: JSON.stringify(buyItems),
+                Cost: totalCost,
+                Estimate: estimate || "-",
+                Finished_At: status === "Completed" ? new Date().toLocaleString('th-TH') : ticket.Finished_At
+            };
+            onSave(updatedTicket);
+        };
+
+        return (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+                <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-2xl max-h-[90vh]">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Edit className="text-blue-600"/> อัปเดตใบงาน {ticket.Ticket_ID}</h3>
+                            <p className="text-sm text-slate-500 mt-1">{(ticket.Description || '').split('\n')[0]}</p>
                         </div>
+                        <button onClick={onClose} className="p-2 bg-white rounded-lg border hover:bg-slate-100 transition"><X size={20}/></button>
+                    </div>
 
-                        <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-700">สถานะงาน (Job Status)</label>
-                                    <select value={status} onChange={e=>setStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
-                                        <option value="Pending">รอรับเรื่อง (Pending)</option>
-                                        <option value="In Progress">กำลังดำเนินการ (In Progress)</option>
-                                        <option value="Completed">เสร็จสิ้น (Completed)</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-slate-700">สถานะอุปกรณ์ปัจจุบัน</label>
-                                    <select value={deviceStatus} onChange={e=>setDeviceStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
-                                        <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
-                                        <option value="ส่งซ่อม">ส่งซ่อม</option>
-                                        <option value="แทงชำรุด">แทงชำรุด</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5 border-t pt-4">
-                                <label className="text-sm font-bold text-slate-700">การดำเนินการของช่าง (Repair Detail)</label>
-                                <select value={repair} onChange={e=>setRepair(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
-                                    <option value="">-- เลือกการดำเนินการ --</option>
-                                    <option value="ซ่อมได้ไม่เสียค่าใช้จ่าย">ซ่อมได้ไม่เสียค่าใช้จ่าย</option>
-                                    <option value="ซ่อมไม่ได้แจ้งชำรุด">ซ่อมไม่ได้แจ้งชำรุด</option>
-                                    <option value="ซ่อมได้/ใช้งบวัสดุซื้อดังนี้">ซ่อมได้ / ใช้งบวัสดุซื้อ</option>
-                                    <option value="เห็นควรจ้างซ่อม/จัดทำเนื่องจาก">เห็นควรจ้างซ่อม / จัดทำเนื่องจาก</option>
-                                    <option value="กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน">กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน</option>
+                    <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-slate-700">สถานะงาน (Job Status)</label>
+                                <select value={status} onChange={e=>setStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                    <option value="Pending">รอรับเรื่อง (Pending)</option>
+                                    <option value="In Progress">กำลังดำเนินการ (In Progress)</option>
+                                    <option value="Completed">เสร็จสิ้น (Completed)</option>
                                 </select>
                             </div>
-
-                            {repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' && (
-                                <div className="space-y-1.5 animate-in fade-in">
-                                    <label className="text-sm font-bold text-slate-700">เหตุผลที่เห็นควรจ้างซ่อม</label>
-                                    <textarea value={reason} onChange={e=>setReason(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none resize-none" rows="3"></textarea>
-                                </div>
-                            )}
-
-                            {repair === 'กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน' && (
-                                <div className="space-y-1.5 animate-in fade-in">
-                                    <label className="text-sm font-bold text-slate-700">วันที่แจ้งบริษัท / คาดการณ์แล้วเสร็จ</label>
-                                    <input type="date" value={estimate} onChange={e=>setEstimate(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none" />
-                                </div>
-                            )}
-
-                            {repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' && (
-                                <div className="space-y-3 animate-in fade-in bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                    <label className="text-sm font-bold text-slate-700 flex justify-between items-center">
-                                        รายการขอซื้ออะไหล่/วัสดุ
-                                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">รวม: {totalCost} ฿</span>
-                                    </label>
-                                    {buyItems.map((b, i) => (
-                                        <div key={i} className="flex gap-2 items-center">
-                                            <input type="text" placeholder="ชื่ออุปกรณ์" value={b.item} onChange={e=>handleBuyChange(i, 'item', e.target.value)} className="flex-1 border rounded p-2 text-sm" />
-                                            <input type="number" placeholder="ราคา" value={b.price} onChange={e=>handleBuyChange(i, 'price', e.target.value)} className="w-24 border rounded p-2 text-sm" />
-                                            <button onClick={()=>handleRemoveBuyItem(i)} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
-                                        </div>
-                                    ))}
-                                    <button onClick={handleAddBuyItem} className="text-xs text-blue-600 font-bold flex items-center mt-2"><PlusCircle size={14} className="mr-1"/> เพิ่มรายการอะไหล่</button>
-                                </div>
-                            )}
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-slate-700">สถานะอุปกรณ์ปัจจุบัน</label>
+                                <select value={deviceStatus} onChange={e=>setDeviceStatus(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                    <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+                                    <option value="ส่งซ่อม">ส่งซ่อม</option>
+                                    <option value="แทงชำรุด">แทงชำรุด</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div className="p-6 border-t border-slate-100 flex gap-3 bg-slate-50 rounded-b-2xl">
-                            <button onClick={onClose} className="px-6 py-2.5 border bg-white rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
-                            <button onClick={handleSave} className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center shadow-sm transition"><Save size={18} className="mr-2"/> บันทึกการอัปเดต</button>
+                        <div className="space-y-1.5 border-t pt-4">
+                            <label className="text-sm font-bold text-slate-700">การดำเนินการของช่าง (Repair Detail)</label>
+                            <select value={repair} onChange={e=>setRepair(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none bg-white">
+                                <option value="">-- เลือกการดำเนินการ --</option>
+                                <option value="ซ่อมได้ไม่เสียค่าใช้จ่าย">ซ่อมได้ไม่เสียค่าใช้จ่าย</option>
+                                <option value="ซ่อมไม่ได้แจ้งชำรุด">ซ่อมไม่ได้แจ้งชำรุด</option>
+                                <option value="ซ่อมได้/ใช้งบวัสดุซื้อดังนี้">ซ่อมได้ / ใช้งบวัสดุซื้อ</option>
+                                <option value="เห็นควรจ้างซ่อม/จัดทำเนื่องจาก">เห็นควรจ้างซ่อม / จัดทำเนื่องจาก</option>
+                                <option value="กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน">กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน</option>
+                            </select>
                         </div>
+
+                        {repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' && (
+                            <div className="space-y-1.5 animate-in fade-in">
+                                <label className="text-sm font-bold text-slate-700">เหตุผลที่เห็นควรจ้างซ่อม</label>
+                                <textarea value={reason} onChange={e=>setReason(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none resize-none" rows="3"></textarea>
+                            </div>
+                        )}
+
+                        {repair === 'กรณีส่งซ่อมแล้วแจ้งบริษัท/ร้าน' && (
+                            <div className="space-y-1.5 animate-in fade-in">
+                                <label className="text-sm font-bold text-slate-700">วันที่แจ้งบริษัท / คาดการณ์แล้วเสร็จ</label>
+                                <input type="date" value={estimate} onChange={e=>setEstimate(e.target.value)} className="w-full border rounded-lg p-2.5 outline-none" />
+                            </div>
+                        )}
+
+                        {repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' && (
+                            <div className="space-y-3 animate-in fade-in bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label className="text-sm font-bold text-slate-700 flex justify-between items-center">
+                                    รายการขอซื้ออะไหล่/วัสดุ
+                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">รวม: {totalCost} ฿</span>
+                                </label>
+                                {buyItems.map((b, i) => (
+                                    <div key={i} className="flex gap-2 items-center">
+                                        <input type="text" placeholder="ชื่ออุปกรณ์" value={b.item} onChange={e=>handleBuyChange(i, 'item', e.target.value)} className="flex-1 border rounded p-2 text-sm" />
+                                        <input type="number" placeholder="ราคา" value={b.price} onChange={e=>handleBuyChange(i, 'price', e.target.value)} className="w-24 border rounded p-2 text-sm" />
+                                        <button onClick={()=>handleRemoveBuyItem(i)} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+                                    </div>
+                                ))}
+                                <button onClick={handleAddBuyItem} className="text-xs text-blue-600 font-bold flex items-center mt-2"><PlusCircle size={14} className="mr-1"/> เพิ่มรายการอะไหล่</button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-6 border-t border-slate-100 flex gap-3 bg-slate-50 rounded-b-2xl">
+                        <button onClick={onClose} className="px-6 py-2.5 border bg-white rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition">ยกเลิก</button>
+                        <button onClick={handleSave} className="flex-1 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 flex items-center justify-center shadow-sm transition"><Save size={18} className="mr-2"/> บันทึกการอัปเดต</button>
                     </div>
                 </div>
-            )
-        }
+            </div>
+        )
+    }
 
-        function StaffWorkload({ notify, apiCall, tickets, setTickets, staffList, equipments }) {
-            const unassignedTickets = tickets.filter(t => t.Assignee === "-" || !t.Assignee);
-            const activeTickets = tickets.filter(t => t.Assignee !== "-" && t.Status !== "Completed");
-            const completedTickets = tickets.filter(t => t.Status === "Completed");
+    function StaffWorkload({ notify, apiCall, tickets, setTickets, staffList, equipments }) {
+        const unassignedTickets = tickets.filter(t => t.Assignee === "-" || !t.Assignee);
+        const activeTickets = tickets.filter(t => t.Assignee !== "-" && t.Status !== "Completed");
+        const completedTickets = tickets.filter(t => t.Status === "Completed");
 
-            const [selectedTicketForUpdate, setSelectedTicketForUpdate] = useState(null);
+        const [selectedTicketForUpdate, setSelectedTicketForUpdate] = useState(null);
 
-            const staffWorkloads = staffList.map(staff => {
-                const myActive = tickets.filter(t => t.Assignee === staff.Name && t.Status === "In Progress").length;
-                const myQueue = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Pending").length;
-                const myCompleted = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Completed").length;
-                return {
-                    ...staff,
-                    activeJobs: myActive,
-                    queue: myQueue,
-                    completed: myCompleted,
-                    status: (myActive + myQueue) > 0 ? "Busy" : "Available"
-                };
-            });
-
-            const handleAssign = async (staffName, ticket) => {
-                const newStatus = ticket.Assignee === "-" ? "Pending" : ticket.Status;
-                const updatedTicket = { ...ticket, Assignee: staffName, Status: newStatus };
-                const success = await apiCall('Tickets', 'update', updatedTicket);
-                if(success) {
-                    setTickets(tickets.map(t => t.Ticket_ID === ticket.Ticket_ID ? updatedTicket : t));
-                    notify(`มอบหมายงาน ${ticket.Ticket_ID} ให้คุณ ${staffName} เรียบร้อย`);
-                }
+        const staffWorkloads = staffList.map(staff => {
+            const myActive = tickets.filter(t => t.Assignee === staff.Name && t.Status === "In Progress").length;
+            const myQueue = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Pending").length;
+            const myCompleted = tickets.filter(t => t.Assignee === staff.Name && t.Status === "Completed").length;
+            return {
+                ...staff,
+                activeJobs: myActive,
+                queue: myQueue,
+                completed: myCompleted,
+                status: (myActive + myQueue) > 0 ? "Busy" : "Available"
             };
+        });
 
-            const handleSaveUpdate = async (updatedTicket) => {
-                const success = await apiCall('Tickets', 'update', updatedTicket);
-                if(success) {
-                    setTickets(tickets.map(t => t.Ticket_ID === updatedTicket.Ticket_ID ? updatedTicket : t));
-                    notify(`อัปเดตใบงาน ${updatedTicket.Ticket_ID} เรียบร้อย`);
-                    
-                    if (updatedTicket.Asset_ID && updatedTicket.Asset_ID !== "-") {
-                        const eqToUpdate = equipments.find(e => e.Id === updatedTicket.Asset_ID || e.Id_equipment === updatedTicket.Asset_ID);
-                        if (eqToUpdate && eqToUpdate.Status !== updatedTicket.Device_Status) {
-                            await apiCall('Equipments', 'update', { ...eqToUpdate, Status: updatedTicket.Device_Status });
-                        }
+        const handleAssign = async (staffName, ticket) => {
+            const newStatus = ticket.Assignee === "-" ? "Pending" : ticket.Status;
+            const updatedTicket = { ...ticket, Assignee: staffName, Status: newStatus };
+            const success = await apiCall('Tickets', 'update', updatedTicket);
+            if(success) {
+                setTickets(tickets.map(t => t.Ticket_ID === ticket.Ticket_ID ? updatedTicket : t));
+                notify(`มอบหมายงาน ${ticket.Ticket_ID} ให้คุณ ${staffName} เรียบร้อย`);
+            }
+        };
+
+        const handleSaveUpdate = async (updatedTicket) => {
+            const success = await apiCall('Tickets', 'update', updatedTicket);
+            if(success) {
+                setTickets(tickets.map(t => t.Ticket_ID === updatedTicket.Ticket_ID ? updatedTicket : t));
+                notify(`อัปเดตใบงาน ${updatedTicket.Ticket_ID} เรียบร้อย`);
+                
+                if (updatedTicket.Asset_ID && updatedTicket.Asset_ID !== "-") {
+                    const eqToUpdate = equipments.find(e => e.Id === updatedTicket.Asset_ID || e.Id_equipment === updatedTicket.Asset_ID);
+                    if (eqToUpdate && eqToUpdate.Status !== updatedTicket.Device_Status) {
+                        await apiCall('Equipments', 'update', { ...eqToUpdate, Status: updatedTicket.Device_Status });
                     }
-                    setSelectedTicketForUpdate(null);
                 }
-            };
+                setSelectedTicketForUpdate(null);
+            }
+        };
 
-            // ฟังก์ชันสำหรับสร้างเอกสารใบส่งซ่อม PDF
-            const generateRepairDoc = (ticket) => {
-                const eq = equipments.find(e => e.Id === ticket.Asset_ID || e.Id_equipment === ticket.Asset_ID) || {};
-                
-                const pastTickets = tickets.filter(t => 
-                    (t.Asset_ID === ticket.Asset_ID) && 
-                    (t.Ticket_ID !== ticket.Ticket_ID) && 
-                    (t.Status === 'Completed') &&
-                    t.Created_At && ticket.Created_At &&
-                    (new Date(t.Created_At.split(' ')[0].split('/').reverse().join('-')) < new Date(ticket.Created_At.split(' ')[0].split('/').reverse().join('-')))
-                ).sort((a,b) => new Date(b.Created_At.split(' ')[0].split('/').reverse().join('-')) - new Date(a.Created_At.split(' ')[0].split('/').reverse().join('-')));
-                
-                const lastTicket = pastTickets.length > 0 ? pastTickets[0] : null;
-                const lastDate = lastTicket && lastTicket.Finished_At && lastTicket.Finished_At !== '-' ? lastTicket.Finished_At.split(' ')[0] : '-';
-                const lastReason = lastTicket ? (lastTicket.Description || '-') : '-';
+        const generateRepairDoc = (ticket) => {
+            const eq = equipments.find(e => e.Id === ticket.Asset_ID || e.Id_equipment === ticket.Asset_ID) || {};
+            
+            const pastTickets = tickets.filter(t => 
+                (t.Asset_ID === ticket.Asset_ID) && 
+                (t.Ticket_ID !== ticket.Ticket_ID) && 
+                (t.Status === 'Completed') &&
+                t.Created_At && ticket.Created_At &&
+                (new Date(t.Created_At.split(' ')[0].split('/').reverse().join('-')) < new Date(ticket.Created_At.split(' ')[0].split('/').reverse().join('-')))
+            ).sort((a,b) => new Date(b.Created_At.split(' ')[0].split('/').reverse().join('-')) - new Date(a.Created_At.split(' ')[0].split('/').reverse().join('-')));
+            
+            const lastTicket = pastTickets.length > 0 ? pastTickets[0] : null;
+            const lastDate = lastTicket && lastTicket.Finished_At && lastTicket.Finished_At !== '-' ? lastTicket.Finished_At.split(' ')[0] : '-';
+            const lastReason = lastTicket ? (lastTicket.Description || '-') : '-';
 
-                let buyItemsStr = "-";
-                if(ticket.Buy && ticket.Buy !== "-" && ticket.Buy !== "[]") {
-                    try {
-                        const parsed = JSON.parse(ticket.Buy);
-                        if(Array.isArray(parsed) && parsed.length > 0) {
-                            buyItemsStr = parsed.map(item => `${item.item} (${item.price} บ.)`).join(', ');
-                        }
-                    } catch(e){}
-                }
-
-                const printWindow = window.open('', '_blank');
-                if(!printWindow) {
-                    alert("เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up เพื่อพิมพ์เอกสารครับ");
-                    return;
-                }
-
-                // แปลงข้อมูลที่อาจจะยังไม่มีให้เป็นช่องว่างเพื่อให้พิมพ์ออกมาสวยงาม
-                const repairText = ticket.Repair && ticket.Repair !== '-' ? ticket.Repair : '';
-                const reasonText = ticket.Reason && ticket.Reason !== '-' ? ticket.Reason : '';
-                const estimateText = ticket.Estimate && ticket.Estimate !== '-' ? ticket.Estimate : '';
-                const assigneeText = ticket.Assignee && ticket.Assignee !== '-' ? ticket.Assignee : '...................................................';
-                const finishedAtText = ticket.Finished_At && ticket.Finished_At !== '-' ? ticket.Finished_At.split(' ')[0] : '......./......./.......';
-
-                printWindow.document.write(`
-                    <html>
-                    <head>
-                        <title>ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์ - ${ticket.Ticket_ID}</title>
-                        <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                            @page { size: A4; margin: 1.5cm 2cm; }
-                            body { font-family: 'Sarabun', sans-serif; font-size: 13pt; color: #000; line-height: 1.4; } /* ลดตัวอักษร 2px */
-                            .container { max-width: 100%; margin: auto; }
-                            .header { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
-                            .right-align { text-align: right; }
-                            .mt-2 { margin-top: 0.5rem; }
-                            .mt-4 { margin-top: 1rem; }
-                            .mt-8 { margin-top: 2rem; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 12pt; }
-                            th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
-                            th { text-align: center; font-weight: bold; background: #f0f0f0; }
-                            .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 12pt; }
-                            .sig-col { width: 48%; }
-                            .indent { padding-left: 2rem; }
-                            .bold { font-weight: bold; }
-                            .underline { text-decoration: underline; }
-                            .text-center { text-align: center; }
-                            .border-none { border: none; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="header">ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์</div>
-                            <div class="right-align">เลขที่ <span class="bold">${ticket.Ticket_ID}</span></div>
-                            <div class="right-align">วันที่ <span class="bold">${ticket.Created_At?.split(' ')[0] || '......./......./.......'}</span></div>
-                            
-                            <div class="mt-2"><span class="bold">ฝ่าย/กลุ่มงาน:</span> &nbsp;&nbsp;${ticket.Department}</div>
-                            <div><span class="bold">เรื่อง:</span> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
-                            <div><span class="bold">เรียน:</span> &nbsp;&nbsp;ผู้อำนวยการโรงพยาบาลสวี</div>
-                            
-                            <div class="mt-4 indent">เนื่องด้วยฝ่าย/กลุ่มงาน <span class="bold">${ticket.Department}</span> มีความประสงค์ที่จะส่งซ่อมบำรุงดังนี้</div>
-                            
-                            <table>
-                                <tr>
-                                    <th width="20%">รายการ</th>
-                                    <th width="40%">เนื่องจาก</th>
-                                    <th width="20%">หมายเลขครุภัณฑ์</th>
-                                    <th width="20%">สถานที่ตั้ง</th>
-                                </tr>
-                                <tr>
-                                    <td>${ticket.Device_Type}</td>
-                                    <td>${(ticket.Description || '').split('\n')[0]}</td>
-                                    <td>${ticket.Asset_ID}</td>
-                                    <td>${eq.Location || '-'}</td>
-                                </tr>
-                            </table>
-                            
-                            <div class="indent">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและดำเนินการต่อไป</div>
-                            
-                            <div class="right-align mt-4" style="padding-right: 2rem;">
-                                ลงชื่อ ........................................................... ผู้ส่งซ่อม<br>
-                                ( ${ticket.Requester} )<br>
-                                ${ticket.Created_At?.split(' ')[0] || '......./......./.......'}
-                            </div>
-
-                            <table style="margin-top: 20px;">
-                                <tr>
-                                    <td colspan="2" class="bold" style="background: #f0f0f0;">บันทึกงานซ่อมบำรุง (สำหรับเจ้าหน้าที่)</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="2">
-                                        <div style="min-height: 80px;">
-                                            <div><span class="bold">การดำเนินการ:</span> &nbsp;&nbsp;${repairText}</div>
-                                            ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><span class="bold">เหตุผล:</span> &nbsp;&nbsp;${reasonText}</div>` : ''}
-                                            ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
-                                                <div><span class="bold">รายการวัสดุ/อะไหล่:</span> &nbsp;&nbsp;${buyItemsStr}</div>
-                                                <div><span class="bold">รวมเป็นเงิน:</span> &nbsp;&nbsp;<span class="bold">${ticket.Cost}</span> บาท</div>
-                                            ` : ''}
-                                            <div class="mt-2"><span class="bold">เวลาที่คาดว่าจะซ่อมเสร็จ:</span> &nbsp;&nbsp;${estimateText}</div>
-                                            <div class="mt-4 right-align" style="padding-right: 2rem;">
-                                                ลงชื่อ ........................................................... ช่างผู้ดำเนินการ<br>
-                                                ( ${assigneeText} )<br>
-                                                ${finishedAtText}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px; border-right: 1px solid #000;">
-                                        เรียน ผู้อำนวยการโรงพยาบาลสวี<br>เพื่อโปรดพิจารณา<br>
-                                        (&nbsp;&nbsp;) ควรอนุมัติ/จัดซื้อวัสดุมาซ่อม/จัดทำอื่นๆ<br>
-                                        ...................................................<br><br><br>
-                                        ลงชื่อ...................................................<br>
-                                        หัวหน้ากลุ่มงานบริหารทั่วไป<br>
-                                        ......./......./.......
-                                    </td>
-                                    <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px;">
-                                        <span class="bold">ความเห็น ผู้อำนวยการโรงพยาบาลสวี</span><br>
-                                        (&nbsp;&nbsp;) ทราบ<br>
-                                        (&nbsp;&nbsp;) อนุมัติให้ดำเนินการตามเสนอ<br>
-                                        (&nbsp;&nbsp;) อื่นๆ..........................................<br><br><br>
-                                        ลงชื่อ...................................................<br>
-                                        ผู้อำนวยการโรงพยาบาลสวี<br>
-                                        ......./......./.......
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <table style="margin-top: 20px;">
-                                <tr>
-                                    <td class="bold" style="background: #f0f0f0;">บันทึกประวัติการซ่อมครุภัณฑ์</td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div style="min-height: 40px;">
-                                            <div><span class="bold">ครั้งสุดท้ายเมื่อ:</span> &nbsp;&nbsp;${lastDate}</div>
-                                            <div><span class="bold">เนื่องจาก:</span> &nbsp;&nbsp;${lastReason}</div>
-                                        </div>
-                                        <div class="mt-2 right-align" style="padding-right: 2rem;">
-                                            ลงชื่อ ........................................................... <br>
-                                            ( ${assigneeText} )<br>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                        <script>
-                            window.onload = function() {
-                                setTimeout(function() {
-                                    window.print();
-                                }, 800);
-                            };
-                        <\/script>
-                    </body>
-                    </html>
-                `);
-                printWindow.document.close();
-            };
-
-            if(staffList.length === 0) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-sm border border-slate-200">
-                        <Users className="w-12 h-12 text-slate-300 mb-4" />
-                        <h3 className="text-lg font-bold text-slate-700">ยังไม่มีรายชื่อพนักงานในระบบ</h3>
-                        <p className="text-slate-500 text-sm mt-2">โปรดไปที่เมนู "ตั้งค่า" เพื่อเพิ่มรายชื่อทีม IT ก่อนใช้งานกระดานรับงานครับ</p>
-                    </div>
-                );
+            let buyItemsStr = "-";
+            if(ticket.Buy && ticket.Buy !== "-" && ticket.Buy !== "[]") {
+                try {
+                    const parsed = JSON.parse(ticket.Buy);
+                    if(Array.isArray(parsed) && parsed.length > 0) {
+                        buyItemsStr = parsed.map(item => `${item.item} (${item.price} บ.)`).join(', ');
+                    }
+                } catch(e){}
             }
 
+            const printWindow = window.open('', '_blank');
+            if(!printWindow) {
+                alert("เบราว์เซอร์ของคุณบล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up เพื่อพิมพ์เอกสารครับ");
+                return;
+            }
+
+            const repairText = ticket.Repair && ticket.Repair !== '-' ? ticket.Repair : '';
+            const reasonText = ticket.Reason && ticket.Reason !== '-' ? ticket.Reason : '';
+            const estimateText = ticket.Estimate && ticket.Estimate !== '-' ? ticket.Estimate : '';
+            const assigneeText = ticket.Assignee && ticket.Assignee !== '-' ? ticket.Assignee : '...................................................';
+            const finishedAtText = ticket.Finished_At && ticket.Finished_At !== '-' ? ticket.Finished_At.split(' ')[0] : '......./......./.......';
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์ - ${ticket.Ticket_ID}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                        @page { size: A4; margin: 1.5cm 2cm; }
+                        body { font-family: 'Sarabun', sans-serif; font-size: 13pt; color: #000; line-height: 1.4; } 
+                        .container { max-width: 100%; margin: auto; }
+                        .header { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
+                        .right-align { text-align: right; }
+                        .mt-2 { margin-top: 0.5rem; }
+                        .mt-4 { margin-top: 1rem; }
+                        .mt-8 { margin-top: 2rem; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 12pt; }
+                        th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
+                        th { text-align: center; font-weight: bold; background: #f0f0f0; }
+                        .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 12pt; }
+                        .sig-col { width: 48%; }
+                        .indent { padding-left: 2rem; }
+                        .bold { font-weight: bold; }
+                        .underline { text-decoration: underline; }
+                        .text-center { text-align: center; }
+                        .border-none { border: none; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">ใบส่งซ่อมบำรุงพัสดุ/ครุภัณฑ์</div>
+                        <div class="right-align">เลขที่ <span class="bold">${ticket.Ticket_ID}</span></div>
+                        <div class="right-align">วันที่ <span class="bold">${ticket.Created_At?.split(' ')[0] || '......./......./.......'}</span></div>
+                        
+                        <div class="mt-2"><span class="bold">ฝ่าย/กลุ่มงาน:</span> &nbsp;&nbsp;${ticket.Department}</div>
+                        <div><span class="bold">เรื่อง:</span> &nbsp;&nbsp;ขออนุมัติซ่อมบำรุงครุภัณฑ์</div>
+                        <div><span class="bold">เรียน:</span> &nbsp;&nbsp;ผู้อำนวยการโรงพยาบาลสวี</div>
+                        
+                        <div class="mt-4 indent">เนื่องด้วยฝ่าย/กลุ่มงาน <span class="bold">${ticket.Department}</span> มีความประสงค์ที่จะส่งซ่อมบำรุงดังนี้</div>
+                        
+                        <table>
+                            <tr>
+                                <th width="20%">รายการ</th>
+                                <th width="40%">เนื่องจาก</th>
+                                <th width="20%">หมายเลขครุภัณฑ์</th>
+                                <th width="20%">สถานที่ตั้ง</th>
+                            </tr>
+                            <tr>
+                                <td>${ticket.Device_Type}</td>
+                                <td>${(ticket.Description || '').split('\n')[0]}</td>
+                                <td>${ticket.Asset_ID}</td>
+                                <td>${eq.Location || '-'}</td>
+                            </tr>
+                        </table>
+                        
+                        <div class="indent">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติและดำเนินการต่อไป</div>
+                        
+                        <div class="right-align mt-4" style="padding-right: 2rem;">
+                            ลงชื่อ ........................................................... ผู้ส่งซ่อม<br>
+                            ( ${ticket.Requester} )<br>
+                            ${ticket.Created_At?.split(' ')[0] || '......./......./.......'}
+                        </div>
+
+                        <table style="margin-top: 20px;">
+                            <tr>
+                                <td colspan="2" class="bold" style="background: #f0f0f0;">บันทึกงานซ่อมบำรุง (สำหรับเจ้าหน้าที่)</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div style="min-height: 80px;">
+                                        <div><span class="bold">การดำเนินการ:</span> &nbsp;&nbsp;${repairText}</div>
+                                        ${ticket.Repair === 'เห็นควรจ้างซ่อม/จัดทำเนื่องจาก' ? `<div><span class="bold">เหตุผล:</span> &nbsp;&nbsp;${reasonText}</div>` : ''}
+                                        ${ticket.Repair === 'ซ่อมได้/ใช้งบวัสดุซื้อดังนี้' ? `
+                                            <div><span class="bold">รายการวัสดุ/อะไหล่:</span> &nbsp;&nbsp;${buyItemsStr}</div>
+                                            <div><span class="bold">รวมเป็นเงิน:</span> &nbsp;&nbsp;<span class="bold">${ticket.Cost}</span> บาท</div>
+                                        ` : ''}
+                                        <div class="mt-2"><span class="bold">เวลาที่คาดว่าจะซ่อมเสร็จ:</span> &nbsp;&nbsp;${estimateText}</div>
+                                        <div class="mt-4 right-align" style="padding-right: 2rem;">
+                                            ลงชื่อ ........................................................... ช่างผู้ดำเนินการ<br>
+                                            ( ${assigneeText} )<br>
+                                            ${finishedAtText}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px; border-right: 1px solid #000;">
+                                    เรียน ผู้อำนวยการโรงพยาบาลสวี<br>เพื่อโปรดพิจารณา<br>
+                                    (&nbsp;&nbsp;) ควรอนุมัติ/จัดซื้อวัสดุมาซ่อม/จัดทำอื่นๆ<br>
+                                    ...................................................<br><br><br>
+                                    ลงชื่อ...................................................<br>
+                                    หัวหน้ากลุ่มงานบริหารทั่วไป<br>
+                                    ......./......./.......
+                                </td>
+                                <td width="50%" style="vertical-align: top; text-align: center; padding: 20px 10px;">
+                                    <span class="bold">ความเห็น ผู้อำนวยการโรงพยาบาลสวี</span><br>
+                                    (&nbsp;&nbsp;) ทราบ<br>
+                                    (&nbsp;&nbsp;) อนุมัติให้ดำเนินการตามเสนอ<br>
+                                    (&nbsp;&nbsp;) อื่นๆ..........................................<br><br><br>
+                                    ลงชื่อ...................................................<br>
+                                    ผู้อำนวยการโรงพยาบาลสวี<br>
+                                    ......./......./.......
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table style="margin-top: 20px;">
+                            <tr>
+                                <td class="bold" style="background: #f0f0f0;">บันทึกประวัติการซ่อมครุภัณฑ์</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="min-height: 40px;">
+                                        <div><span class="bold">ครั้งสุดท้ายเมื่อ:</span> &nbsp;&nbsp;${lastDate}</div>
+                                        <div><span class="bold">เนื่องจาก:</span> &nbsp;&nbsp;${lastReason}</div>
+                                    </div>
+                                    <div class="mt-2 right-align" style="padding-right: 2rem;">
+                                        ลงชื่อ ........................................................... <br>
+                                        ( ${assigneeText} )<br>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                            }, 800);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        };
+
+        if(staffList.length === 0) {
             return (
-                <div className="space-y-8 max-w-5xl">
-                <div className="flex items-center gap-3"><Users className="text-blue-600 w-7 h-7" /><h2 className="text-2xl font-bold text-slate-800">Admin Dashboard: IT Team Workload</h2></div>
-                
-                <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
-                    <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center"><div className="flex items-center gap-3"><AlertTriangle className="text-orange-600" /><h3 className="font-bold text-orange-800">งานใหม่รอจ่าย (Unassigned)</h3></div><span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-orange-600 border border-orange-200">{unassignedTickets.length} Waiting</span></div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">การจัดการ</th></tr></thead>
-                        <tbody className="divide-y divide-orange-50">
-                            {unassignedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานใหม่รอจ่าย</td></tr>) : unassignedTickets.map(ticket => (
-                            <tr key={ticket.Ticket_ID} className="hover:bg-orange-50/50">
-                            <td className="px-6 py-4">
-                                <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
-                                <div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block ${ticket.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : ticket.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{ticket.Urgency}</span>
-                            </td>
-                            <td className="px-6 py-4"><div className="font-bold text-blue-700 font-mono text-xs">{ticket.Asset_ID}</div><div className="text-xs text-slate-600 line-clamp-2 mt-1">{(ticket.Description || '').split('\n')[0]}</div></td>
-                            <td className="px-6 py-4"><span className="text-slate-800 font-medium">{ticket.Requester}</span><div className="text-xs text-gray-500">{ticket.Department}</div></td>
-                            <td className="px-6 py-4 text-right">
-                                <div className="flex justify-end gap-2 flex-wrap w-48 ml-auto">
+                <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-sm border border-slate-200">
+                    <Users className="w-12 h-12 text-slate-300 mb-4" />
+                    <h3 className="text-lg font-bold text-slate-700">ยังไม่มีรายชื่อพนักงานในระบบ</h3>
+                    <p className="text-slate-500 text-sm mt-2">โปรดไปที่เมนู "ตั้งค่า" เพื่อเพิ่มรายชื่อทีม IT ก่อนใช้งานกระดานรับงานครับ</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-8 max-w-5xl">
+            <div className="flex items-center gap-3"><Users className="text-blue-600 w-7 h-7" /><h2 className="text-2xl font-bold text-slate-800">Admin Dashboard: IT Team Workload</h2></div>
+            
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
+                <div className="px-6 py-4 bg-orange-50 border-b border-orange-100 flex justify-between items-center"><div className="flex items-center gap-3"><AlertTriangle className="text-orange-600" /><h3 className="font-bold text-orange-800">งานใหม่รอจ่าย (Unassigned)</h3></div><span className="bg-white px-3 py-1 rounded-full text-xs font-bold text-orange-600 border border-orange-200">{unassignedTickets.length} Waiting</span></div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-orange-100"><tr><th className="px-6 py-3">ID / เรื่อง</th><th className="px-6 py-3">อุปกรณ์ที่แจ้ง / อาการ</th><th className="px-6 py-3">ผู้แจ้ง</th><th className="px-6 py-3 text-right">การจัดการ</th></tr></thead>
+                    <tbody className="divide-y divide-orange-50">
+                        {unassignedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานใหม่รอจ่าย</td></tr>) : unassignedTickets.map(ticket => (
+                        <tr key={ticket.Ticket_ID} className="hover:bg-orange-50/50">
+                        <td className="px-6 py-4">
+                            <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
+                            <div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block ${ticket.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : ticket.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{ticket.Urgency}</span>
+                        </td>
+                        <td className="px-6 py-4"><div className="font-bold text-blue-700 font-mono text-xs">{ticket.Asset_ID}</div><div className="text-xs text-slate-600 line-clamp-2 mt-1">{(ticket.Description || '').split('\n')[0]}</div></td>
+                        <td className="px-6 py-4"><span className="text-slate-800 font-medium">{ticket.Requester}</span><div className="text-xs text-gray-500">{ticket.Department}</div></td>
+                        <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2 flex-wrap w-48 ml-auto">
+                                {ticket.Device_Type !== "Data" && (
+                                    <button onClick={() => generateRepairDoc(ticket)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 shadow-sm transition" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/></button>
+                                )}
+                                {staffWorkloads.map(s => (
+                                    <button key={s.Staff_ID} title={`จ่ายให้ ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
+                                        {s.Name.charAt(0)}
+                                    </button>
+                                ))}
+                            </div>
+                        </td>
+                        </tr>
+                    ))}</tbody></table>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {staffWorkloads.map(staff => (
+                <div key={staff.Staff_ID} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 relative overflow-hidden">
+                    <div className="flex items-center gap-4 mb-4 z-10 relative">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm ${staff.Avatar_Color}`}>{staff.Name.charAt(0)}</div>
+                        <div><h3 className="font-bold text-slate-800">{staff.Name}</h3><p className="text-xs text-slate-500">{staff.Role}</p></div>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 z-10 relative">
+                        <div className="flex justify-between text-sm mb-2"><span className="text-slate-600">กำลังทำ: <b className="text-blue-600">{staff.activeJobs}</b></span><span className="text-slate-600">รอดำเนินการ: <b className="text-orange-500">{staff.queue}</b></span></div>
+                        <div className="w-full bg-slate-200 rounded-full h-2 mb-3"><div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{width: `${Math.min((staff.activeJobs+staff.queue)*20, 100)}%`}}></div></div>
+                        <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-semibold text-emerald-600"><span className="flex items-center gap-1"><CheckSquare size={14}/> งานที่ทำเสร็จแล้ว</span><span>{staff.completed} งาน</span></div>
+                    </div>
+                </div>
+                ))}
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center"><h3 className="font-bold text-slate-800">งานที่กำลังดำเนินการ (Active Jobs)</h3></div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-slate-200"><tr><th className="px-6 py-3">ID / สถานะปัจจุบัน</th><th className="px-6 py-3">เรื่อง / อุปกรณ์</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3 text-center">การจัดการ</th></tr></thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {activeTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานที่กำลังดำเนินการ</td></tr>) : activeTickets.map(ticket => (
+                        <tr key={ticket.Ticket_ID} className="hover:bg-slate-50">
+                        <td className="px-6 py-4">
+                            <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ticket.Status === 'Pending' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{ticket.Status}</span>
+                        </td>
+                        <td className="px-6 py-4"><div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'} <span className="text-blue-600 font-mono text-xs ml-1">[{ticket.Asset_ID}]</span></div><div className="text-xs text-slate-500 mt-1">{ticket.Requester} ({ticket.Department})</div></td>
+                        <td className="px-6 py-4 text-slate-800 font-medium flex items-center gap-2"><div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] ${staffList.find(s => s.Name === ticket.Assignee)?.Avatar_Color || 'bg-gray-400'}`}>{ticket.Assignee.charAt(0)}</div>{ticket.Assignee}</td>
+                        <td className="px-6 py-4">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex justify-center gap-2">
+                                    <button onClick={() => setSelectedTicketForUpdate(ticket)} className="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 shadow-sm transition flex items-center gap-1.5"><Edit size={14}/> จัดการงาน</button>
                                     {ticket.Device_Type !== "Data" && (
-                                        <button onClick={() => generateRepairDoc(ticket)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 shadow-sm transition" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/></button>
+                                        <button onClick={() => generateRepairDoc(ticket)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 shadow-sm transition flex items-center gap-1" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/> พิมพ์</button>
                                     )}
-                                    {staffWorkloads.map(s => (
-                                        <button key={s.Staff_ID} title={`จ่ายให้ ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
+                                </div>
+                                <div className="flex items-center gap-1 mt-1 bg-slate-100 px-2 py-1 rounded-full">
+                                    <span className="text-[10px] text-slate-500 mr-1">ส่งต่อให้:</span>
+                                    {staffWorkloads.filter(s => s.Name !== ticket.Assignee).map(s => (
+                                        <button key={s.Staff_ID} title={`เปลี่ยนเป็น ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
                                             {s.Name.charAt(0)}
                                         </button>
                                     ))}
                                 </div>
-                            </td>
-                            </tr>
-                        ))}</tbody></table>
-                    </div>
+                            </div>
+                        </td>
+                        </tr>
+                    ))}</tbody></table>
                 </div>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {staffWorkloads.map(staff => (
-                    <div key={staff.Staff_ID} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 relative overflow-hidden">
-                        <div className="flex items-center gap-4 mb-4 z-10 relative">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm ${staff.Avatar_Color}`}>{staff.Name.charAt(0)}</div>
-                            <div><h3 className="font-bold text-slate-800">{staff.Name}</h3><p className="text-xs text-slate-500">{staff.Role}</p></div>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 z-10 relative">
-                            <div className="flex justify-between text-sm mb-2"><span className="text-slate-600">กำลังทำ: <b className="text-blue-600">{staff.activeJobs}</b></span><span className="text-slate-600">รอดำเนินการ: <b className="text-orange-500">{staff.queue}</b></span></div>
-                            <div className="w-full bg-slate-200 rounded-full h-2 mb-3"><div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{width: `${Math.min((staff.activeJobs+staff.queue)*20, 100)}%`}}></div></div>
-                            <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-semibold text-emerald-600"><span className="flex items-center gap-1"><CheckSquare size={14}/> งานที่ทำเสร็จแล้ว</span><span>{staff.completed} งาน</span></div>
-                        </div>
-                    </div>
-                    ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+                <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2"><ShieldCheck className="text-emerald-600 w-5 h-5"/><h3 className="font-bold text-emerald-800">ประวัติงานที่เสร็จสิ้นแล้ว (Completed Jobs)</h3></div>
+                <div className="overflow-x-auto max-h-64 overflow-y-auto custom-scrollbar">
+                    <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-emerald-100 sticky top-0 shadow-sm"><tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">เรื่อง</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3">การจัดการ</th></tr></thead>
+                    <tbody className="divide-y divide-emerald-50">
+                        {completedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ยังไม่มีประวัติงานที่เสร็จสิ้น</td></tr>) : completedTickets.slice().reverse().map(ticket => (
+                        <tr key={ticket.Ticket_ID} className="hover:bg-emerald-50/50">
+                        <td className="px-6 py-3 font-mono text-slate-500 text-xs">{ticket.Ticket_ID}</td>
+                        <td className="px-6 py-3"><div className="font-bold text-slate-700">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div><div className="text-xs text-slate-400">{ticket.Requester}</div></td>
+                        <td className="px-6 py-3 text-slate-600 text-sm">{ticket.Assignee}</td>
+                        <td className="px-6 py-3 flex gap-2 items-center">
+                            <div><div className="text-xs font-bold text-emerald-700 mb-0.5">{ticket.Repair}</div><div className="text-[10px] text-slate-400">ปิดงาน: {ticket.Finished_At?.split(' ')[0] || '-'}</div></div>
+                            {ticket.Device_Type !== "Data" && (
+                                <button onClick={() => generateRepairDoc(ticket)} className="p-2 ml-auto bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="สร้างเอกสารใบส่งซ่อม"><FileText size={16}/></button>
+                            )}
+                        </td>
+                        </tr>
+                    ))}</tbody></table>
                 </div>
+            </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center"><h3 className="font-bold text-slate-800">งานที่กำลังดำเนินการ (Active Jobs)</h3></div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-slate-200"><tr><th className="px-6 py-3">ID / สถานะปัจจุบัน</th><th className="px-6 py-3">เรื่อง / อุปกรณ์</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3 text-center">การจัดการ</th></tr></thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {activeTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ไม่มีงานที่กำลังดำเนินการ</td></tr>) : activeTickets.map(ticket => (
-                            <tr key={ticket.Ticket_ID} className="hover:bg-slate-50">
-                            <td className="px-6 py-4">
-                                <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ticket.Status === 'Pending' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{ticket.Status}</span>
-                            </td>
-                            <td className="px-6 py-4"><div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'} <span className="text-blue-600 font-mono text-xs ml-1">[{ticket.Asset_ID}]</span></div><div className="text-xs text-slate-500 mt-1">{ticket.Requester} ({ticket.Department})</div></td>
-                            <td className="px-6 py-4 text-slate-800 font-medium flex items-center gap-2"><div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] ${staffList.find(s => s.Name === ticket.Assignee)?.Avatar_Color || 'bg-gray-400'}`}>{ticket.Assignee.charAt(0)}</div>{ticket.Assignee}</td>
-                            <td className="px-6 py-4">
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="flex justify-center gap-2">
-                                        <button onClick={() => setSelectedTicketForUpdate(ticket)} className="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-50 shadow-sm transition flex items-center gap-1.5"><Edit size={14}/> จัดการงาน</button>
-                                        {ticket.Device_Type !== "Data" && (
-                                            <button onClick={() => generateRepairDoc(ticket)} className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-100 shadow-sm transition flex items-center gap-1" title="พิมพ์ใบส่งซ่อม"><FileText size={14}/> พิมพ์</button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1 mt-1 bg-slate-100 px-2 py-1 rounded-full">
-                                        <span className="text-[10px] text-slate-500 mr-1">ส่งต่อให้:</span>
-                                        {staffWorkloads.filter(s => s.Name !== ticket.Assignee).map(s => (
-                                            <button key={s.Staff_ID} title={`เปลี่ยนเป็น ${s.Name}`} onClick={()=>handleAssign(s.Name, ticket)} className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] shadow-sm hover:scale-110 transition ${s.Avatar_Color}`}>
-                                                {s.Name.charAt(0)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </td>
-                            </tr>
-                        ))}</tbody></table>
-                    </div>
-                </div>
+            {/* Modal สำหรับการอัปเดตงาน */}
+            {selectedTicketForUpdate && <TicketUpdateModal ticket={selectedTicketForUpdate} onClose={() => setSelectedTicketForUpdate(null)} onSave={handleSaveUpdate} />}
 
-                <div className="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-                    <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2"><ShieldCheck className="text-emerald-600 w-5 h-5"/><h3 className="font-bold text-emerald-800">ประวัติงานที่เสร็จสิ้นแล้ว (Completed Jobs)</h3></div>
-                    <div className="overflow-x-auto max-h-64 overflow-y-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left"><thead className="bg-white text-slate-500 border-b border-emerald-100 sticky top-0 shadow-sm"><tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">เรื่อง</th><th className="px-6 py-3">ผู้รับผิดชอบ</th><th className="px-6 py-3">การจัดการ</th></tr></thead>
-                        <tbody className="divide-y divide-emerald-50">
-                            {completedTickets.length === 0 ? (<tr><td colSpan="4" className="text-center py-6 text-gray-500">ยังไม่มีประวัติงานที่เสร็จสิ้น</td></tr>) : completedTickets.slice().reverse().map(ticket => (
-                            <tr key={ticket.Ticket_ID} className="hover:bg-emerald-50/50">
-                            <td className="px-6 py-3 font-mono text-slate-500 text-xs">{ticket.Ticket_ID}</td>
-                            <td className="px-6 py-3"><div className="font-bold text-slate-700">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div><div className="text-xs text-slate-400">{ticket.Requester}</div></td>
-                            <td className="px-6 py-3 text-slate-600 text-sm">{ticket.Assignee}</td>
-                            <td className="px-6 py-3 flex gap-2 items-center">
-                                <div><div className="text-xs font-bold text-emerald-700 mb-0.5">{ticket.Repair}</div><div className="text-[10px] text-slate-400">ปิดงาน: {ticket.Finished_At?.split(' ')[0] || '-'}</div></div>
-                                {ticket.Device_Type !== "Data" && (
-                                    <button onClick={() => generateRepairDoc(ticket)} className="p-2 ml-auto bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="สร้างเอกสารใบส่งซ่อม"><FileText size={16}/></button>
-                                )}
-                            </td>
-                            </tr>
-                        ))}</tbody></table>
-                    </div>
-                </div>
+            </div>
+        );
+    }
 
-                {/* Modal สำหรับการอัปเดตงาน */}
-                {selectedTicketForUpdate && <TicketUpdateModal ticket={selectedTicketForUpdate} onClose={() => setSelectedTicketForUpdate(null)} onSave={handleSaveUpdate} />}
-
-                </div>
-            );
-        }
-
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
     </script>
 </body>
 </html>
