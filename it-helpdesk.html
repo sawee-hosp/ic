@@ -50,6 +50,7 @@
             BookOpen, PhoneCall, BrainCircuit
         } from 'lucide-react';
 
+        // !! นำ URL ของ Web App ที่ Deploy ใหม่มาใส่ตรงนี้ !!
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhmXHiFWbKcIbrQyNh800vbvoEcckcatqpywN1et4L14I7kXXT1Hel-U5kSLZaAS9_/exec';
 
         const defaultBrands = ["HP", "Dell", "Lenovo", "Asus", "Acer", "Apple", "Cisco", "TP-Link", "Epson", "Canon", "Brother", "APC", "Syndome", "Logitech", "Other"];
@@ -146,14 +147,16 @@
             );
         };
 
-        const PinLogin = ({ onLogin }) => {
+        // ส่ง prop role (general หรือ admin) เพื่อให้ Backend เช็คตัวแปร Password ได้ถูกจุด
+        const PinLogin = ({ role, onLogin, onCancel }) => {
             const [pin, setPin] = useState(['', '', '', '', '']);
             const [error, setError] = useState(false);
             const [loading, setLoading] = useState(false);
             const inputRefs = useRef([]);
 
             useEffect(() => {
-                const savedPin = localStorage.getItem('sawee_it_pin');
+                const storageKey = role === 'admin' ? 'sawee_admin_pin' : 'sawee_general_pin';
+                const savedPin = localStorage.getItem(storageKey);
                 if (savedPin && savedPin.length === 5) {
                     verifyPin(savedPin, true);
                 } else {
@@ -161,7 +164,7 @@
                         inputRefs.current[0].focus();
                     }
                 }
-            }, []);
+            }, [role]);
 
             const handleChange = (index, value) => {
                 if (!/^[0-9]*$/.test(value)) return;
@@ -190,15 +193,16 @@
                 try {
                     const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'verifyPin', payload: { pin: fullPin } })
+                        body: JSON.stringify({ action: 'verifyPin', payload: { pin: fullPin, role: role } })
                     });
                     const result = await response.json();
                     
+                    const storageKey = role === 'admin' ? 'sawee_admin_pin' : 'sawee_general_pin';
                     if (result.status === 'success') {
-                        localStorage.setItem('sawee_it_pin', fullPin);
+                        localStorage.setItem(storageKey, fullPin);
                         onLogin();
                     } else {
-                        localStorage.removeItem('sawee_it_pin');
+                        localStorage.removeItem(storageKey);
                         if (!isAutoLogin) {
                             setError(true);
                             setPin(['', '', '', '', '']);
@@ -213,11 +217,20 @@
             };
 
             return (
-                <div className="flex h-screen w-full items-center justify-center bg-gray-50 flex-col">
-                    <div className="bg-white p-8 rounded-3xl shadow-lg flex flex-col items-center max-w-sm w-full mx-4 border border-gray-100">
-                        <div className="bg-blue-100 p-4 rounded-full text-blue-600 mb-5"><ShieldCheck size={36} /></div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">ระบบ Helpdesk & IT Service</h2>
-                        <p className="text-sm text-gray-500 mb-8 text-center font-medium">กรุณาพิมพ์รหัสรพ. 5 ตัว เพื่อเข้าใช้งาน</p>
+                <div className={`flex h-screen w-full items-center justify-center flex-col ${role==='admin' ? 'bg-black/60 fixed inset-0 z-[200] backdrop-blur-sm' : 'bg-gray-50'}`}>
+                    <div className="bg-white p-8 rounded-3xl shadow-lg flex flex-col items-center max-w-sm w-full mx-4 border border-gray-100 relative">
+                        {role === 'admin' && onCancel && (
+                            <button onClick={onCancel} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-100 p-1.5 rounded-full"><X size={18}/></button>
+                        )}
+                        <div className={`p-4 rounded-full mb-5 ${role === 'admin' ? 'bg-indigo-100 text-indigo-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {role === 'admin' ? <Settings size={36} /> : <ShieldCheck size={36} />}
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">
+                            {role === 'admin' ? 'โหมดผู้ดูแลระบบ (Admin)' : 'ระบบ Helpdesk & IT'}
+                        </h2>
+                        <p className="text-sm text-gray-500 mb-8 text-center font-medium">
+                            {role === 'admin' ? 'กรุณาใส่รหัสสำหรับ Admin 5 หลัก' : 'กรุณาพิมพ์รหัสรพ. 5 ตัว เพื่อเข้าใช้งาน'}
+                        </p>
                         
                         <div className="flex gap-3 mb-6">
                             {pin.map((digit, idx) => (
@@ -245,11 +258,15 @@
 
         function App() {
             const urlParams = new URLSearchParams(window.location.search);
-            const initialIsAdmin = urlParams.get('action') === 'admin';
+            const isUrlAdmin = urlParams.get('action') === 'admin';
 
-            const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [activeTab, setActiveTab] = useState(initialIsAdmin ? 'equipments' : 'repair'); 
+            // ระดับสิทธิ์: 'none', 'general', 'admin'
+            const [authLevel, setAuthLevel] = useState('none');
+            const [showAdminLogin, setShowAdminLogin] = useState(false);
+            
+            const isAdmin = authLevel === 'admin';
+
+            const [activeTab, setActiveTab] = useState('repair'); 
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [showNotification, setShowNotification] = useState(false);
             const [notificationMsg, setNotificationMsg] = useState("");
@@ -268,6 +285,18 @@
             
             const [prefillAsset, setPrefillAsset] = useState(null);
             const [prefillSoftwareAsset, setPrefillSoftwareAsset] = useState(null);
+
+            // หากผ่าน URL ?action=admin ให้โชว์หน้าล็อกอินแอดมินรอเลยเมื่อเข้าระบบทั่วไปสำเร็จ
+            useEffect(() => {
+                if (authLevel === 'general' && isUrlAdmin) {
+                    setShowAdminLogin(true);
+                }
+            }, [authLevel, isUrlAdmin]);
+
+            // เมื่อเป็น Admin แล้วให้ตั้งค่าหน้า Default เป็น Equipments
+            useEffect(() => {
+                if (authLevel === 'admin') setActiveTab('equipments');
+            }, [authLevel]);
 
             const handleNotify = (msg) => {
                 setNotificationMsg(msg);
@@ -310,10 +339,10 @@
             };
 
             useEffect(() => { 
-                if (isAuthenticated) {
+                if (authLevel !== 'none') {
                     fetchAllData(); 
                 }
-            }, [isAuthenticated]);
+            }, [authLevel]);
 
             const apiCall = async (sheetName, action, payload) => {
                 setIsSyncing(true);
@@ -437,8 +466,9 @@
                 printWindow.document.close();
             };
 
-            if (!isAuthenticated) {
-                return <PinLogin onLogin={() => setIsAuthenticated(true)} />;
+            // แสดงหน้า Login ผู้ใช้ทั่วไป
+            if (authLevel === 'none') {
+                return <PinLogin role="general" onLogin={() => setAuthLevel('general')} />;
             }
 
             if (isLoading) {
@@ -453,6 +483,11 @@
             return (
                 <div className="flex h-screen bg-gray-100 font-sans relative overflow-hidden">
                 
+                {/* แสดงหน้า Login Admin (ทับแบบ Modal หากกดขอเข้าแอดมิน) */}
+                {showAdminLogin && (
+                    <PinLogin role="admin" onLogin={() => { setAuthLevel('admin'); setShowAdminLogin(false); }} onCancel={() => setShowAdminLogin(false)} />
+                )}
+
                 {isSyncing && (
                     <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex items-center justify-center">
                     <div className="bg-white p-4 rounded-xl shadow-lg flex items-center space-x-3 border border-blue-100">
@@ -462,11 +497,13 @@
                     </div>
                 )}
 
+                {/* Mobile Backdrop Overlay */}
                 <div 
                     className={`fixed inset-0 bg-black/50 z-20 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
                     onClick={() => setIsSidebarOpen(false)}>
                 </div>
 
+                {/* Animated Sidebar */}
                 <div className={`fixed md:relative z-30 h-full bg-slate-800 text-white shadow-xl flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-64' : 'w-0'}`}>
                     <div className="w-64 h-full flex flex-col">
                         <div className="p-5 flex items-center justify-between border-b border-slate-700">
@@ -499,7 +536,8 @@
 
                             {!isAdmin && (
                                 <>
-                                    <SidebarItem icon={<Settings size={20} />} label="Admin Login" active={false} onClick={() => { setIsAdmin(true); setActiveTab('equipments'); setIsSidebarOpen(false); }} />
+                                    <div className="my-4 border-t border-slate-700"></div>
+                                    <SidebarItem icon={<Settings size={20} />} label="Admin Login" active={false} onClick={() => { setShowAdminLogin(true); setIsSidebarOpen(false); }} />
                                 </>
                             )}
 
@@ -548,9 +586,13 @@
                             </h2>
                         </div>
                         <div className="flex items-center">
-                            {isAdmin && (
-                                <button onClick={() => { setIsAdmin(false); setActiveTab('repair'); localStorage.removeItem('sawee_it_pin'); setIsAuthenticated(false); }} className="text-sm font-semibold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors mr-2">
-                                    ออกจากระบบ (Logout)
+                            {isAdmin ? (
+                                <button onClick={() => { setAuthLevel('general'); setActiveTab('repair'); localStorage.removeItem('sawee_admin_pin'); }} className="text-sm font-semibold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors mr-2">
+                                    ออกจาก Admin
+                                </button>
+                            ) : (
+                                <button onClick={() => { setAuthLevel('none'); localStorage.removeItem('sawee_general_pin'); }} className="text-sm font-semibold text-gray-500 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors mr-2">
+                                    Logout
                                 </button>
                             )}
                             <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors shrink-0">
@@ -589,7 +631,7 @@
                         
                         {activeTab === 'admin_workload' && isAdmin && <StaffWorkload notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} staffList={staffList} equipments={equipments} />}
                         {activeTab === 'settings' && isAdmin && <SettingsView departments={departments} setDepartments={setDepartments} types={types} setTypes={setTypes} staffList={staffList} setStaffList={setStaffList} apiCall={apiCall} notify={handleNotify} />}
-                        {activeTab === 'manual' && <UserManual isAdmin={isAdmin} />}
+                        {activeTab === 'manual' && <UserManual />}
                     </main>
                 </div>
 
@@ -625,7 +667,7 @@
 
         // --- COMPONENTS & MANAGERS ---
 
-        const UserManual = ({ isAdmin }) => {
+        const UserManual = () => {
             return (
                 <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-200 animate-in fade-in duration-500 text-gray-700">
                     <div className="flex items-center gap-4 border-b pb-6 mb-8">
@@ -641,8 +683,8 @@
                             <h2 className="text-xl font-bold text-blue-800 mb-4 bg-blue-50 py-2 px-4 rounded-lg border-l-4 border-blue-500">ส่วนที่ 1: บทนำและสิทธิ์การใช้งาน</h2>
                             <p className="mb-3">ระบบนี้ถูกออกแบบมาเพื่ออำนวยความสะดวกในการบริหารจัดการครุภัณฑ์คอมพิวเตอร์ และศูนย์บริการรับแจ้งซ่อมปัญหาไอทีของโรงพยาบาล โดยแบ่งผู้ใช้งานออกเป็น 2 ระดับ:</p>
                             <ul className="list-disc pl-8 space-y-2 mb-4">
-                                <li><b>ผู้ใช้งานทั่วไป (General User):</b> สามารถแจ้งซ่อม, ขอข้อมูลรายงาน, ติดตามสถานะงาน และอ่านคู่มือได้โดยไม่ต้องมีรหัสผ่าน</li>
-                                <li><b>ผู้ดูแลระบบ (Admin / IT Staff):</b> ต้องใช้รหัสผ่าน 5 หลักเพื่อเข้าสู่ระบบ (รหัสผ่านนี้ตั้งค่าไว้ที่ Backend) จะมีสิทธิ์เข้าถึงเมนู Dashboard, การจัดการทะเบียนครุภัณฑ์, ลงทะเบียนซอฟต์แวร์ และการจ่ายงานช่าง</li>
+                                <li><b>ผู้ใช้งานทั่วไป (General User):</b> สามารถแจ้งซ่อม, ขอข้อมูลรายงาน, ติดตามสถานะงาน และอ่านคู่มือได้โดยล็อกอินด้วยรหัสผ่าน 5 หลัก สำหรับผู้ใช้งานทั่วไป</li>
+                                <li><b>ผู้ดูแลระบบ (Admin / IT Staff):</b> เข้าสู่ระบบผ่านเมนู Admin Login ตรงแถบเมนูด้านซ้าย จะมีสิทธิ์เข้าถึงเมนู Dashboard, การจัดการทะเบียนครุภัณฑ์, ลงทะเบียนซอฟต์แวร์ และการจ่ายงานช่าง</li>
                             </ul>
                         </section>
 
@@ -755,8 +797,8 @@
                         <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                             <div className="flex flex-col md:flex-row gap-6 mb-8">
                                 <div className="w-full md:w-1/3 shrink-0">
-                                    {equipment.Image_URL ? (
-                                        <img src={equipment.Image_URL} alt="Equipment" className="w-full h-48 object-cover rounded-xl border border-gray-200 shadow-sm" />
+                                    {equipment.Images ? (
+                                        <img src={equipment.Images} alt="Equipment" className="w-full h-48 object-cover rounded-xl border border-gray-200 shadow-sm" />
                                     ) : (
                                         <div className="w-full h-48 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400">
                                             <ImageIcon size={40} className="mb-2" />
@@ -966,7 +1008,7 @@
                 Port: '',
                 Location: '',
                 Date: today,
-                Image_URL: ''
+                Images: ''
             });
 
             useEffect(() => {
@@ -1039,7 +1081,7 @@
                         filename: `EQ_${Date.now()}_${filename}`
                     });
                     if(res && res.url) {
-                        setFormData(prev => ({ ...prev, Image_URL: res.url }));
+                        setFormData(prev => ({ ...prev, Images: res.url }));
                         notify("อัปโหลดรูปภาพสำเร็จ");
                     }
                 } catch(e) {
@@ -1094,11 +1136,11 @@
                                 <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none" />
                                 <p className="text-xs text-gray-400 mt-2">รองรับการถ่ายรูปจากมือถือ หรืออัปโหลดไฟล์ ระบบจะย่อขนาดให้อัตโนมัติและเก็บบนคลาวด์</p>
                                 {isUploading && <p className="text-sm font-bold text-orange-500 mt-2 flex items-center"><Loader2 size={14} className="animate-spin mr-1"/> กำลังอัปโหลด...</p>}
-                                {!isUploading && formData.Image_URL && <p className="text-sm font-bold text-emerald-600 mt-2 flex items-center"><CheckCircle size={14} className="mr-1"/> รูปภาพพร้อมบันทึก</p>}
+                                {!isUploading && formData.Images && <p className="text-sm font-bold text-emerald-600 mt-2 flex items-center"><CheckCircle size={14} className="mr-1"/> รูปภาพพร้อมบันทึก</p>}
                             </div>
-                            {(imagePreview || formData.Image_URL) && (
+                            {(imagePreview || formData.Images) && (
                                 <div className="w-32 h-32 rounded-lg border border-gray-300 overflow-hidden shadow-sm flex-shrink-0 bg-white">
-                                    <img src={imagePreview || formData.Image_URL} alt="Preview" className="w-full h-full object-cover" />
+                                    <img src={imagePreview || formData.Images} alt="Preview" className="w-full h-full object-cover" />
                                 </div>
                             )}
                         </div>
@@ -1198,8 +1240,8 @@
                         {filteredData.length === 0 ? (<tr><td colSpan="6" className="p-12 text-center text-gray-500 bg-white">ยังไม่มีข้อมูลในระบบ</td></tr>) : filteredData.slice().reverse().map(eq => (
                         <tr key={eq.Id} onClick={() => onViewDetail(eq)} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition cursor-pointer group">
                             <td className="p-4">
-                                {eq.Image_URL ? (
-                                    <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Image_URL} alt="eq" className="w-full h-full object-cover" /></div>
+                                {eq.Images ? (
+                                    <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Images} alt="eq" className="w-full h-full object-cover" /></div>
                                 ) : (
                                     <div className="w-12 h-12 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
                                 )}
@@ -1691,7 +1733,7 @@
                     });
                     
                     if (response && response.text) {
-                        if(response.text.includes("ขัดข้อง") || response.text.includes("กำลังปรับปรุง")) {
+                        if(response.text.includes("ขัดข้อง") || response.text.includes("กำลังปรับปรุง") || response.text.includes("Error")) {
                             setAiAdviceInlineError(response.text);
                         } else {
                             setAiAdviceModal({ isOpen: true, text: response.text, isError: false });
@@ -1859,7 +1901,7 @@
                             <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
                                 ปิดหน้าต่าง
                             </button>
-                            <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); /* Trigger form submit is complex via ref, so user just clicks send themselves. */ }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
+                            <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
                                 <Send size={18}/> ทราบและดำเนินการซ่อมต่อ
                             </button>
                         </div>
@@ -2215,17 +2257,17 @@
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
                         @page { size: A4; margin: 1.5cm 2cm; }
-                        body { font-family: 'Sarabun', sans-serif; font-size: 13pt; color: #000; line-height: 1.4; } 
+                        body { font-family: 'Sarabun', sans-serif; font-size: 11pt; color: #000; line-height: 1.4; } 
                         .container { max-width: 100%; margin: auto; }
-                        .header { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
+                        .header { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 10px; }
                         .right-align { text-align: right; }
                         .mt-2 { margin-top: 0.5rem; }
                         .mt-4 { margin-top: 1rem; }
                         .mt-8 { margin-top: 2rem; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 12pt; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; font-size: 10pt; }
                         th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; vertical-align: top; }
                         th { text-align: center; font-weight: bold; background: #f0f0f0; }
-                        .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 12pt; }
+                        .signature-box { display: flex; justify-content: space-between; margin-top: 20px; font-size: 10pt; }
                         .sig-col { width: 48%; }
                         .indent { padding-left: 2rem; }
                         .bold { font-weight: bold; }
