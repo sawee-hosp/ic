@@ -1909,7 +1909,7 @@
                             <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
                                 ปิดหน้าต่าง
                             </button>
-                            <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
+                            <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
                                 <Send size={18}/> ทราบและดำเนินการซ่อมต่อ
                             </button>
                         </div>
@@ -2181,6 +2181,7 @@
         const completedTickets = tickets.filter(t => t.Status === "Completed");
 
         const [selectedTicketForUpdate, setSelectedTicketForUpdate] = useState(null);
+        const [editingUrgencyId, setEditingUrgencyId] = useState(null);
 
         const staffWorkloads = staffList.map(staff => {
             const myActive = tickets.filter(t => t.Assignee === staff.Name && t.Status === "In Progress").length;
@@ -2203,6 +2204,20 @@
                 setTickets(tickets.map(t => t.Ticket_ID === ticket.Ticket_ID ? updatedTicket : t));
                 notify(`มอบหมายงาน ${ticket.Ticket_ID} ให้คุณ ${staffName} เรียบร้อย`);
             }
+        };
+
+        const handleUrgencyChange = async (ticket, newUrgency) => {
+            if (ticket.Urgency === newUrgency) {
+                setEditingUrgencyId(null);
+                return;
+            }
+            const updatedTicket = { ...ticket, Urgency: newUrgency };
+            const success = await apiCall('Tickets', 'update', updatedTicket);
+            if(success) {
+                setTickets(tickets.map(t => t.Ticket_ID === ticket.Ticket_ID ? updatedTicket : t));
+                notify(`ปรับความเร่งด่วนของใบงาน ${ticket.Ticket_ID} เป็น "${newUrgency}" เรียบร้อย`);
+            }
+            setEditingUrgencyId(null);
         };
 
         const handleSaveUpdate = async (updatedTicket) => {
@@ -2417,7 +2432,33 @@
                         <td className="px-6 py-4">
                             <div className="font-mono text-slate-500 text-xs mb-1">{ticket.Ticket_ID}</div>
                             <div className="font-bold text-slate-800">{ticket.Device_Type === 'Data' ? 'ขอข้อมูล/รายงาน' : 'แจ้งซ่อม'}</div>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block ${ticket.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600' : ticket.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>{ticket.Urgency}</span>
+                            {editingUrgencyId === ticket.Ticket_ID ? (
+                                <select
+                                    autoFocus
+                                    defaultValue={ticket.Urgency}
+                                    onBlur={(e) => {
+                                        if (e.target.value !== ticket.Urgency) {
+                                            handleUrgencyChange(ticket, e.target.value);
+                                        } else {
+                                            setEditingUrgencyId(null);
+                                        }
+                                    }}
+                                    onChange={(e) => handleUrgencyChange(ticket, e.target.value)}
+                                    className="mt-1 text-[10px] font-bold border border-blue-400 rounded outline-none p-0.5 bg-white text-blue-700"
+                                >
+                                    <option value="ทั่วไป">ทั่วไป</option>
+                                    <option value="เร่งด่วน">เร่งด่วน</option>
+                                    <option value="วิกฤต">วิกฤต</option>
+                                </select>
+                            ) : (
+                                <span 
+                                    onClick={() => setEditingUrgencyId(ticket.Ticket_ID)}
+                                    className={`cursor-pointer text-[10px] font-bold px-1.5 py-0.5 rounded mt-1 inline-flex items-center gap-1 hover:ring-2 hover:ring-offset-1 transition ${ticket.Urgency === 'วิกฤต' ? 'bg-rose-100 text-rose-600 hover:ring-rose-300' : ticket.Urgency === 'เร่งด่วน' ? 'bg-orange-100 text-orange-600 hover:ring-orange-300' : 'bg-slate-100 text-slate-600 hover:ring-slate-300'}`}
+                                    title="คลิกเพื่อแก้ไขความเร่งด่วน"
+                                >
+                                    {ticket.Urgency} <Edit size={10} />
+                                </span>
+                            )}
                         </td>
                         <td className="px-6 py-4"><div className="font-bold text-blue-700 font-mono text-xs">{ticket.Asset_ID}</div><div className="text-xs text-slate-600 line-clamp-2 mt-1">{(ticket.Description || '').split('\n')[0]}</div></td>
                         <td className="px-6 py-4"><span className="text-slate-800 font-medium">{ticket.Requester}</span><div className="text-xs text-gray-500">{ticket.Department}</div></td>
