@@ -47,7 +47,8 @@
             Sparkles, Bot, Wifi, MessageSquare, Send, AlertTriangle, 
             Clock, FileText, BarChart3, Database, Users, HardDrive, 
             Layout, Zap, X, ChevronRight, Activity, Printer, Package, 
-            Edit, UserPlus, ArrowLeft, CheckSquare, ShieldCheck, Image as ImageIcon, Camera, ScanLine, LayoutList, Calendar, Menu
+            Edit, UserPlus, ArrowLeft, CheckSquare, ShieldCheck, Image as ImageIcon, Camera, ScanLine, LayoutList, Calendar, Menu,
+            BookOpen, PhoneCall, BrainCircuit
         } from 'lucide-react';
 
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhmXHiFWbKcIbrQyNh800vbvoEcckcatqpywN1et4L14I7kXXT1Hel-U5kSLZaAS9_/exec';
@@ -146,6 +147,19 @@
             const [loading, setLoading] = useState(false);
             const inputRefs = useRef([]);
 
+            useEffect(() => {
+                // เช็คว่ามีรหัสใน localStorage หรือไม่ ถ้ามีให้ลองล็อกอินอัตโนมัติ
+                const savedPin = localStorage.getItem('sawee_it_pin');
+                if (savedPin && savedPin.length === 5) {
+                    verifyPin(savedPin, true);
+                } else {
+                    // Auto-focus ช่องแรกตอนโหลดหน้า
+                    if (inputRefs.current[0]) {
+                        inputRefs.current[0].focus();
+                    }
+                }
+            }, []);
+
             const handleChange = (index, value) => {
                 if (!/^[0-9]*$/.test(value)) return;
                 const newPin = [...pin];
@@ -158,7 +172,7 @@
                 }
 
                 if (newPin.every(p => p !== '')) {
-                    verifyPin(newPin.join(''));
+                    verifyPin(newPin.join(''), false);
                 }
             };
 
@@ -168,7 +182,7 @@
                 }
             };
 
-            const verifyPin = async (fullPin) => {
+            const verifyPin = async (fullPin, isAutoLogin = false) => {
                 setLoading(true);
                 try {
                     const response = await fetch(SCRIPT_URL, {
@@ -178,14 +192,20 @@
                     const result = await response.json();
                     
                     if (result.status === 'success') {
+                        // บันทึกลง localStorage เมื่อสำเร็จ
+                        localStorage.setItem('sawee_it_pin', fullPin);
                         onLogin();
                     } else {
-                        setError(true);
-                        setPin(['', '', '', '', '']);
-                        inputRefs.current[0].focus();
+                        // เคลียร์ค่าที่บันทึกไว้ถ้ารหัสผิด
+                        localStorage.removeItem('sawee_it_pin');
+                        if (!isAutoLogin) {
+                            setError(true);
+                            setPin(['', '', '', '', '']);
+                            if (inputRefs.current[0]) inputRefs.current[0].focus();
+                        }
                     }
                 } catch (err) {
-                    alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+                    if (!isAutoLogin) alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
                 } finally {
                     setLoading(false);
                 }
@@ -224,11 +244,12 @@
 
         function App() {
             const urlParams = new URLSearchParams(window.location.search);
-            const isAdmin = urlParams.get('action') === 'admin';
+            const initialIsAdmin = urlParams.get('action') === 'admin';
 
+            const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
             const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [activeTab, setActiveTab] = useState(isAdmin ? 'dashboard' : 'repair');
-            const [isSidebarOpen, setIsSidebarOpen] = useState(true); // เปิดตอนโหลดครั้งแรก
+            const [activeTab, setActiveTab] = useState(initialIsAdmin ? 'dashboard' : 'repair');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [showNotification, setShowNotification] = useState(false);
             const [notificationMsg, setNotificationMsg] = useState("");
 
@@ -245,14 +266,185 @@
             const [isSyncing, setIsSyncing] = useState(false);
             const [apiError, setApiError] = useState(null);
 
-            useEffect(() => { 
-                if (isAuthenticated) fetchAllData(); 
-            }, [isAuthenticated]);
-
+            // แจ้งเตือน Notification
             const handleNotify = (msg) => {
                 setNotificationMsg(msg);
                 setShowNotification(true);
                 setTimeout(() => setShowNotification(false), 3000);
+            };
+
+            const handleTabChange = (tab) => {
+                setActiveTab(tab);
+                setIsSidebarOpen(false); 
+            };
+
+            // สร้างฟังก์ชัน fetch ไว้บนสุด เพื่อไม่ให้ติด Scope หากมีการ return Component ก่อน
+            const fetchAllData = async () => {
+                setIsLoading(true);
+                setApiError(null);
+                try {
+                    const getOptions = { method: 'GET', redirect: 'follow' };
+                    const [eqRes, swRes, depRes, typeRes, ticketsRes, staffRes] = await Promise.all([
+                        fetch(`${SCRIPT_URL}?sheet=Equipments`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Softwares`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Departments`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Types`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Tickets`, getOptions).then(r => r.json()),
+                        fetch(`${SCRIPT_URL}?sheet=Staff`, getOptions).then(r => r.json())
+                    ]);
+
+                    setEquipments(Array.isArray(eqRes) ? eqRes.map(e => ({...e, Storage: typeof e.Storage === 'string' ? safeJsonParse(e.Storage, []) : (e.Storage || [])})) : []);
+                    setSoftwares(Array.isArray(swRes) ? swRes.map(s => ({...s, programs: typeof s.programs === 'string' ? safeJsonParse(s.programs, []) : (s.programs || [])})) : []);
+                    setDepartments(Array.isArray(depRes) ? depRes : []);
+                    setTypes(Array.isArray(typeRes) ? typeRes : []);
+                    setTickets(Array.isArray(ticketsRes) ? ticketsRes : []);
+                    setStaffList(Array.isArray(staffRes) ? staffRes : []);
+
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    setApiError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ โปรดลองใหม่อีกครั้ง");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            useEffect(() => { 
+                if (isAuthenticated) {
+                    fetchAllData(); 
+                }
+            }, [isAuthenticated]);
+
+            const apiCall = async (sheetName, action, payload) => {
+                setIsSyncing(true);
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        redirect: 'follow', 
+                        body: JSON.stringify({ sheetName, action, payload }) 
+                    });
+                    const result = await response.json();
+                    
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                    }
+                    return result;
+                } catch (error) {
+                    console.error("API Error:", error);
+                    alert("ข้อผิดพลาดระบบ\n\n" + error.message);
+                    throw error; 
+                } finally {
+                    setIsSyncing(false);
+                }
+            };
+
+            const handleAIAnalysis = async (equipment) => {
+                setAiModal({ isOpen: true, data: equipment, result: '', loading: true });
+                setTimeout(() => {
+                    setAiModal(prev => ({ 
+                        ...prev, 
+                        result: "AI จำเป็นต้องใช้ API Key ของ Google Gemini เพื่อวิเคราะห์ข้อมูลจริง\n(จำลอง) อุปกรณ์นี้สเปคยังเพียงพอสำหรับการทำงานออฟฟิศทั่วไป แนะนำให้อัปเกรด RAM เป็น 16GB หากต้องเปิดหลายหน้าต่าง", 
+                        loading: false 
+                    }));
+                }, 1500);
+            };
+
+            const printSticker = (item) => {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${item.Id}&margin=0`; 
+                
+                const printWindow = window.open('', '_blank', 'width=400,height=300');
+                if (!printWindow) {
+                    alert('เบราว์เซอร์บล็อกหน้าต่าง Pop-up กรุณาอนุญาตเพื่อสั่งพิมพ์สติกเกอร์');
+                    return;
+                }
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>Print Sticker</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                            @page { margin: 0; size: 6cm 2.5cm; }
+                            body { 
+                                margin: 0; padding: 0; 
+                                width: 6cm; height: 2.5cm; 
+                                font-family: 'Sarabun', sans-serif;
+                                display: flex;
+                                background: white;
+                            }
+                            .sticker-container {
+                                width: 100%; height: 100%;
+                                display: flex;
+                                box-sizing: border-box;
+                                padding: 2px 4px;
+                                gap: 6px;
+                                border: 1px dashed #ccc; 
+                            }
+                            .qr-section {
+                                width: 1.8cm;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                align-items: center;
+                            }
+                            .qr-img {
+                                width: 1.6cm;
+                                height: 1.6cm;
+                            }
+                            .qr-code-text {
+                                font-size: 7.5px;
+                                font-weight: bold;
+                                margin-top: 1px;
+                                text-align: center;
+                            }
+                            .detail-section {
+                                flex: 1;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                line-height: 1.3;
+                                overflow: hidden;
+                            }
+                            .eq-name {
+                                font-size: 13px; 
+                                font-weight: bold;
+                                color: #000;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                margin-bottom: 2px;
+                            }
+                            .eq-dept, .eq-date {
+                                font-size: 8.5px;
+                                color: #333;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="sticker-container">
+                            <div class="qr-section">
+                                <img src="${qrUrl}" class="qr-img" />
+                                <div class="qr-code-text">${item.Id}</div>
+                            </div>
+                            <div class="detail-section">
+                                <div class="eq-name">${item.name || item.Type}</div>
+                                <div class="eq-dept">หน่วยงาน: ${item.department || '-'}</div>
+                                <div class="eq-date">วันที่: ${item.Date || '-'}</div>
+                            </div>
+                        </div>
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() {
+                                    window.print();
+                                    window.close();
+                                }, 500);
+                            };
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
             };
 
             if (!isAuthenticated) {
@@ -316,6 +508,15 @@
                             <SidebarItem icon={<Database size={20} />} label="ขอข้อมูล / รายงาน" active={activeTab === 'data_request'} onClick={() => handleTabChange('data_request')} />
                             <SidebarItem icon={<LayoutList size={20} />} label="ติดตามสถานะงาน" active={activeTab === 'ticket_tracking'} onClick={() => handleTabChange('ticket_tracking')} />
                             
+                            <div className="my-4 border-t border-slate-700"></div>
+                            <SidebarItem icon={<BookOpen size={20} />} label="คู่มือการใช้งานระบบ" active={activeTab === 'manual'} onClick={() => handleTabChange('manual')} />
+
+                            {!isAdmin && (
+                                <>
+                                    <SidebarItem icon={<Settings size={20} />} label="Admin Login" active={false} onClick={() => { setIsAdmin(true); setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
+                                </>
+                            )}
+
                             {isAdmin && (
                                 <>
                                     <SidebarItem icon={<Users size={20} />} label="Admin Workload" active={activeTab === 'admin_workload'} onClick={() => handleTabChange('admin_workload')} />
@@ -326,6 +527,15 @@
                             )}
                         </nav>
                         
+                        {/* สายด่วน Helpdesk โทร 503 */}
+                        <div className="p-4 border-t border-slate-700">
+                            <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 text-center shadow-inner relative overflow-hidden group hover:bg-blue-900/60 transition">
+                                <PhoneCall className="absolute -right-2 -bottom-2 w-16 h-16 text-blue-500/10 group-hover:scale-110 transition-transform" />
+                                <p className="text-blue-300 text-[11px] font-bold mb-1 tracking-wider uppercase">สายด่วน Help Desk</p>
+                                <div className="text-3xl font-black text-white tracking-widest drop-shadow-md">ต่อ <span className="text-yellow-400">503</span></div>
+                            </div>
+                        </div>
+
                         {!isAdmin && (
                             <div className="p-4 border-t border-slate-700 text-center">
                                 <p className="text-xs text-slate-400">ระบบบริการผู้ใช้งาน</p>
@@ -350,11 +560,19 @@
                                 {activeTab === 'ticket_tracking' && 'ติดตามสถานะงานแจ้งซ่อม / ขอข้อมูล'}
                                 {activeTab === 'admin_workload' && 'กระดานบริหารงานทีม IT'}
                                 {activeTab === 'settings' && 'ตั้งค่าข้อมูลพื้นฐาน และ พนักงาน IT'}
+                                {activeTab === 'manual' && 'คู่มือการใช้งานระบบอย่างละเอียด'}
                             </h2>
                         </div>
-                        <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors shrink-0 ml-2">
-                            <RefreshCw size={16} className="mr-2" /> <span className="hidden sm:inline">รีเฟรชข้อมูล</span>
-                        </button>
+                        <div className="flex items-center">
+                            {isAdmin && (
+                                <button onClick={() => { setIsAdmin(false); setActiveTab('repair'); localStorage.removeItem('sawee_it_pin'); setIsAuthenticated(false); }} className="text-sm font-semibold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors mr-2">
+                                    ออกจากระบบ (Logout)
+                                </button>
+                            )}
+                            <button onClick={fetchAllData} className="flex items-center text-sm text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors shrink-0">
+                                <RefreshCw size={16} className="mr-2" /> <span className="hidden sm:inline">รีเฟรชข้อมูล</span>
+                            </button>
+                        </div>
                     </header>
                     
                     {apiError && (
@@ -386,6 +604,7 @@
                         
                         {activeTab === 'admin_workload' && isAdmin && <StaffWorkload notify={handleNotify} apiCall={apiCall} tickets={tickets} setTickets={setTickets} staffList={staffList} equipments={equipments} />}
                         {activeTab === 'settings' && isAdmin && <SettingsView departments={departments} setDepartments={setDepartments} types={types} setTypes={setTypes} staffList={staffList} setStaffList={setStaffList} apiCall={apiCall} notify={handleNotify} />}
+                        {activeTab === 'manual' && <UserManual isAdmin={isAdmin} />}
                     </main>
                 </div>
 
@@ -442,135 +661,119 @@
             </button>
         );
 
-        // --- MANAGERS ---
-        
-        const EquipmentManager = ({ equipments, setEquipments, departments, types, apiCall, onPrintSticker, onShowQR, onAIAnalyze, notify }) => {
-            const [view, setView] = useState('list'); 
-            const [editingItem, setEditingItem] = useState(null);
+        // --- COMPONENTS & MANAGERS ---
 
-            const handleSave = async (data) => {
-                if (editingItem) {
-                    const success = await apiCall('Equipments', 'update', data);
-                    if (success) {
-                        setEquipments(equipments.map(e => e.Id === data.Id ? data : e));
-                        notify("อัปเดตข้อมูลครุภัณฑ์สำเร็จ");
-                        setView('list');
-                        setEditingItem(null);
-                    }
-                } else {
-                    const success = await apiCall('Equipments', 'append', data);
-                    if (success) {
-                        setEquipments([...equipments, data]);
-                        notify("บันทึกข้อมูลครุภัณฑ์สำเร็จ");
-                        setView('list');
-                    }
-                }
-            };
-
-            const handleEdit = (item) => {
-                setEditingItem(item);
-                setView('form');
-            };
-
-            const handleDelete = async (id) => {
-                if(confirm('ยืนยันการลบข้อมูลครุภัณฑ์นี้?')) {
-                    const success = await apiCall('Equipments', 'delete', { Id: id });
-                    if (success) {
-                        setEquipments(equipments.filter(e => e.Id !== id));
-                        notify("ลบข้อมูลครุภัณฑ์สำเร็จ");
-                    }
-                }
-            };
-
+        const UserManual = ({ isAdmin }) => {
             return (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-800">
-                            {view === 'list' ? 'รายการครุภัณฑ์ทั้งหมด' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'แบบฟอร์มลงทะเบียนครุภัณฑ์')}
-                        </h3>
-                        {view === 'list' ? (
-                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
-                                <PlusCircle size={16} /> ลงทะเบียนครุภัณฑ์ใหม่
-                            </button>
-                        ) : (
-                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
-                                <ArrowLeft size={16} /> กลับหน้ารายการ
-                            </button>
-                        )}
+                <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-slate-200 animate-in fade-in duration-500 text-gray-700">
+                    <div className="flex items-center gap-4 border-b pb-6 mb-8">
+                        <div className="bg-blue-100 p-4 rounded-full text-blue-600"><BookOpen size={36}/></div>
+                        <div>
+                            <h1 className="text-3xl font-black text-gray-800">คู่มือการใช้งานระบบ IT Helpdesk</h1>
+                            <p className="text-gray-500 mt-1">โรงพยาบาลสวี (ฉบับสมบูรณ์)</p>
+                        </div>
                     </div>
-                    {view === 'list' ? (
-                        <EquipmentList equipments={equipments} onEdit={handleEdit} onDelete={handleDelete} onShowQR={onShowQR} onPrintSticker={onPrintSticker} onAIAnalyze={onAIAnalyze} departments={departments} types={types} />
-                    ) : (
-                        <EquipmentForm initialData={editingItem} departments={departments} types={types} onSave={handleSave} currentEquipments={equipments} apiCall={apiCall} notify={notify} />
-                    )}
+
+                    <div className="space-y-10 leading-relaxed text-sm md:text-base">
+                        <section>
+                            <h2 className="text-xl font-bold text-blue-800 mb-4 bg-blue-50 py-2 px-4 rounded-lg border-l-4 border-blue-500">ส่วนที่ 1: บทนำและสิทธิ์การใช้งาน</h2>
+                            <p className="mb-3">ระบบนี้ถูกออกแบบมาเพื่ออำนวยความสะดวกในการบริหารจัดการครุภัณฑ์คอมพิวเตอร์ และศูนย์บริการรับแจ้งซ่อมปัญหาไอทีของโรงพยาบาล โดยแบ่งผู้ใช้งานออกเป็น 2 ระดับ:</p>
+                            <ul className="list-disc pl-8 space-y-2 mb-4">
+                                <li><b>ผู้ใช้งานทั่วไป (General User):</b> สามารถแจ้งซ่อม, ขอข้อมูลรายงาน, ติดตามสถานะงาน และอ่านคู่มือได้โดยไม่ต้องมีรหัสผ่าน</li>
+                                <li><b>ผู้ดูแลระบบ (Admin / IT Staff):</b> ต้องใช้รหัสผ่าน 5 หลักเพื่อเข้าสู่ระบบ (รหัสผ่านนี้ตั้งค่าไว้ที่ Backend) จะมีสิทธิ์เข้าถึงเมนู Dashboard, การจัดการทะเบียนครุภัณฑ์, ลงทะเบียนซอฟต์แวร์ และการจ่ายงานช่าง</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2 className="text-xl font-bold text-blue-800 mb-4 bg-blue-50 py-2 px-4 rounded-lg border-l-4 border-blue-500">ส่วนที่ 2: สำหรับผู้ใช้งานทั่วไป (General User)</h2>
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">2.1 การแจ้งปัญหา / ส่งซ่อม IT</h3>
+                                    <ol className="list-decimal pl-6 space-y-2">
+                                        <li>ไปที่เมนู <b>"แจ้งซ่อม IT"</b> ที่แถบเมนูด้านซ้าย</li>
+                                        <li>กรอก <b>ชื่อผู้แจ้ง</b> และเลือก <b>หน่วยงาน</b> ของท่าน</li>
+                                        <li>หากทราบรหัสครุภัณฑ์ ให้กรอกในช่อง <b>รหัสระบบครุภัณฑ์</b> ระบบจะมี Dropdown แนะนำให้ หรือท่านสามารถคลิกไอคอน QR Code เพื่อเปิดกล้องมือถือสแกนสติกเกอร์ที่ติดอยู่บนเครื่องได้ทันที</li>
+                                        <li>เลือกประเภทอุปกรณ์ (Hardware, Software, Printer, Network)</li>
+                                        <li>กรอก <b>รายละเอียดปัญหา</b> ที่พบให้ชัดเจน (เช่น ปริ้นไม่ออก, เปิดไม่ติด, เข้าโปรแกรมไม่ได้)</li>
+                                        <li><b>ฟีเจอร์พิเศษ (AI ช่วยเหลือ):</b> 
+                                            <ul className="list-disc pl-6 mt-2 text-gray-600">
+                                                <li>ปุ่ม <b>"ให้ AI ช่วยประเมิน"</b>: AI จะช่วยวิเคราะห์ว่าปัญหาของท่านมีความเร่งด่วนระดับใด (ทั่วไป, เร่งด่วน, วิกฤต) พร้อมบอกเหตุผล</li>
+                                                <li>ปุ่ม <b>"ขอวิธีแก้ปัญหาเบื้องต้น"</b>: ให้ AI แนะนำวิธีแก้ปัญหาปฐมพยาบาลเบื้องต้นด้วยตนเองก่อนช่างไปถึง</li>
+                                            </ul>
+                                        </li>
+                                        <li>กดปุ่ม <b>"ส่งเรื่องแจ้งซ่อมให้ช่าง"</b> ท่านจะได้รับ Ticket ID สำหรับใช้ติดตามงาน</li>
+                                    </ol>
+                                </div>
+                                
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">2.2 การติดตามสถานะงาน</h3>
+                                    <p className="mb-2">ผู้ใช้งานสามารถตรวจสอบว่างานของท่านช่างดำเนินการถึงไหนแล้ว โดยคลิกที่เมนู <b>"ติดตามสถานะงาน"</b></p>
+                                    <ul className="list-disc pl-6 space-y-1">
+                                        <li><b>คอลัมน์สีส้ม (Pending):</b> งานที่เพิ่งแจ้งเข้ามา และรอช่างรับเรื่อง</li>
+                                        <li><b>คอลัมน์สีฟ้า (In Progress):</b> งานที่ช่างรับเรื่องแล้ว (มีชื่อช่างกำกับ) และกำลังดำเนินการแก้ไข</li>
+                                        <li><b>คอลัมน์สีเขียว (Completed):</b> งานที่ซ่อมเสร็จสิ้นแล้ว จะระบุวันที่ปิดงานและการแก้ไข</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2 className="text-xl font-bold text-blue-800 mb-4 bg-blue-50 py-2 px-4 rounded-lg border-l-4 border-blue-500">ส่วนที่ 3: สำหรับผู้ดูแลระบบ (Admin)</h2>
+                            <p className="mb-4 text-orange-600 font-semibold text-sm flex items-center gap-2"><AlertTriangle size={16}/> *การเข้าถึงส่วนนี้ต้องใช้รหัส PIN 5 หลัก (คลิกที่ Admin Login)</p>
+                            
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">3.1 การตั้งค่าระบบพื้นฐาน (สำคัญมากในครั้งแรก)</h3>
+                                    <p className="mb-2">ก่อนเริ่มใช้ระบบ แอดมินต้องไปที่เมนู <b>"ตั้งค่าระบบ / พนักงาน"</b> เพื่อกำหนดค่าเริ่มต้น:</p>
+                                    <ul className="list-disc pl-6 space-y-1">
+                                        <li><b>ตั้งค่าหน่วยงาน:</b> เพิ่มรายชื่อแผนก/ตึกต่างๆ ในโรงพยาบาล เพื่อให้ปรากฏใน Dropdown ตอนผู้ใช้แจ้งซ่อม</li>
+                                        <li><b>ชนิดอุปกรณ์:</b> เพิ่มหมวดหมู่อุปกรณ์ เช่น ชุดเครื่องคอมพิวเตอร์, ปริ้นเตอร์เลเซอร์, เครื่องคอมพิวเตอร์พกพา ฯลฯ</li>
+                                        <li><b>พนักงาน IT:</b> เพิ่มรายชื่อทีมงานไอทีที่จะทำหน้าที่รับงานซ่อม (ระบบจะสุ่มสี Avatar ให้เอง)</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">3.2 การขึ้นทะเบียนครุภัณฑ์ (Equipment Manager)</h3>
+                                    <p className="mb-2">ไปที่เมนู <b>"จัดการครุภัณฑ์"</b> เพื่อลงทะเบียนเครื่องเข้าสู่ฐานข้อมูล:</p>
+                                    <ul className="list-disc pl-6 space-y-1">
+                                        <li>กดปุ่ม "ลงทะเบียนครุภัณฑ์ใหม่" ขวาบน</li>
+                                        <li>เลือกชนิดอุปกรณ์ ระบบจะสร้าง Auto ID ให้ หรือพิมพ์แก้ไขเองได้</li>
+                                        <li>แอดมินสามารถ <b>อัปโหลดภาพถ่ายอุปกรณ์</b> ได้ทันที (หากทำบนมือถือ สามารถกดถ่ายรูปได้เลย)</li>
+                                        <li>ในหน้ารายการครุภัณฑ์ มีปุ่ม <b>"พิมพ์สติกเกอร์"</b> (ไอคอนเครื่องพิมพ์) ระบบจะสร้าง QR Code พร้อมรายละเอียดเพื่อสั่งพิมพ์ติดที่เครื่องได้ทันที</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">3.3 การจัดการซอฟต์แวร์ (Software Manager)</h3>
+                                    <p className="mb-2">เมนูนี้ใช้เพื่อบันทึกว่าคอมพิวเตอร์เครื่องใด (ดึงข้อมูลจากทะเบียนครุภัณฑ์) ติดตั้งโปรแกรมอะไรไว้บ้าง</p>
+                                    <ul className="list-disc pl-6 space-y-1">
+                                        <li>เลือกรหัสเครื่องจาก Dropdown</li>
+                                        <li>ติ๊กเลือกโปรแกรมมาตรฐาน หรือพิมพ์ชื่อโปรแกรมเฉพาะทางเพิ่มเองได้</li>
+                                        <li>ในหน้ารายการ จะมีฟิลเตอร์ค้นหาชื่อโปรแกรม ระบบจะสรุป(นับจำนวน) ให้ว่ามีกี่เครื่องที่ลงโปรแกรมนั้นอยู่</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-lg mb-2">3.4 การบริหารจัดการงานซ่อม (Admin Workload)</h3>
+                                    <p className="mb-2">เมนู <b>"Admin Workload"</b> คือหัวใจหลักของทีม IT ในการจ่ายงานและปิดงาน:</p>
+                                    <ol className="list-decimal pl-6 space-y-2">
+                                        <li><b>การรับงาน:</b> งานที่เข้ามาใหม่จะอยู่ในตาราง "งานใหม่รอจ่าย" แอดมินสามารถจ่ายงานให้ทีมงานได้โดยการคลิกที่วงกลมชื่อย่อช่าง</li>
+                                        <li><b>การปิดงาน/อัปเดต:</b> ในตาราง "งานที่กำลังดำเนินการ" ให้คลิกปุ่ม <b>"จัดการงาน"</b> เพื่ออัปเดตสถานะเป็น Completed และเพิ่มรายการอะไหล่</li>
+                                        <li><b>การพิมพ์ใบส่งซ่อม:</b> ในตารางจะมีปุ่ม "พิมพ์" ระบบจะสร้างฟอร์มใบส่งซ่อมบำรุงรูปแบบราชการ (A4) มาให้</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="bg-gray-800 text-white p-6 rounded-xl mt-8">
+                            <h2 className="text-lg font-bold mb-2 flex items-center gap-2"><PhoneCall size={20}/> ช่องทางการติดต่อสอบถาม</h2>
+                            <p>หากพบปัญหาในการใช้งานระบบนี้ กรุณาติดต่อหน่วยงาน IT ของโรงพยาบาล<br/><br/>
+                            <span className="text-xl font-bold text-yellow-400">สายด่วนภายใน: ต่อ 503</span></p>
+                        </section>
+                    </div>
                 </div>
             );
         };
-
-        const SoftwareManager = ({ softwares, setSoftwares, equipments, apiCall, notify }) => {
-            const [view, setView] = useState('list');
-            const [editingItem, setEditingItem] = useState(null);
-
-            const handleSave = async (data) => {
-                if (editingItem) {
-                    const success = await apiCall('Softwares', 'update', data);
-                    if (success) {
-                        setSoftwares(softwares.map(s => s.id === data.id ? data : s));
-                        notify("อัปเดตข้อมูลซอฟต์แวร์สำเร็จ");
-                        setView('list');
-                        setEditingItem(null);
-                    }
-                } else {
-                    const success = await apiCall('Softwares', 'append', data);
-                    if (success) {
-                        setSoftwares([...softwares, data]);
-                        notify("บันทึกข้อมูลซอฟต์แวร์สำเร็จ");
-                        setView('list');
-                    }
-                }
-            };
-
-            const handleEdit = (item) => {
-                setEditingItem(item);
-                setView('form');
-            }
-
-            const handleDelete = async (id) => {
-                if(confirm('ยืนยันการลบข้อมูลนี้?')) {
-                    const success = await apiCall('Softwares', 'delete', { id: id });
-                    if (success) {
-                        setSoftwares(softwares.filter(s => s.id !== id));
-                        notify("ลบข้อมูลสำเร็จ");
-                    }
-                }
-            };
-
-            return (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-800">
-                            {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem ? 'แก้ไขซอฟต์แวร์' : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
-                        </h3>
-                        {view === 'list' ? (
-                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
-                                <PlusCircle size={16} /> ลงทะเบียนซอฟต์แวร์ใหม่
-                            </button>
-                        ) : (
-                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
-                                <ArrowLeft size={16} /> กลับหน้ารายการ
-                            </button>
-                        )}
-                    </div>
-                    {view === 'list' ? (
-                        <SoftwareList softwares={softwares} onEdit={handleEdit} onDelete={handleDelete} />
-                    ) : (
-                        <SoftwareForm initialData={editingItem} equipments={equipments} onSave={handleSave} currentSoftwares={softwares} />
-                    )}
-                </div>
-            );
-        };
-
-        // --- COMPONENTS --- //
 
         const DashboardView = ({ equipments }) => {
             const stats = {
@@ -637,6 +840,69 @@
                     <p className="text-green-600 text-sm text-center md:text-left">ระบบพร้อมใช้งาน โหลดข้อมูลเสร็จสิ้นเรียบร้อยแล้ว</p>
                     </div>
                 </div>
+                </div>
+            );
+        };
+
+        const EquipmentManager = ({ equipments, setEquipments, departments, types, apiCall, onPrintSticker, onShowQR, onAIAnalyze, notify }) => {
+            const [view, setView] = useState('list'); 
+            const [editingItem, setEditingItem] = useState(null);
+
+            const handleSave = async (data) => {
+                if (editingItem) {
+                    const success = await apiCall('Equipments', 'update', data);
+                    if (success) {
+                        setEquipments(equipments.map(e => e.Id === data.Id ? data : e));
+                        notify("อัปเดตข้อมูลครุภัณฑ์สำเร็จ");
+                        setView('list');
+                        setEditingItem(null);
+                    }
+                } else {
+                    const success = await apiCall('Equipments', 'append', data);
+                    if (success) {
+                        setEquipments([...equipments, data]);
+                        notify("บันทึกข้อมูลครุภัณฑ์สำเร็จ");
+                        setView('list');
+                    }
+                }
+            };
+
+            const handleEdit = (item) => {
+                setEditingItem(item);
+                setView('form');
+            };
+
+            const handleDelete = async (id) => {
+                if(confirm('ยืนยันการลบข้อมูลครุภัณฑ์นี้?')) {
+                    const success = await apiCall('Equipments', 'delete', { Id: id });
+                    if (success) {
+                        setEquipments(equipments.filter(e => e.Id !== id));
+                        notify("ลบข้อมูลครุภัณฑ์สำเร็จ");
+                    }
+                }
+            };
+
+            return (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {view === 'list' ? 'รายการครุภัณฑ์ทั้งหมด' : (editingItem ? 'แก้ไขข้อมูลครุภัณฑ์' : 'แบบฟอร์มลงทะเบียนครุภัณฑ์')}
+                        </h3>
+                        {view === 'list' ? (
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
+                                <PlusCircle size={16} /> ลงทะเบียนครุภัณฑ์ใหม่
+                            </button>
+                        ) : (
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
+                                <ArrowLeft size={16} /> กลับหน้ารายการ
+                            </button>
+                        )}
+                    </div>
+                    {view === 'list' ? (
+                        <EquipmentList equipments={equipments} onEdit={handleEdit} onDelete={handleDelete} onShowQR={onShowQR} onPrintSticker={onPrintSticker} onAIAnalyze={onAIAnalyze} departments={departments} types={types} />
+                    ) : (
+                        <EquipmentForm initialData={editingItem} departments={departments} types={types} onSave={handleSave} currentEquipments={equipments} apiCall={apiCall} notify={notify} />
+                    )}
                 </div>
             );
         };
@@ -857,6 +1123,220 @@
             );
         };
 
+        const EquipmentList = ({ equipments, onEdit, onDelete, onShowQR, onPrintSticker, onAIAnalyze, departments, types }) => {
+            const [filterDept, setFilterDept] = useState('');
+            const [filterType, setFilterType] = useState('');
+            const [filterStatus, setFilterStatus] = useState('');
+
+            const filteredData = equipments.filter(e => {
+                return (filterDept === '' || e.department === filterDept) && (filterType === '' || e.Type === filterType) && (filterStatus === '' || e.Status === filterStatus);
+            });
+
+            const getStatusBadge = (status) => {
+                switch(status) {
+                case 'พร้อมใช้งาน': return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold flex items-center w-max"><CheckCircle size={12} className="mr-1"/> พร้อมใช้งาน</span>;
+                case 'ส่งซ่อม': return <span className="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold flex items-center w-max"><Wrench size={12} className="mr-1"/> ส่งซ่อม</span>;
+                case 'แทงชำรุด': return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold flex items-center w-max"><XCircle size={12} className="mr-1"/> แทงชำรุด</span>;
+                default: return <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-[10px] font-bold">{status}</span>;
+                }
+            };
+
+            return (
+                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center text-gray-600 font-medium mr-2"><Filter size={18} className="mr-2"/> กรองข้อมูล:</div>
+                    <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกหน่วยงาน</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select>
+                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกชนิดอุปกรณ์</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select>
+                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกสถานะ</option><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ส่งซ่อม">ส่งซ่อม</option><option value="แทงชำรุด">แทงชำรุด</option></select>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                        <tr><th className="p-4 font-semibold w-16">รูป</th><th className="p-4 font-semibold">รหัสระบบ</th><th className="p-4 font-semibold">ชื่อ / ชนิด / เลขรพ.</th><th className="p-4 font-semibold">หน่วยงาน (สถานที่)</th><th className="p-4 font-semibold">สถานะ</th><th className="p-4 font-semibold text-center">จัดการ</th></tr>
+                    </thead>
+                    <tbody className="text-sm">
+                        {filteredData.length === 0 ? (<tr><td colSpan="6" className="p-12 text-center text-gray-500 bg-white">ยังไม่มีข้อมูลในระบบ</td></tr>) : filteredData.slice().reverse().map(eq => (
+                        <tr key={eq.Id} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition">
+                            <td className="p-4">
+                                {eq.Image_URL ? (
+                                    <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Image_URL} alt="eq" className="w-full h-full object-cover" /></div>
+                                ) : (
+                                    <div className="w-12 h-12 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
+                                )}
+                            </td>
+                            <td className="p-4 font-medium text-blue-700 font-mono">{eq.Id}</td>
+                            <td className="p-4">
+                                <div className="font-bold text-gray-800">{eq.name || '-'}</div>
+                                <div className="text-xs text-gray-500 mt-1">{eq.Type} • {eq.Id_equipment}</div>
+                            </td>
+                            <td className="p-4">
+                                <div className="text-gray-700 font-medium">{eq.department}</div>
+                                <div className="text-xs text-gray-400 mt-1">{eq.Location || '-'}</div>
+                            </td>
+                            <td className="p-4">{getStatusBadge(eq.Status)}</td>
+                            <td className="p-4 text-right">
+                            <div className="flex justify-end space-x-2">
+                                {["ชุดเครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา", "คอมพิวเตอร์แม่ข่าย"].some(t => eq.Type.includes(t)) && (
+                                    <button onClick={() => onAIAnalyze(eq)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 shadow-sm" title="AI วิเคราะห์"><Sparkles size={16}/></button>
+                                )}
+                                <button onClick={() => onEdit(eq)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไขข้อมูล"><Edit size={16}/></button>
+                                <button onClick={() => onShowQR(eq)} className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 shadow-sm" title="ดู QR Code"><QrCode size={16}/></button>
+                                <button onClick={() => onPrintSticker(eq)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 shadow-sm" title="พิมพ์สติกเกอร์"><Printer size={16}/></button>
+                                <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={16}/></button>
+                            </div>
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                    </table>
+                </div>
+                </div>
+            );
+        };
+
+        const SoftwareManager = ({ softwares, setSoftwares, equipments, apiCall, notify }) => {
+            const [view, setView] = useState('list');
+            const [editingItem, setEditingItem] = useState(null);
+
+            const handleSave = async (data) => {
+                if (editingItem) {
+                    const success = await apiCall('Softwares', 'update', data);
+                    if (success) {
+                        setSoftwares(softwares.map(s => s.id === data.id ? data : s));
+                        notify("อัปเดตข้อมูลซอฟต์แวร์สำเร็จ");
+                        setView('list');
+                        setEditingItem(null);
+                    }
+                } else {
+                    const success = await apiCall('Softwares', 'append', data);
+                    if (success) {
+                        setSoftwares([...softwares, data]);
+                        notify("บันทึกข้อมูลซอฟต์แวร์สำเร็จ");
+                        setView('list');
+                    }
+                }
+            };
+
+            const handleEdit = (item) => {
+                setEditingItem(item);
+                setView('form');
+            }
+
+            const handleDelete = async (id) => {
+                if(confirm('ยืนยันการลบข้อมูลนี้?')) {
+                    const success = await apiCall('Softwares', 'delete', { id: id });
+                    if (success) {
+                        setSoftwares(softwares.filter(s => s.id !== id));
+                        notify("ลบข้อมูลสำเร็จ");
+                    }
+                }
+            };
+
+            return (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {view === 'list' ? 'รายการซอฟต์แวร์ประจำเครื่อง' : (editingItem ? 'แก้ไขซอฟต์แวร์' : 'แบบฟอร์มลงทะเบียนซอฟต์แวร์')}
+                        </h3>
+                        {view === 'list' ? (
+                            <button onClick={() => { setEditingItem(null); setView('form'); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700 flex items-center justify-center gap-2 transition">
+                                <PlusCircle size={16} /> ลงทะเบียนซอฟต์แวร์ใหม่
+                            </button>
+                        ) : (
+                            <button onClick={() => { setView('list'); setEditingItem(null); }} className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition">
+                                <ArrowLeft size={16} /> กลับหน้ารายการ
+                            </button>
+                        )}
+                    </div>
+                    {view === 'list' ? (
+                        <SoftwareList softwares={softwares} onEdit={handleEdit} onDelete={handleDelete} />
+                    ) : (
+                        <SoftwareForm initialData={editingItem} equipments={equipments} onSave={handleSave} currentSoftwares={softwares} />
+                    )}
+                </div>
+            );
+        };
+
+        const SoftwareForm = ({ initialData, equipments, onSave, currentSoftwares }) => {
+            const pcList = equipments.filter(eq => ["ชุดเครื่องคอมพิวเตอร์", "คอมพิวเตอร์แม่ข่าย", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา"].some(t=>eq.Type.includes(t)));
+            
+            const [formData, setFormData] = useState(initialData || { id: generate5DigitId(currentSoftwares, 'id'), Computer_Name: '', programs: [], customProgram: '' });
+
+            useEffect(() => {
+                if (initialData) setFormData(initialData);
+            }, [initialData]);
+
+            const handleCheck = (prog) => {
+                let newProgs = [...formData.programs];
+                if (newProgs.includes(prog)) newProgs = newProgs.filter(p => p !== prog); else newProgs.push(prog);
+                setFormData({ ...formData, programs: newProgs });
+            };
+
+            const addCustomProgram = () => {
+                if (formData.customProgram.trim() && !formData.programs.includes(formData.customProgram.trim())) {
+                    setFormData({ ...formData, programs: [...formData.programs, formData.customProgram.trim()], customProgram: '' });
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if(!formData.Computer_Name) return alert('กรุณาเลือกเครื่องคอมพิวเตอร์');
+                onSave({ id: formData.id, Computer_Name: formData.Computer_Name, programs: formData.programs });
+            };
+
+            return (
+                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเครื่องคอมพิวเตอร์ <span className="text-red-500">*</span></label>
+                    <select value={formData.Computer_Name} onChange={(e) => setFormData({...formData, Computer_Name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-white" required disabled={initialData}>
+                        <option value="">-- เลือกจากฐานข้อมูลครุภัณฑ์ --</option>
+                        {pcList.map(pc => <option key={pc.Id} value={pc.Id}>{pc.Id} - {pc.name || pc.Type} ({pc.department})</option>)}
+                    </select>
+                    {pcList.length === 0 && <p className="text-sm text-red-500 mt-2 flex items-center"><XCircle size={14} className="mr-1"/> ไม่มีข้อมูลคอมพิวเตอร์ในระบบ กรุณาลงทะเบียนครุภัณฑ์ก่อน</p>}
+                    </div>
+
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">โปรแกรมหลัก (Checklist)</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
+                        {defaultSoftware.map(prog => (
+                        <label key={prog} className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-slate-100">
+                            <input type="checkbox" checked={formData.programs.includes(prog)} onChange={() => handleCheck(prog)} className="w-5 h-5 text-blue-600 rounded border-gray-300" />
+                            <span className="text-gray-700 font-medium">{prog}</span>
+                        </label>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">เพิ่มโปรแกรมอื่นๆ</label>
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                        <input type="text" value={formData.customProgram || ''} onChange={e => setFormData({...formData, customProgram: e.target.value})} onKeyDown={e => e.key === 'Enter' ? (e.preventDefault(), addCustomProgram()) : null} placeholder="พิมพ์ชื่อโปรแกรม..." className="flex-1 p-3 border border-gray-300 rounded-xl outline-none" />
+                        <button type="button" onClick={addCustomProgram} className="bg-slate-800 text-white px-6 py-3 rounded-xl hover:bg-slate-700 font-medium">เพิ่ม</button>
+                    </div>
+                    {formData.programs.filter(p => !defaultSoftware.includes(p)).length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                        {formData.programs.filter(p => !defaultSoftware.includes(p)).map(prog => (
+                            <span key={prog} className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-medium flex items-center">
+                            {prog} <button type="button" onClick={() => handleCheck(prog)} className="ml-2 text-blue-400 hover:text-red-500"><XCircle size={16}/></button>
+                            </span>
+                        ))}
+                        </div>
+                    )}
+                    </div>
+
+                    <div className="pt-6 mt-4 border-t flex justify-end">
+                    <button type="submit" className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center justify-center">
+                        <Save className="w-5 h-5 mr-2" /> 
+                        {initialData ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
+                    </button>
+                    </div>
+                </form>
+                </div>
+            );
+        };
+
         const SoftwareList = ({ softwares, onEdit, onDelete }) => {
             const [searchTerm, setSearchTerm] = useState('');
             
@@ -1065,10 +1545,15 @@
 
         function RepairForm({ notify, apiCall, tickets, setTickets, departments, equipments = [] }) {
             const [description, setDescription] = useState('');
-            const [aiSuggestion, setAiSuggestion] = useState(null);
-            const [isAnalyzing, setIsAnalyzing] = useState(false);
-            const [selectedDevice, setSelectedDevice] = useState('Hardware');
+            const [aiAdviceModal, setAiAdviceModal] = useState({ isOpen: false, text: '', isError: false });
+            const [aiAdviceInlineError, setAiAdviceInlineError] = useState(null);
+            const [isAnalyzingAdvice, setIsAnalyzingAdvice] = useState(false);
+
+            const [urgency, setUrgency] = useState("ทั่วไป");
+            const [urgencyReason, setUrgencyReason] = useState("");
+            const [isAnalyzingUrgency, setIsAnalyzingUrgency] = useState(false);
             
+            const [selectedDevice, setSelectedDevice] = useState('Hardware');
             const [assetId, setAssetId] = useState('');
             const [filteredEqs, setFilteredEqs] = useState([]);
             const [showEqSuggestions, setShowEqSuggestions] = useState(false);
@@ -1106,7 +1591,7 @@
                     Asset_ID: assetId || "-",
                     Device_Type: selectedDevice,
                     Description: description,
-                    Urgency: form.urgency.value,
+                    Urgency: urgency,
                     Status: "Pending",
                     Assignee: "-",
                     Device_Status: "-",
@@ -1126,7 +1611,8 @@
                     form.reset();
                     setDescription('');
                     setAssetId('');
-                    setAiSuggestion(null);
+                    setUrgency('ทั่วไป');
+                    setUrgencyReason('');
                 }
             };
 
@@ -1136,16 +1622,56 @@
                 setShowEqSuggestions(false);
             };
 
-            const handleGetAdvice = () => {
+            const handleGetAdvice = async () => {
                 if (!description.trim()) return alert("กรุณาระบุรายละเอียดปัญหาก่อนขอคำแนะนำ");
-                setIsAnalyzing(true); setAiSuggestion(null);
-                setTimeout(() => {
-                    const lower = description.toLowerCase();
-                    let suggestion = "AI รับทราบปัญหาเบื้องต้น... \nแนะนำให้กด 'ส่งเรื่องแจ้งซ่อม' เพื่อส่งเรื่องให้เจ้าหน้าที่ IT ครับ";
-                    if (lower.includes('ปริ้น') || lower.includes('print')) suggestion = "แนะนำเบื้องต้น: \n1. ตรวจสอบกระดาษ หรือ สาย USB/LAN ว่าหลุดหรือไม่\n2. ลอง Restart เครื่องพิมพ์";
-                    else if (lower.includes('net') || lower.includes('lan') || lower.includes('เน็ต')) suggestion = "แนะนำเบื้องต้น: \n1. สังเกตไฟที่ช่อง LAN หลังเครื่องคอมฯ ว่ากระพริบหรือไม่\n2. ถอดสาย LAN แล้วเสียบใหม่";
-                    setAiSuggestion(suggestion); setIsAnalyzing(false);
-                }, 1000);
+                setIsAnalyzingAdvice(true); 
+                setAiAdviceInlineError(null);
+                
+                try {
+                    const response = await apiCall('Tickets', 'getAIAdvice', {
+                        description: description,
+                        deviceType: selectedDevice
+                    });
+                    
+                    if (response && response.text) {
+                        if(response.text.includes("ขัดข้อง") || response.text.includes("กำลังปรับปรุง")) {
+                            setAiAdviceInlineError(response.text);
+                        } else {
+                            setAiAdviceModal({ isOpen: true, text: response.text, isError: false });
+                        }
+                    } else {
+                        setAiAdviceInlineError("ไม่สามารถเชื่อมต่อ AI ได้ในขณะนี้ แนะนำให้กดส่งเรื่องแจ้งซ่อมเพื่อให้ช่างตรวจสอบครับ");
+                    }
+                } catch (error) {
+                    setAiAdviceInlineError("ระบบ AI เกิดข้อผิดพลาดในการเชื่อมต่อ แนะนำให้ส่งเรื่องแจ้งซ่อมได้เลยครับ");
+                } finally {
+                    setIsAnalyzingAdvice(false);
+                }
+            };
+
+            const handleGetUrgencyAI = async () => {
+                if (!description.trim()) return alert("กรุณาระบุรายละเอียดปัญหาก่อนให้ AI ประเมินความเร่งด่วน");
+                setIsAnalyzingUrgency(true);
+                setUrgencyReason("");
+                
+                try {
+                    const response = await apiCall('Tickets', 'getAIUrgency', { description: description });
+                    
+                    if (response && response.data && response.status === 'success') {
+                        let level = response.data.level;
+                        if(level.includes("วิกฤต")) setUrgency("วิกฤต");
+                        else if(level.includes("เร่งด่วน")) setUrgency("เร่งด่วน");
+                        else setUrgency("ทั่วไป");
+
+                        setUrgencyReason(response.data.reason);
+                    } else {
+                        setUrgencyReason("AI ไม่สามารถประเมินได้ในขณะนี้ กรุณาเลือกด้วยตนเอง");
+                    }
+                } catch (error) {
+                    setUrgencyReason("เกิดข้อผิดพลาดในการเชื่อมต่อ AI");
+                } finally {
+                    setIsAnalyzingUrgency(false);
+                }
             };
 
             return (
@@ -1197,42 +1723,92 @@
                     </div>
 
                     <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-slate-700">รายละเอียดปัญหา <span className="text-red-500">*</span></label>
-                    <textarea rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none resize-none focus:border-blue-500" placeholder="ระบุอาการที่พบ หรือข้อความ Error" required value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
-                    {aiSuggestion && (<div className="mt-3 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 p-4 rounded-xl flex gap-3"><Sparkles className="w-5 h-5 text-indigo-600 shrink-0" /><div className="flex-1"><p className="text-sm text-indigo-900 whitespace-pre-line font-medium">{aiSuggestion}</p><button type="button" onClick={() => setAiSuggestion(null)} className="text-xs text-indigo-500 underline mt-2">ปิดคำแนะนำ</button></div></div>)}
+                        <label className="text-sm font-bold text-slate-700">รายละเอียดปัญหา <span className="text-red-500">*</span></label>
+                        <textarea rows="4" className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none resize-none focus:border-blue-500" placeholder="ระบุอาการที่พบ หรือข้อความ Error" required value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+                        
+                        {/* Error ธรรมดา กรณี AI Advice เสีย */}
+                        {aiAdviceInlineError && (
+                            <div className="mt-2 text-sm text-orange-700 bg-orange-50 border border-orange-200 p-3 rounded-xl flex items-center gap-2">
+                                <AlertTriangle size={16} className="shrink-0"/> {aiAdviceInlineError}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">ระดับความเร่งด่วน <span className="text-red-500">*</span></label>
-                    <div className="flex flex-col gap-3">
-                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="ทั่วไป" className="w-4 h-4 shrink-0" defaultChecked />
-                            <div><span className="text-sm font-bold text-slate-700">ทั่วไป</span> <span className="text-xs text-slate-500 ml-2 block sm:inline">(สามารถใช้งานได้ พอมีทางเลี่ยงอื่นได้)</span></div>
-                        </label>
-                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-orange-50 has-[:checked]:border-orange-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="เร่งด่วน" className="w-4 h-4 shrink-0" />
-                            <div><span className="text-sm font-bold text-orange-600">เร่งด่วน</span> <span className="text-xs text-orange-500/80 ml-2 block sm:inline">(กระทบคนกลุ่มใหญ่ ต้องแก้ภายใน 1-8 ชั่วโมง)</span></div>
-                        </label>
-                        <label className="border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer has-[:checked]:bg-rose-50 has-[:checked]:border-rose-500 hover:bg-slate-50 transition">
-                            <input type="radio" name="urgency" value="วิกฤต" className="w-4 h-4 shrink-0" />
-                            <div><span className="text-sm font-bold text-rose-600 flex items-center gap-1 inline-flex"><Zap size={14}/> วิกฤต</span> <span className="text-xs text-rose-500/80 ml-2 block sm:inline">(ระบบหลักทำงานไม่ได้ ล่มทั้ง รพ. ต้องแก้ไขทันที)</span></div>
-                        </label>
-                    </div>
+                    <div className="space-y-2 border-t pt-4">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-sm font-bold text-slate-700">ระดับความเร่งด่วน <span className="text-red-500">*</span></label>
+                            <button type="button" onClick={handleGetUrgencyAI} disabled={isAnalyzingUrgency} className="text-xs flex items-center gap-1 bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-1.5 rounded-full font-bold transition">
+                                {isAnalyzingUrgency ? <Loader2 size={12} className="animate-spin" /> : <BrainCircuit size={14} />} ให้ AI ช่วยประเมิน
+                            </button>
+                        </div>
+                        
+                        {urgencyReason && (
+                            <div className="mb-3 bg-purple-50 border border-purple-100 p-3 rounded-xl flex gap-3 text-sm text-purple-900 animate-in fade-in">
+                                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
+                                <div><span className="font-bold">AI วิเคราะห์แล้ว:</span> {urgencyReason}</div>
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-3">
+                            <label className={`border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition ${urgency === 'ทั่วไป' ? 'bg-blue-50 border-blue-500' : 'hover:bg-slate-50 border-slate-200'}`}>
+                                <input type="radio" name="urgency" value="ทั่วไป" checked={urgency === 'ทั่วไป'} onChange={(e)=>setUrgency(e.target.value)} className="w-4 h-4 shrink-0" />
+                                <div><span className="text-sm font-bold text-slate-700">ทั่วไป</span> <span className="text-xs text-slate-500 ml-2 block sm:inline">(สามารถใช้งานได้ พอมีทางเลี่ยงอื่นได้)</span></div>
+                            </label>
+                            <label className={`border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition ${urgency === 'เร่งด่วน' ? 'bg-orange-50 border-orange-500' : 'hover:bg-slate-50 border-slate-200'}`}>
+                                <input type="radio" name="urgency" value="เร่งด่วน" checked={urgency === 'เร่งด่วน'} onChange={(e)=>setUrgency(e.target.value)} className="w-4 h-4 shrink-0" />
+                                <div><span className="text-sm font-bold text-orange-600">เร่งด่วน</span> <span className="text-xs text-orange-500/80 ml-2 block sm:inline">(กระทบคนกลุ่มใหญ่ ต้องแก้ภายใน 1-8 ชั่วโมง)</span></div>
+                            </label>
+                            <label className={`border-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer transition ${urgency === 'วิกฤต' ? 'bg-rose-50 border-rose-500' : 'hover:bg-slate-50 border-slate-200'}`}>
+                                <input type="radio" name="urgency" value="วิกฤต" checked={urgency === 'วิกฤต'} onChange={(e)=>setUrgency(e.target.value)} className="w-4 h-4 shrink-0" />
+                                <div><span className="text-sm font-bold text-rose-600 flex items-center gap-1 inline-flex"><Zap size={14}/> วิกฤต</span> <span className="text-xs text-rose-500/80 ml-2 block sm:inline">(ระบบหลักทำงานไม่ได้ ล่มทั้ง รพ. ต้องแก้ไขทันที)</span></div>
+                            </label>
+                        </div>
                     </div>
 
                     <div className="pt-4 border-t flex flex-col sm:flex-row gap-3">
-                        <button type="button" onClick={handleGetAdvice} disabled={isAnalyzing} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-sm font-bold py-3 px-4 hover:bg-indigo-100 flex items-center justify-center gap-2 transition shrink-0">
-                            {isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />} 
-                            <span className="hidden sm:inline">{isAnalyzing ? "กำลังวิเคราะห์..." : "วิธีแก้ไขเบื้องต้น"}</span>
-                            <span className="sm:hidden">{isAnalyzing ? "กำลังวิเคราะห์..." : "ขอคำแนะนำ AI"}</span>
+                        <button type="button" onClick={handleGetAdvice} disabled={isAnalyzingAdvice} className="w-full sm:w-auto bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl text-sm font-bold py-3 px-4 hover:bg-indigo-100 flex items-center justify-center gap-2 transition shrink-0">
+                            {isAnalyzingAdvice ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />} 
+                            <span className="hidden sm:inline">{isAnalyzingAdvice ? "กำลังวิเคราะห์..." : "ขอวิธีแก้ปัญหาเบื้องต้น"}</span>
+                            <span className="sm:hidden">{isAnalyzingAdvice ? "กำลังวิเคราะห์..." : "ขอคำแนะนำ AI"}</span>
                         </button>
-                        <button type="submit" className="w-full sm:flex-1 bg-blue-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-blue-700 flex items-center justify-center gap-2 transition">
-                            <Send className="w-5 h-5" /> ส่งเรื่องแจ้งซ่อม
+                        <button type="submit" className="w-full sm:flex-1 bg-blue-600 text-white rounded-xl text-sm font-bold py-3 hover:bg-blue-700 flex items-center justify-center gap-2 transition shadow-md">
+                            <Send className="w-5 h-5" /> ส่งเรื่องแจ้งซ่อมให้ช่าง
                         </button>
                     </div>
                 </form>
 
                 {showScanner && <QRScannerModal onScan={handleScanQR} onClose={() => setShowScanner(false)} />}
+                
+                {/* Modal สรุปคำแนะนำจาก AI (เด่นชัด) */}
+                {aiAdviceModal.isOpen && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] backdrop-blur-sm p-4 animate-in fade-in">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
+                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex justify-between items-center text-white">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2.5 rounded-full"><Bot size={28}/></div>
+                                    <div>
+                                        <h3 className="text-xl font-bold">AI วิเคราะห์วิธีแก้ปัญหา</h3>
+                                        <p className="text-xs text-indigo-100 opacity-80 mt-0.5">กรุณาลองทำตามคำแนะนำเบื้องต้นด้านล่างนี้</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="text-white hover:text-indigo-200 transition"><X size={24}/></button>
+                            </div>
+                            <div className="p-6 md:p-8 bg-indigo-50/30 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                                <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+                                    {aiAdviceModal.text}
+                                </div>
+                            </div>
+                            <div className="p-6 bg-white border-t border-gray-100 flex gap-3">
+                                <button onClick={() => setAiAdviceModal({isOpen: false, text: ''})} className="w-full py-3.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition">
+                                    ปิดหน้าต่าง
+                                </button>
+                                <button onClick={() => { setAiAdviceModal({isOpen: false, text: ''}); document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }} className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-md transition flex justify-center items-center gap-2">
+                                    <Send size={18}/> ดำเนินการส่งแจ้งซ่อมต่อ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 </div>
             );
         }
