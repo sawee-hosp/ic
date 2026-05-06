@@ -54,7 +54,7 @@
 
         const defaultBrands = ["HP", "Dell", "Lenovo", "Asus", "Acer", "Apple", "Cisco", "TP-Link", "Epson", "Canon", "Brother", "APC", "Syndome", "Logitech", "Other"];
         const defaultCPUs = ["Intel Core i3", "Intel Core i5", "Intel Core i7", "Intel Core i9", "AMD Ryzen 3", "AMD Ryzen 5", "AMD Ryzen 7", "AMD Ryzen 9", "Apple M1", "Apple M2", "Other"];
-        const defaultOS = ["Windows 10 Pro", "Windows 11 Pro", "Windows 10 Home", "Windows 11 Home", "macOS", "Linux Ubuntu", "Windows Server 2019", "Windows Server 2022"];
+        const defaultOS = ["Windows 7", "Windows 10 Pro", "Windows 11 Pro", "Windows 10 Home", "Windows 11 Home", "Winserver", "Windows Server 2019", "Windows Server 2022", "macOS", "Linux Ubuntu"];
         const defaultSoftware = ["HOSxP", "Word", "Excel", "PowerPoint", "LINE"];
         const colorPalette = ["bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-orange-500", "bg-pink-500", "bg-indigo-500", "bg-rose-500", "bg-cyan-500"];
 
@@ -73,12 +73,13 @@
 
         const getTypePrefix = (typeName) => {
             if(!typeName) return "EQP";
-            if(typeName.includes("คอม") || typeName.toUpperCase().includes("COM")) return "COM";
-            if(typeName.includes("ปริ้น") || typeName.toUpperCase().includes("PRN")) return "PRN";
-            if(typeName.includes("เน็ต") || typeName.includes("สวิตซ์") || typeName.toUpperCase().includes("NET")) return "NET";
-            if(typeName.includes("เซิร์ฟ") || typeName.toUpperCase().includes("SRV")) return "SRV";
-            const engMatch = typeName.match(/[A-Za-z]{3}/);
-            if(engMatch) return engMatch[0].toUpperCase();
+            const lower = typeName.toLowerCase();
+            if(lower.includes("ชุดเครื่องคอมพิวเตอร์") || lower.includes("set")) return "SET";
+            if(lower.includes("คอมพิวเตอร์แม่ข่าย") || lower.includes("server")) return "SERV";
+            if(lower.includes("จอภาพ") || lower.includes("monitor")) return "MT";
+            if(lower.includes("คอม") || lower.includes("com")) return "COM";
+            if(lower.includes("ปริ้น") || lower.includes("prn")) return "PRN";
+            if(lower.includes("เน็ต") || lower.includes("สวิตซ์") || lower.includes("net")) return "NET";
             return typeName.substring(0, 3).toUpperCase();
         };
 
@@ -139,10 +140,93 @@
             );
         };
 
+        const PinLogin = ({ onLogin }) => {
+            const [pin, setPin] = useState(['', '', '', '', '']);
+            const [error, setError] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const inputRefs = useRef([]);
+
+            const handleChange = (index, value) => {
+                if (!/^[0-9]*$/.test(value)) return;
+                const newPin = [...pin];
+                newPin[index] = value;
+                setPin(newPin);
+                setError(false);
+
+                if (value !== '' && index < 4) {
+                    inputRefs.current[index + 1].focus();
+                }
+
+                if (newPin.every(p => p !== '')) {
+                    verifyPin(newPin.join(''));
+                }
+            };
+
+            const handleKeyDown = (index, e) => {
+                if (e.key === 'Backspace' && !pin[index] && index > 0) {
+                    inputRefs.current[index - 1].focus();
+                }
+            };
+
+            const verifyPin = async (fullPin) => {
+                setLoading(true);
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'verifyPin', payload: { pin: fullPin } })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        onLogin();
+                    } else {
+                        setError(true);
+                        setPin(['', '', '', '', '']);
+                        inputRefs.current[0].focus();
+                    }
+                } catch (err) {
+                    alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="flex h-screen w-full items-center justify-center bg-gray-50 flex-col">
+                    <div className="bg-white p-8 rounded-3xl shadow-lg flex flex-col items-center max-w-sm w-full mx-4 border border-gray-100">
+                        <div className="bg-blue-100 p-4 rounded-full text-blue-600 mb-5"><ShieldCheck size={36} /></div>
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">ระบบ Helpdesk & IT Service</h2>
+                        <p className="text-sm text-gray-500 mb-8 text-center font-medium">กรุณาพิมพ์รหัสรพ. 5 ตัว เพื่อเข้าใช้งาน</p>
+                        
+                        <div className="flex gap-3 mb-6">
+                            {pin.map((digit, idx) => (
+                                <input
+                                    key={idx}
+                                    ref={el => inputRefs.current[idx] = el}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleChange(idx, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                                    className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 outline-none transition-all ${error ? 'border-red-500 bg-red-50 text-red-600' : 'border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 bg-white'}`}
+                                    disabled={loading}
+                                />
+                            ))}
+                        </div>
+                        
+                        {error && <p className="text-red-500 text-sm font-bold animate-bounce flex items-center bg-red-50 px-4 py-1.5 rounded-full"><XCircle size={16} className="mr-1"/> รหัสผิด! กรุณาลองใหม่</p>}
+                        {loading && <p className="text-blue-500 text-sm flex items-center font-bold"><Loader2 size={16} className="animate-spin mr-2"/> กำลังตรวจสอบ...</p>}
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
             const urlParams = new URLSearchParams(window.location.search);
             const isAdmin = urlParams.get('action') === 'admin';
 
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
             const [activeTab, setActiveTab] = useState(isAdmin ? 'dashboard' : 'repair');
             const [isSidebarOpen, setIsSidebarOpen] = useState(true); // เปิดตอนโหลดครั้งแรก
             const [showNotification, setShowNotification] = useState(false);
@@ -161,176 +245,19 @@
             const [isSyncing, setIsSyncing] = useState(false);
             const [apiError, setApiError] = useState(null);
 
+            useEffect(() => { 
+                if (isAuthenticated) fetchAllData(); 
+            }, [isAuthenticated]);
+
             const handleNotify = (msg) => {
                 setNotificationMsg(msg);
                 setShowNotification(true);
                 setTimeout(() => setShowNotification(false), 3000);
             };
 
-            const handleTabChange = (tab) => {
-                setActiveTab(tab);
-                setIsSidebarOpen(false); // ซ่อน sidebar อัตโนมัติเมื่อมีการเลือกเมนู
-            };
-
-            const fetchAllData = async () => {
-                setIsLoading(true);
-                setApiError(null);
-                try {
-                    const getOptions = { method: 'GET', redirect: 'follow' };
-                    const [eqRes, swRes, depRes, typeRes, ticketsRes, staffRes] = await Promise.all([
-                        fetch(`${SCRIPT_URL}?sheet=Equipments`, getOptions).then(r => r.json()),
-                        fetch(`${SCRIPT_URL}?sheet=Softwares`, getOptions).then(r => r.json()),
-                        fetch(`${SCRIPT_URL}?sheet=Departments`, getOptions).then(r => r.json()),
-                        fetch(`${SCRIPT_URL}?sheet=Types`, getOptions).then(r => r.json()),
-                        fetch(`${SCRIPT_URL}?sheet=Tickets`, getOptions).then(r => r.json()),
-                        fetch(`${SCRIPT_URL}?sheet=Staff`, getOptions).then(r => r.json())
-                    ]);
-
-                    setEquipments(Array.isArray(eqRes) ? eqRes.map(e => ({...e, Storage: typeof e.Storage === 'string' ? safeJsonParse(e.Storage, []) : (e.Storage || [])})) : []);
-                    setSoftwares(Array.isArray(swRes) ? swRes.map(s => ({...s, programs: typeof s.programs === 'string' ? safeJsonParse(s.programs, []) : (s.programs || [])})) : []);
-                    setDepartments(Array.isArray(depRes) ? depRes : []);
-                    setTypes(Array.isArray(typeRes) ? typeRes : []);
-                    setTickets(Array.isArray(ticketsRes) ? ticketsRes : []);
-                    setStaffList(Array.isArray(staffRes) ? staffRes : []);
-
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                    setApiError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ โปรดลองใหม่อีกครั้ง");
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-
-            useEffect(() => { fetchAllData(); }, []);
-
-            const apiCall = async (sheetName, action, payload) => {
-                setIsSyncing(true);
-                try {
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        redirect: 'follow', 
-                        body: JSON.stringify({ sheetName, action, payload }) 
-                    });
-                    const result = await response.json();
-                    
-                    if (result.status !== 'success') {
-                        throw new Error(result.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-                    }
-                    return result;
-                } catch (error) {
-                    console.error("API Error:", error);
-                    alert("ข้อผิดพลาดระบบ\n\n" + error.message);
-                    throw error; 
-                } finally {
-                    setIsSyncing(false);
-                }
-            };
-
-            const handleAIAnalysis = async (equipment) => {
-                setAiModal({ isOpen: true, data: equipment, result: '', loading: true });
-                setTimeout(() => {
-                    setAiModal(prev => ({ 
-                        ...prev, 
-                        result: "AI จำเป็นต้องใช้ API Key ของ Google Gemini เพื่อวิเคราะห์ข้อมูลจริง\n(จำลอง) อุปกรณ์นี้สเปคยังเพียงพอสำหรับการทำงานออฟฟิศทั่วไป แนะนำให้อัปเกรด RAM เป็น 16GB หากต้องเปิดหลายหน้าต่าง", 
-                        loading: false 
-                    }));
-                }, 1500);
-            };
-
-            const printSticker = (item) => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${item.Id}&margin=0`; 
-                
-                const printWindow = window.open('', '_blank', 'width=400,height=300');
-                printWindow.document.write(`
-                    <html>
-                    <head>
-                        <title>Print Sticker</title>
-                        <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                            @page { margin: 0; size: 6cm 2.5cm; }
-                            body { 
-                                margin: 0; padding: 0; 
-                                width: 6cm; height: 2.5cm; 
-                                font-family: 'Sarabun', sans-serif;
-                                display: flex;
-                                background: white;
-                            }
-                            .sticker-container {
-                                width: 100%; height: 100%;
-                                display: flex;
-                                box-sizing: border-box;
-                                padding: 2px 4px;
-                                gap: 6px;
-                                border: 1px dashed #ccc; 
-                            }
-                            .qr-section {
-                                width: 1.8cm;
-                                display: flex;
-                                flex-direction: column;
-                                justify-content: center;
-                                align-items: center;
-                            }
-                            .qr-img {
-                                width: 1.6cm;
-                                height: 1.6cm;
-                            }
-                            .qr-code-text {
-                                font-size: 7.5px;
-                                font-weight: bold;
-                                margin-top: 1px;
-                                text-align: center;
-                            }
-                            .detail-section {
-                                flex: 1;
-                                display: flex;
-                                flex-direction: column;
-                                justify-content: center;
-                                line-height: 1.3;
-                                overflow: hidden;
-                            }
-                            .eq-name {
-                                font-size: 13px; 
-                                font-weight: bold;
-                                color: #000;
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                                margin-bottom: 2px;
-                            }
-                            .eq-dept, .eq-date {
-                                font-size: 8.5px;
-                                color: #333;
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="sticker-container">
-                            <div class="qr-section">
-                                <img src="${qrUrl}" class="qr-img" />
-                                <div class="qr-code-text">${item.Id}</div>
-                            </div>
-                            <div class="detail-section">
-                                <div class="eq-name">${item.name || item.Type}</div>
-                                <div class="eq-dept">หน่วยงาน: ${item.department || '-'}</div>
-                                <div class="eq-date">วันที่: ${item.Date || '-'}</div>
-                            </div>
-                        </div>
-                        <script>
-                            window.onload = function() {
-                                setTimeout(function() {
-                                    window.print();
-                                    window.close();
-                                }, 500);
-                            };
-                        <\/script>
-                    </body>
-                    </html>
-                `);
-                printWindow.document.close();
-            };
+            if (!isAuthenticated) {
+                return <PinLogin onLogin={() => setIsAuthenticated(true)} />;
+            }
 
             if (isLoading) {
                 return (
@@ -393,6 +320,7 @@
                                 <>
                                     <SidebarItem icon={<Users size={20} />} label="Admin Workload" active={activeTab === 'admin_workload'} onClick={() => handleTabChange('admin_workload')} />
                                     <div className="my-4 border-t border-slate-700"></div>
+                                    <div className="px-4 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Helpdesk Service</div>
                                     <SidebarItem icon={<Settings size={20} />} label="ตั้งค่าระบบ / พนักงาน" active={activeTab === 'settings'} onClick={() => handleTabChange('settings')} />
                                 </>
                             )}
@@ -723,6 +651,7 @@
                 Status: 'พร้อมใช้งาน',
                 Type: '',
                 Id_equipment: '', 
+                Model: '',
                 Computer_Name: '',
                 Brand: '',
                 CPU: '',
@@ -837,11 +766,13 @@
                         
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">ชนิดอุปกรณ์ <span className="text-red-500">*</span></label><select name="Type" value={formData.Type} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white focus:ring-2 focus:ring-blue-500"><option value="">-- เลือกชนิด --</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select></div>
 
-                        <div><label className="block text-sm font-medium text-gray-700 mb-1">รหัสระบบ (Auto ID)</label><input type="text" name="Id" value={formData.Id} readOnly className="w-full p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed font-mono" placeholder="เลือกชนิดเพื่อ Gen ID" /></div>
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">รหัสระบบ (Auto ID / ปรับแก้ได้)</label><input type="text" name="Id" value={formData.Id} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg text-blue-700 font-bold font-mono outline-none focus:border-blue-500" placeholder="เลือกชนิดเพื่อ Gen หรือพิมพ์เอง" required /></div>
                         
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">ชื่ออุปกรณ์ (Name) <span className="text-red-500">*</span></label><input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none" placeholder="เช่น คอมพิวเตอร์ส่วนบุคคล, จอภาพ" /></div>
                         
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">เลขครุภัณฑ์ รพ. (Manual Input) <span className="text-red-500">*</span></label><input type="text" name="Id_equipment" value={formData.Id_equipment} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white font-mono text-blue-700" placeholder="ระบุเลขทะเบียนรพ. 7440-xxx..." /></div>
+
+                        <div><label className="block text-sm font-medium text-gray-700 mb-1">รุ่น (Model)</label><input type="text" name="Model" value={formData.Model || ''} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white" placeholder="ระบุรุ่นอุปกรณ์ (ถ้ามี)" /></div>
 
                         <div><label className="block text-sm font-medium text-gray-700 mb-1">หน่วยงาน <span className="text-red-500">*</span></label><select name="department" value={formData.department} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="">-- เลือกหน่วยงาน --</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select></div>
                         
@@ -874,14 +805,26 @@
                     <div className="animate-in fade-in duration-300">
                         <h3 className="text-lg font-bold text-gray-800 mt-8 mb-4 border-b pb-2 flex items-center"><Save className="mr-2" size={20}/> รายละเอียดทางเทคนิค (ถ้ามี)</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border border-slate-100">
-                        <div><label className="block text-sm font-medium text-gray-700 mb-1">แบรนด์ / ยี่ห้อ <span className="text-red-500">*</span></label><select name="Brand" value={formData.Brand} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white"><option value="">-- เลือกแบรนด์ --</option>{defaultBrands.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">แบรนด์ / ยี่ห้อ <span className="text-red-500">*</span></label>
+                            <input list="brand-options" name="Brand" value={formData.Brand} onChange={handleChange} required className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white" placeholder="เลือกหรือพิมพ์ชื่อแบรนด์" />
+                            <datalist id="brand-options">{defaultBrands.map(b => <option key={b} value={b} />)}</datalist>
+                        </div>
 
                         {isComputerGroup && (
                             <>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">ชื่อเครื่อง (Computer Name)</label><input type="text" name="Computer_Name" value={formData.Computer_Name} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none" placeholder="เช่น IT-PC-01" /></div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">ซีพียู (CPU)</label><select name="CPU" value={formData.CPU} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg bg-white"><option value="">-- เลือก CPU --</option>{defaultCPUs.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ซีพียู (CPU)</label>
+                                <input list="cpu-options" name="CPU" value={formData.CPU} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white" placeholder="เลือกหรือพิมพ์ CPU" />
+                                <datalist id="cpu-options">{defaultCPUs.map(c => <option key={c} value={c} />)}</datalist>
+                            </div>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">หน่วยความจำ (RAM) - GB</label><input type="number" name="RAM" value={formData.RAM} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg" placeholder="เช่น 8, 16" /></div>
-                            <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">ระบบปฏิบัติการ (OS)</label><select name="OS" value={formData.OS} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg bg-white"><option value="">-- เลือก OS --</option>{defaultOS.map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ระบบปฏิบัติการ (OS)</label>
+                                <input list="os-options" name="OS" value={formData.OS} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg outline-none bg-white" placeholder="เลือกหรือพิมพ์ OS" />
+                                <datalist id="os-options">{defaultOS.map(o => <option key={o} value={o} />)}</datalist>
+                            </div>
                             <div className="md:col-span-2 mt-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">พื้นที่จัดเก็บข้อมูล (Storage)</label>
                                 <div className="space-y-2">
@@ -914,180 +857,80 @@
             );
         };
 
-        const EquipmentList = ({ equipments, onEdit, onDelete, onShowQR, onPrintSticker, onAIAnalyze, departments, types }) => {
-            const [filterDept, setFilterDept] = useState('');
-            const [filterType, setFilterType] = useState('');
-            const [filterStatus, setFilterStatus] = useState('');
-
-            const filteredData = equipments.filter(e => {
-                return (filterDept === '' || e.department === filterDept) && (filterType === '' || e.Type === filterType) && (filterStatus === '' || e.Status === filterStatus);
-            });
-
-            const getStatusBadge = (status) => {
-                switch(status) {
-                case 'พร้อมใช้งาน': return <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold flex items-center w-max"><CheckCircle size={12} className="mr-1"/> พร้อมใช้งาน</span>;
-                case 'ส่งซ่อม': return <span className="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold flex items-center w-max"><Wrench size={12} className="mr-1"/> ส่งซ่อม</span>;
-                case 'แทงชำรุด': return <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold flex items-center w-max"><XCircle size={12} className="mr-1"/> แทงชำรุด</span>;
-                default: return <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-[10px] font-bold">{status}</span>;
-                }
-            };
-
-            return (
-                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <div className="flex items-center text-gray-600 font-medium mr-2"><Filter size={18} className="mr-2"/> กรองข้อมูล:</div>
-                    <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกหน่วยงาน</option>{departments.map(d => <option key={d.dep_Id} value={d.dep_name}>{d.dep_name}</option>)}</select>
-                    <select value={filterType} onChange={e => setFilterType(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกชนิดอุปกรณ์</option>{types.map(t => <option key={t.Type_id} value={t.Type_name}>{t.Type_name}</option>)}</select>
-                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm bg-white outline-none"><option value="">ทุกสถานะ</option><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ส่งซ่อม">ส่งซ่อม</option><option value="แทงชำรุด">แทงชำรุด</option></select>
-                </div>
-
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
-                        <tr><th className="p-4 font-semibold w-16">รูป</th><th className="p-4 font-semibold">รหัสระบบ</th><th className="p-4 font-semibold">ชื่อ / ชนิด / เลขรพ.</th><th className="p-4 font-semibold">หน่วยงาน (สถานที่)</th><th className="p-4 font-semibold">สถานะ</th><th className="p-4 font-semibold text-center">จัดการ</th></tr>
-                    </thead>
-                    <tbody className="text-sm">
-                        {filteredData.length === 0 ? (<tr><td colSpan="6" className="p-12 text-center text-gray-500 bg-white">ยังไม่มีข้อมูลในระบบ</td></tr>) : filteredData.slice().reverse().map(eq => (
-                        <tr key={eq.Id} className="hover:bg-blue-50/50 border-b border-gray-100 bg-white transition">
-                            <td className="p-4">
-                                {eq.Image_URL ? (
-                                    <div className="w-12 h-12 rounded-lg border overflow-hidden shadow-sm"><img src={eq.Image_URL} alt="eq" className="w-full h-full object-cover" /></div>
-                                ) : (
-                                    <div className="w-12 h-12 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
-                                )}
-                            </td>
-                            <td className="p-4 font-medium text-blue-700 font-mono">{eq.Id}</td>
-                            <td className="p-4">
-                                <div className="font-bold text-gray-800">{eq.name || '-'}</div>
-                                <div className="text-xs text-gray-500 mt-1">{eq.Type} • {eq.Id_equipment}</div>
-                            </td>
-                            <td className="p-4">
-                                <div className="text-gray-700 font-medium">{eq.department}</div>
-                                <div className="text-xs text-gray-400 mt-1">{eq.Location || '-'}</div>
-                            </td>
-                            <td className="p-4">{getStatusBadge(eq.Status)}</td>
-                            <td className="p-4 text-right">
-                            <div className="flex justify-end space-x-2">
-                                {["ชุดเครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา", "คอมพิวเตอร์แม่ข่าย"].some(t => eq.Type.includes(t)) && (
-                                    <button onClick={() => onAIAnalyze(eq)} className="p-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 shadow-sm" title="AI วิเคราะห์"><Sparkles size={16}/></button>
-                                )}
-                                <button onClick={() => onEdit(eq)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไขข้อมูล"><Edit size={16}/></button>
-                                <button onClick={() => onShowQR(eq)} className="p-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 shadow-sm" title="ดู QR Code"><QrCode size={16}/></button>
-                                <button onClick={() => onPrintSticker(eq)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 shadow-sm" title="พิมพ์สติกเกอร์"><Printer size={16}/></button>
-                                <button onClick={() => onDelete(eq.Id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={16}/></button>
-                            </div>
-                            </td>
-                        </tr>
-                        ))}
-                    </tbody>
-                    </table>
-                </div>
-                </div>
-            );
-        };
-
-        const SoftwareForm = ({ initialData, equipments, onSave, currentSoftwares }) => {
-            const pcList = equipments.filter(eq => ["ชุดเครื่องคอมพิวเตอร์", "คอมพิวเตอร์แม่ข่าย", "เครื่องคอมพิวเตอร์", "เครื่องคอมพิวเตอร์พกพา"].some(t=>eq.Type.includes(t)));
+        const SoftwareList = ({ softwares, onEdit, onDelete }) => {
+            const [searchTerm, setSearchTerm] = useState('');
             
-            const [formData, setFormData] = useState(initialData || { id: generate5DigitId(currentSoftwares, 'id'), Computer_Name: '', programs: [], customProgram: '' });
+            const filteredSoftwares = softwares.filter(sw => 
+                sw.Computer_Name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                (Array.isArray(sw.programs) && sw.programs.some(p => p.toLowerCase().includes(searchTerm.toLowerCase())))
+            );
 
-            useEffect(() => {
-                if (initialData) setFormData(initialData);
-            }, [initialData]);
-
-            const handleCheck = (prog) => {
-                let newProgs = [...formData.programs];
-                if (newProgs.includes(prog)) newProgs = newProgs.filter(p => p !== prog); else newProgs.push(prog);
-                setFormData({ ...formData, programs: newProgs });
-            };
-
-            const addCustomProgram = () => {
-                if (formData.customProgram.trim() && !formData.programs.includes(formData.customProgram.trim())) {
-                    setFormData({ ...formData, programs: [...formData.programs, formData.customProgram.trim()], customProgram: '' });
+            // นับจำนวนโปรแกรมจากรายการที่ค้นพบ
+            const programCounts = filteredSoftwares.reduce((acc, sw) => {
+                if (Array.isArray(sw.programs)) {
+                    sw.programs.forEach(p => {
+                        acc[p] = (acc[p] || 0) + 1;
+                    });
                 }
-            };
+                return acc;
+            }, {});
 
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if(!formData.Computer_Name) return alert('กรุณาเลือกเครื่องคอมพิวเตอร์');
-                onSave({ id: formData.id, Computer_Name: formData.Computer_Name, programs: formData.programs });
-            };
+            // เรียงลำดับจากมากไปน้อย
+            const sortedCounts = Object.entries(programCounts).sort((a, b) => b[1] - a[1]);
 
             return (
-                <div className="max-w-3xl bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">เลือกเครื่องคอมพิวเตอร์ <span className="text-red-500">*</span></label>
-                    <select value={formData.Computer_Name} onChange={(e) => setFormData({...formData, Computer_Name: e.target.value})} className="w-full p-3 border border-gray-300 rounded-xl outline-none bg-white" required disabled={initialData}>
-                        <option value="">-- เลือกจากฐานข้อมูลครุภัณฑ์ --</option>
-                        {pcList.map(pc => <option key={pc.Id} value={pc.Id}>{pc.Id} - {pc.name || pc.Type} ({pc.department})</option>)}
-                    </select>
-                    {pcList.length === 0 && <p className="text-sm text-red-500 mt-2 flex items-center"><XCircle size={14} className="mr-1"/> ไม่มีข้อมูลคอมพิวเตอร์ในระบบ กรุณาลงทะเบียนครุภัณฑ์ก่อน</p>}
-                    </div>
-
-                    <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">โปรแกรมหลัก (Checklist)</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-xl border border-slate-100">
-                        {defaultSoftware.map(prog => (
-                        <label key={prog} className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-slate-100">
-                            <input type="checkbox" checked={formData.programs.includes(prog)} onChange={() => handleCheck(prog)} className="w-5 h-5 text-blue-600 rounded border-gray-300" />
-                            <span className="text-gray-700 font-medium">{prog}</span>
-                        </label>
-                        ))}
-                    </div>
-                    </div>
-
-                    <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">เพิ่มโปรแกรมอื่นๆ</label>
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                        <input type="text" value={formData.customProgram || ''} onChange={e => setFormData({...formData, customProgram: e.target.value})} onKeyDown={e => e.key === 'Enter' ? (e.preventDefault(), addCustomProgram()) : null} placeholder="พิมพ์ชื่อโปรแกรม..." className="flex-1 p-3 border border-gray-300 rounded-xl outline-none" />
-                        <button type="button" onClick={addCustomProgram} className="bg-slate-800 text-white px-6 py-3 rounded-xl hover:bg-slate-700 font-medium">เพิ่ม</button>
-                    </div>
-                    {formData.programs.filter(p => !defaultSoftware.includes(p)).length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                        {formData.programs.filter(p => !defaultSoftware.includes(p)).map(prog => (
-                            <span key={prog} className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-medium flex items-center">
-                            {prog} <button type="button" onClick={() => handleCheck(prog)} className="ml-2 text-blue-400 hover:text-red-500"><XCircle size={16}/></button>
-                            </span>
-                        ))}
+                <div className="space-y-4">
+                    {/* ส่วนสรุปตัวนับ */}
+                    {sortedCounts.length > 0 && (
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-blue-100 animate-in fade-in">
+                            <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center"><AppWindow size={16} className="mr-2 text-blue-500"/> สรุปจำนวนเครื่องที่มีซอฟต์แวร์ {searchTerm ? '(จากผลการค้นหา)' : '(ทั้งหมด)'}</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {sortedCounts.map(([prog, count]) => (
+                                    <div key={prog} className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm">
+                                        <span>{prog}</span>
+                                        <span className="bg-white text-blue-600 px-2.5 py-0.5 rounded-lg shadow-sm border border-blue-100">{count} เครื่อง</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
-                    </div>
 
-                    <div className="pt-6 mt-4 border-t flex justify-end">
-                    <button type="submit" className="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-blue-700 shadow-md flex items-center justify-center">
-                        <Save className="w-5 h-5 mr-2" /> 
-                        {initialData ? "อัปเดตข้อมูลซอฟต์แวร์" : "บันทึกข้อมูลซอฟต์แวร์"}
-                    </button>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="mb-5">
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                <input 
+                                    type="text" 
+                                    placeholder="ค้นหาตามรหัสเครื่อง หรือ ชื่อโปรแกรม (เช่น LINE, Word)..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition"
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto rounded-xl border border-gray-200">
+                            <table className="w-full text-left border-collapse min-w-[600px]">
+                            <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                                <tr><th className="p-4 font-semibold">รหัสอ้างอิงระบบเครื่อง</th><th className="p-4 font-semibold">รายการโปรแกรมที่ติดตั้ง</th><th className="p-4 font-semibold text-center w-24">จัดการ</th></tr>
+                            </thead>
+                            <tbody className="text-sm">
+                                {filteredSoftwares.length === 0 ? (<tr><td colSpan="3" className="p-12 text-center text-gray-500 bg-white font-medium">ไม่พบข้อมูลที่ค้นหา</td></tr>) : filteredSoftwares.map(sw => (
+                                <tr key={sw.id} className="border-b border-gray-100 hover:bg-blue-50/50 bg-white transition">
+                                    <td className="p-4 font-bold text-blue-700 text-base">{sw.Computer_Name}</td>
+                                    <td className="p-4"><div className="flex flex-wrap gap-2">{Array.isArray(sw.programs) && sw.programs.map((p, idx) => (<span key={idx} className="bg-white text-slate-700 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 shadow-sm">{p}</span>))}</div></td>
+                                    <td className="p-4 flex justify-center space-x-2">
+                                        <button onClick={() => onEdit(sw)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไข"><Edit size={18}/></button>
+                                        <button onClick={() => onDelete(sw.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={18}/></button>
+                                    </td>
+                                </tr>
+                                ))}
+                            </tbody>
+                            </table>
+                        </div>
                     </div>
-                </form>
                 </div>
             );
         };
-
-        const SoftwareList = ({ softwares, onEdit, onDelete }) => (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-                <table className="w-full text-left border-collapse min-w-[600px]">
-                <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
-                    <tr><th className="p-4 font-semibold">รหัสอ้างอิงระบบเครื่อง</th><th className="p-4 font-semibold">รายการโปรแกรมที่ติดตั้ง</th><th className="p-4 font-semibold text-center w-24">จัดการ</th></tr>
-                </thead>
-                <tbody className="text-sm">
-                    {softwares.length === 0 ? (<tr><td colSpan="3" className="p-12 text-center text-gray-500 bg-white">ไม่มีข้อมูลซอฟต์แวร์</td></tr>) : softwares.map(sw => (
-                    <tr key={sw.id} className="border-b border-gray-100 hover:bg-blue-50/50 bg-white transition">
-                        <td className="p-4 font-semibold text-blue-700 text-base">{sw.Computer_Name}</td>
-                        <td className="p-4"><div className="flex flex-wrap gap-2">{Array.isArray(sw.programs) && sw.programs.map((p, idx) => (<span key={idx} className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200">{p}</span>))}</div></td>
-                        <td className="p-4 flex justify-center space-x-2">
-                            <button onClick={() => onEdit(sw)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 shadow-sm" title="แก้ไข"><Edit size={18}/></button>
-                            <button onClick={() => onDelete(sw.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 shadow-sm"><Trash2 size={18}/></button>
-                        </td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-            </div>
-            </div>
-        );
 
         const SettingsView = ({ departments, setDepartments, types, setTypes, staffList, setStaffList, apiCall, notify }) => {
             const [newDept, setNewDept] = useState('');
