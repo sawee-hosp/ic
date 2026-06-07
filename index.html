@@ -60,7 +60,7 @@
 
         const CHRONIC_DISEASES = ["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"];
 
-        // --- 1. GLOBAL UTILS & HELPERS ---
+        // --- 1. GLOBAL UTILS, ATOMS, AND HELPERS (MUST BE DECLARED FIRST TO PREVENT SCOPE REFERENCEERRORS) ---
         const callGAS = async (action, payload = {}) => {
             try {
                 const res = await fetch(GAS_URL, {
@@ -89,13 +89,6 @@
             return <span ref={ref} className="inline-flex items-center justify-center"></span>;
         };
 
-        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
-            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
-                <div className={`p-4 rounded-full ${bg} shadow-inner`}><Icon name={icon} size={40} className={color} /></div>
-                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
-            </button>
-        );
-
         const Toast = ({ notification, onClose }) => {
             useEffect(() => {
                 if (notification) {
@@ -120,194 +113,174 @@
             );
         };
 
-        const LoginPage = ({ onLogin, onLiff, onRegister }) => {
-            const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
-            const isValid = useMemo(() => {
-                let count = 0;
-                if(c.loginname.trim()) count++; if(c.HN.trim()) count++; if(c.cid.trim()) count++;
-                return (count >= 2) || (c.cid.trim().length === 13);
-            }, [c]);
+        const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
+            <div>
+                <div className="flex justify-between items-end mb-1">
+                    <label className="text-[10px] text-slate-400">{label}</label>
+                    {onChart && !readonly && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
+                </div>
+                <div className="relative">
+                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} disabled={readonly} />
+                    {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
+                </div>
+            </div>
+        );
 
-            const attemptLogin = () => {
-                if(!isValid) return alert("กรุณากรอกข้อมูลตามเงื่อนไข");
-                const cleanCriteria = { ...c, cid: c.cid.replace(/[^0-9]/g, '') };
-                onLogin(cleanCriteria);
-            };
+        const Card = ({ title, children }) => (
+            <div className="glass-panel p-5 rounded-2xl">
+                <h3 className="text-indigo-300 font-bold text-[11px] uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">{title}</h3>
+                {children}
+            </div>
+        );
 
+        const Select = ({ label, val, options, onChange, disabled }) => {
+            const found = options?.find(o => o.code == val);
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in relative overflow-hidden">
-                    <div className="w-full max-w-sm text-center z-10">
-                        <div className="mb-6 relative inline-block">
-                            <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
-                            <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
-                        </div>
-                        <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
-                        <h2 className="text-lg text-indigo-300 font-medium mb-2 tracking-wide">Digital Health Book</h2>
-                        <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">สมุดบันทึกสุขภาพบุคลากร<br/>งานป้องกันและควบคุมการติดเชื้อในโรงพยาบาลสวี</p>
-
-                        <div className="glass-panel p-6 rounded-2xl space-y-4 text-left border-t border-white/10">
-                            <label className="text-xs text-indigo-200 block text-center font-medium bg-indigo-500/10 py-2 rounded border border-indigo-500/20">กรุณากรอกข้อมูลยืนยันตัวตนอย่างน้อย 2 ช่อง</label>
-                            <div className="space-y-2">
-                                <input className="glass-input text-center" placeholder="HosXP Login Name" value={c.loginname} onChange={e=>setC({...c, loginname:e.target.value})} />
-                                <input className="glass-input text-center" placeholder="รหัส HN" value={c.HN} onChange={e=>setC({...c, HN:e.target.value})} />
-                                <input className="glass-input text-center" placeholder="เลขบัตรประชาชน (CID)" maxLength="13" value={c.cid} onChange={e=>setC({...c, cid:e.target.value})} />
-                            </div>
-                            <button onClick={attemptLogin} disabled={!isValid} className={`btn-primary mt-2 shadow-lg shadow-indigo-500/30 w-full transition-all ${!isValid ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>เข้าสู่ระบบ</button>
-                        </div>
-                        <div className="mt-8 space-y-3 pt-6 border-t border-slate-700/50">
-                            <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20">เข้าสู่ระบบด้วย LINE</button>
-                            <button onClick={onRegister} className="w-full py-3 rounded-xl border border-slate-600 text-slate-300 font-bold text-sm hover:bg-slate-800 transition-all">ลงทะเบียนผู้ใช้งานใหม่</button>
-                        </div>
-                    </div>
+                <div>
+                    {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
+                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)} disabled={disabled}>
+                        <option value="">- เลือก -</option>
+                        {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
+                        {val && !found && <option value={val}>{val}</option>}
+                    </select>
                 </div>
             );
         };
 
-        const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
-            const [data, setData] = useState({});
-            const [orgType, setOrgType] = useState('hospital'); 
+        const RadioBtn = ({ name, val, setVal, opts, disabled }) => (
+            <div className="flex bg-slate-800 rounded p-0.5 w-full">
+                {opts.map(o => (
+                    <button key={o.v} onClick={()=> !disabled && setVal(o.v)} 
+                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {o.l}
+                    </button>
+                ))}
+            </div>
+        );
 
-            useEffect(() => { 
-                if(user) {
-                    const u = user; 
-                    const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
-                    let genderCode = u.Gender;
-                    if (u.Gender === 'ชาย') genderCode = 1;
-                    if (u.Gender === 'หญิง') genderCode = 2;
-                    const mapped = {
-                        loginname: u.loginname || u.LoginName || '',
-                        HN: u.HN || u.hn || '',
-                        cid: u.cid || u.CID || '',
-                        Title: u.Title || u.title || 'นาย',
-                        Name: u.Name || u.name || '',
-                        nickname: u.nickname || u.NickName || '',
-                        Gender: genderCode || 1,
-                        dob: u.dob || u.birthdate || '',
-                        Age: u.Age || u.age || '',
-                        Dept: u.Dept || u.dept || u.department || '',
-                        Job: u.Job || u.job || '',
-                        Right: u.Right || u.right || '',
-                        phone: cleanPhone(u.phone || u.Tel),
-                        email: u.email || u.Email || '',
-                        pictureProfile: u.pictureProfile || u.pictureprofile || ''
-                    };
-                    if (!mapped.Age && mapped.dob) {
-                        const d = new Date(mapped.dob);
-                        if(!isNaN(d.getTime())) mapped.Age = new Date().getFullYear() - d.getFullYear();
-                    }
-                    if (PCU_OPTIONS.includes(mapped.Dept)) setOrgType('network'); else setOrgType('hospital');
-                    setData(mapped); 
-                }
-            }, [user]);
+        const FlagInput = ({ label, name, val, detail, onChange, opts, disabled }) => {
+            const hasDetail = (val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2) || (name.includes('cbc') && val==2) || (name.includes('chemistry') && val==2));
+            const detailName = name.replace('flag','detail').replace('has_','').replace('_flag','_detail');
+            return (
+                <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
+                        <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} disabled={disabled} /></div>
+                    </div>
+                    {hasDetail && name !== 'has_chronic' && (
+                        <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail||''} onChange={e=>onChange(detailName, e.target.value)} disabled={disabled} />
+                    )}
+                </div>
+            );
+        };
 
-            const h = (f, v) => setData(p => ({...p, [f]: v}));
-            const handleDob = (v) => {
-                h('dob', v);
-                if(v) {
-                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
-                    h('Age', age > 0 ? age : 0);
-                }
-            };
+        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
+            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
+                <div className={`p-4 rounded-full ${bg} shadow-inner`}><Icon name={icon} size={40} className={color} /></div>
+                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
+            </button>
+        );
+
+        const ChartModal = ({ hn, field, title, value, year, onClose }) => {
+            const canvasRef = useRef(null);
+            const [mode, setMode] = useState('self');
+            const [loading, setLoading] = useState(true);
+            const [stats, setStats] = useState(null);
 
             useEffect(() => {
-                if (data.Job && codebook?.job_map && codebook.job_map[data.Job]) {
-                     h('Right', codebook.job_map[data.Job]);
-                }
-            }, [data.Job, codebook]);
+                const draw = async () => {
+                    setLoading(true);
+                    try {
+                        let config = {};
+                        if (mode === 'self') {
+                            setStats(null);
+                            const res = await callGAS('getSelfTrend', { hn, field });
+                            config = { 
+                                type: 'line', 
+                                data: { labels: res.map(d=>d.year), datasets: [{ label: 'แนวโน้ม', data: res.map(d=>d.value), borderColor: '#6366f1', tension: 0.4, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)' }] } 
+                            };
+                        } else {
+                            const res = await callGAS('getDistribution', { field, year, hn });
+                            const vals = res.values || [];
+                            const userVal = parseFloat(value) || res.userVal || 0;
+                            
+                            const n = vals.length;
+                            const sortedVals = [...vals].sort((a,b) => a - b);
+                            const rank = sortedVals.findIndex(v => v >= userVal) + 1 || n;
+                            setStats({ n, rank });
 
-            const validateAndSubmit = () => {
-                if (!data.cid || data.cid.trim().length !== 13) {
-                    alert("กรุณากรอกเลขบัตรประชาชน 13 หลัก ให้ถูกต้อง");
-                    return;
-                }
-                if (!data.Name || data.Name.trim() === "") {
-                    alert("กรุณากรอก ชื่อ-สกุล ให้ครบถ้วน");
-                    return;
-                }
-                onSubmit(data);
-            };
+                            const bins = 10;
+                            const min = Math.min(...vals, userVal);
+                            const max = Math.max(...vals, userVal);
+                            const buffer = (max - min) * 0.1 || 1;
+                            const rangeMin = Math.floor(min - buffer);
+                            const rangeMax = Math.ceil(max + buffer);
+                            const step = (rangeMax - rangeMin) / bins;
+                            const curveData = [];
+                            
+                            for(let i=0; i<bins; i++) {
+                                const start = rangeMin + (i*step);
+                                const end = start + step;
+                                const mid = start + (step/2);
+                                const count = vals.filter(v => v >= start && v < end).length;
+                                curveData.push({ x: mid, y: count });
+                            }
+                            
+                            if(curveData.length > 0) {
+                                curveData.unshift({ x: rangeMin, y: 0 });
+                                curveData.push({ x: rangeMax, y: 0 });
+                            }
 
-            const deptOptions = orgType === 'hospital' 
-                ? (codebook['department'] || [])
-                : PCU_OPTIONS.map(name => ({ code: name, label: name }));
-            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
+                            config = { 
+                                type: 'line', 
+                                data: { 
+                                    datasets: [
+                                        { label: 'กลุ่ม', data: curveData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', fill: true, tension: 0.4, pointRadius: 0 },
+                                        { type: 'scatter', label: 'คุณ', data: [{x: userVal, y: 0}], backgroundColor: '#f43f5e', pointRadius: 8, borderColor: 'white', borderWidth: 2, order: 0 }
+                                    ] 
+                                },
+                                options: { 
+                                    scales: { x: { type: 'linear', grid:{color:'#334155'}, ticks:{color:'#94a3b8'}, min: rangeMin, max: rangeMax }, y: { display:false, beginAtZero: true } },
+                                    plugins: { legend: { display: false } }
+                                }
+                            };
+                        }
+                        
+                        if (canvasRef.current) {
+                            const chart = Chart.getChart(canvasRef.current);
+                            if (chart) chart.destroy();
+                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false } });
+                        }
+                    } catch(e) {}
+                    setLoading(false);
+                };
+                draw();
+            }, [mode]);
 
             return (
-                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon name="user-cog" className="text-indigo-400" /> อัปเดตประวัติส่วนตัว</h2>
-                        <button onClick={onSkip} className="text-xs text-slate-400 border border-slate-600 px-3 py-1.5 rounded-full hover:bg-slate-800 transition-colors">ข้ามไปก่อน &rarr;</button>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow relative">
-                        <div className="flex justify-center mb-6">
-                            <div className="relative">
-                                <img src={data.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-24 h-24 rounded-full border-4 border-indigo-500/30 shadow-2xl object-cover" />
-                                <div className="absolute bottom-0 right-0 bg-slate-800 p-1.5 rounded-full border border-slate-600"><Icon name="camera" className="text-slate-300" size={16} /></div>
-                            </div>
-                        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in" onClick={onClose}>
+                    <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-5 border border-slate-700 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white"><Icon name="x" size={20} /></button>
+                        <h3 className="text-white font-bold mb-1 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
+                        <p className="text-xs text-slate-400 mb-4 ml-7">ค่าของคุณ: <span className="text-white font-bold">{value || '-'}</span></p>
                         
-                        <div className="p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/20 space-y-3">
-                            <h3 className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1"><Icon name="shield" size={12} /> ข้อมูลยืนยันตัวตน</h3>
-                            <div className="grid grid-cols-1 gap-2">
-                                <Field label="Login Name" val={data.loginname} onChange={v=>h('loginname',v)} />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Field label="HN" val={data.HN} onChange={v=>h('HN',v)} />
-                                    <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
-                                </div>
-                            </div>
+                        <div className="flex bg-slate-900 rounded p-1 mb-4">
+                            <button onClick={()=>setMode('self')} className={`flex-1 text-xs py-2 rounded ${mode==='self'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบตัวเอง</button>
+                            <button onClick={()=>setMode('others')} className={`flex-1 text-xs py-2 rounded ${mode==='others'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบกลุ่ม</button>
                         </div>
-
-                        <div className="space-y-3 pt-2">
-                            <div className="grid grid-cols-12 gap-2">
-                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
-                                <div className="col-span-8"><Field label="ชื่อ-สกุล" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                        <div className="h-56 relative">{loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">สร้างกราฟ...</div>}<canvas ref={canvasRef}></canvas></div>
+                        {mode === 'others' && (
+                            <div className="mt-3 text-center">
+                                <p className="text-[10px] text-slate-500">* จุดสีแดงคือตำแหน่งของค่าที่บันทึกในกลุ่มบุคลากร</p>
+                                {stats && <p className="text-xs text-slate-300 mt-1">จำนวนข้อมูล (n) = <span className="font-bold text-white">{stats.n}</span> | ลำดับที่ <span className="font-bold text-white">{stats.rank}</span> (จากน้อยไปมาก)</p>}
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Field label="ชื่อเล่น" val={data.nickname} onChange={v=>h('nickname',v)} />
-                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
-                                <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
-                            </div>
-                            
-                            <div className="pt-2 border-t border-slate-700/50">
-                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
-                                <div className="flex bg-slate-800 rounded p-1 mb-2">
-                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
-                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label className="text-[10px] text-slate-400 block mb-1">
-                                            {orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}
-                                        </label>
-                                        <Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} />
-                                    </div>
-                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                <div>
-                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน (กลุ่มงาน)</label>
-                                    <select className="glass-input text-xs" value={data.Right} onChange={e=>h('Right',e.target.value)}>
-                                        <option value="">- เลือก -</option>
-                                        <option value="กลุ่มวิชาชีพสัมผัสผู้ป่วย">กลุ่มวิชาชีพสัมผัสผู้ป่วย</option>
-                                        <option value="กลุ่มสนับสนุนทางการแพทย์">กลุ่มสนับสนุนทางการแพทย์</option>
-                                        <option value="กลุ่มงานโภชนาการ">กลุ่มงานโภชนาการ</option>
-                                        <option value="กลุ่มงานทั่วไป">กลุ่มงานทั่วไป</option>
-                                    </select>
-                                </div>
-                                <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
-                            </div>
-                        </div>
+                        )}
                     </div>
-                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
                 </div>
             );
         };
+
+        // --- 4. COMPONENT DECLARATIONS ---
 
         const RegistrationPage = ({ pendingProfile, codebook, onSubmit, onCancel }) => {
             const [data, setData] = useState({ 
@@ -533,14 +506,30 @@
                                                     <span className={`text-[10px] px-2 py-1 rounded ${b.status === 'Received' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{b.status}</span>
                                                 </div>
 
-                                                {/* Lot & Serial Details with Immersive Styling */}
-                                                <div className="my-3 p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 border border-white/5 relative overflow-hidden shadow-inner text-center">
-                                                    <div className="absolute top-2 right-2 text-indigo-500/20"><Icon name="vial" size={64} /></div>
-                                                    <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Serial No.</div>
-                                                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-indigo-400 to-pink-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] font-mono my-2">{b.no}</div>
-                                                    <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5 text-[11px] text-slate-300">
-                                                        <div className="text-left bg-black/20 p-2 rounded-lg"><span className="block text-[9px] text-slate-500 uppercase tracking-wide">Lot No.</span><span className="font-bold font-mono text-indigo-300">{b.lot || '-'}</span></div>
-                                                        <div className="text-left bg-black/20 p-2 rounded-lg"><span className="block text-[9px] text-slate-500 uppercase tracking-wide">Exp. Date</span><span className="font-bold font-mono text-indigo-300">{b.expired || '-'}</span></div>
+                                                {/* Premium Serial Card */}
+                                                <div className="my-3 p-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 border border-white/20 relative overflow-hidden shadow-2xl text-center">
+                                                    <div className="absolute top-2 right-2 text-white/10 opacity-30">
+                                                        <Icon name="vial" size={64} />
+                                                    </div>
+
+                                                    <div className="text-[11px] text-white/80 uppercase tracking-widest font-bold">Serial No.</div>
+                                                    <div className="text-6xl font-black text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)] font-mono my-2 select-none tracking-widest">
+                                                        {b.no}
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/20 text-[11px] text-white/90">
+                                                        <div className="text-left bg-black/30 p-2 rounded-lg backdrop-blur-sm">
+                                                            <span className="block text-[9px] text-white/60 uppercase tracking-wider font-bold">Lot No.</span>
+                                                            <span className="font-extrabold font-mono text-emerald-300 text-xs">{b.lot || '-'}</span>
+                                                        </div>
+                                                        <div className="text-left bg-black/30 p-2 rounded-lg backdrop-blur-sm">
+                                                            <span className="block text-[9px] text-white/60 uppercase tracking-wider font-bold">Exp. Date</span>
+                                                            <span className="font-extrabold font-mono text-emerald-300 text-xs">{b.expired || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-white/90">
+                                                        <Icon name="vial" size={14} className="text-emerald-300" />
+                                                        <span className="font-medium tracking-wide">สแกนรับวัคซีนตาม Lot นี้</span>
                                                     </div>
                                                 </div>
                                                 
@@ -583,6 +572,12 @@
                                                 <button onClick={handleBookOther} className="btn-primary w-full py-3 bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold rounded-xl shadow-lg mt-2">ยืนยันการจองคิว</button>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+                                
+                                {!isPastYear && stats.remaining <= 0 && (
+                                    <div className="text-center p-4 border border-dashed border-slate-600 rounded-xl">
+                                        <p className="text-slate-400 text-sm">โควตาวัคซีนหมดแล้ว</p>
                                     </div>
                                 )}
                              </>
@@ -724,7 +719,7 @@
             const flags = getFlags(data);
 
             const riskyItems = useMemo(() => {
-                const labels = {bmi:'BMI', bp:'ความดันโลหิต', waist:'รอบเอว', pulse:'ชีพจร', fbs:'FBS', chol:'Cholesterol', trig:'Triglyceride', hdl:'HDL', ldl:'LDL', bun:'BUN', cr:'Cr', sgot:'SGOT', sgpt:'SGPT', alk:'Alk Phos', uric:'Uric', hct:'Hct', hgb:'Hgb', rbc:'RBC(Urine)', wbc:'WBC(Urine)'};
+                const labels = {bmi:'BMI', bp:'ความดันโลหิต', waist:'รอบเอว', pulse:'ชีพจร', fbs:'FBS', chol:'Cholesterol', trig:'Triglyceride', hdl:'HDL', ldl:'LDL', font_bold:'BUN', cr:'Cr', sgot:'SGOT', sgpt:'SGPT', alk:'Alk Phos', uric:'Uric', hct:'Hct', hgb:'Hgb', rbc:'RBC(Urine)', wbc:'WBC(Urine)'};
                 return Object.entries(flags)
                     .filter(([k, v]) => v && (v.bg === 'bg-red' || v.bg === 'bg-yellow'))
                     .map(([k, v]) => labels[k] || k)
@@ -733,15 +728,6 @@
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
-            const toggleChronic = (disease) => {
-                if(isReadOnly) return;
-                setData(p => {
-                    const arr = p.chronic_array || [];
-                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
-                    return { ...p, chronic_array: newArr };
-                });
-            };
-
             const handleSave = async () => {
                 if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
@@ -844,12 +830,13 @@
             };
 
             const openChart = (field, title, val) => setModal({ open: true, field, title, value: val });
+            
             const alcoholOpts = [{code:1,label:'ไม่ดื่ม'},{code:2,label:'นานๆครั้ง'},{code:3,label:'ดื่มเป็นประจำ'},{code:9,label:'ไม่มีข้อมูล'}];
             const helmetOpts = [{code:1,label:'ไม่สวม'},{code:2,label:'สวมบางครั้ง'},{code:3,label:'สวมทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
             const beltOpts = [{code:1,label:'ไม่คาด'},{code:2,label:'คาดบางครั้ง'},{code:3,label:'คาดทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
 
             return (
-                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative">
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative text-slate-100">
                     <div className="bg-[#0f172a]/80 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
                         <div className="flex items-center gap-3">
                             <button onClick={onBack}><Icon name="arrow-left" className="text-slate-300 hover:text-white transition" /></button>
@@ -1687,10 +1674,6 @@
                     </div>
 
                     <div className="space-y-6">
-                        <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
-                            <img src="https://sawee-hosp.github.io/ic/2026.png" alt="วัคซีนไข้หวัดใหญ่ 2026" className="w-full h-auto object-cover" />
-                        </div>
-
                         {loading ? (
                             <div className="glass-panel p-6 rounded-2xl text-center animate-pulse">
                                 <p className="text-slate-400 text-xs">กำลังคำนวณยอดคงเหลือ...</p>
@@ -1735,6 +1718,11 @@
                                     <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-teal-500 rounded-full"></span><p className="font-bold text-white">2. คีย์บันทึกระบบวัคซีน</p><p className="text-[11px] text-slate-400">คีย์ระบบวัคซีนด้วยตนเอง โดยตรวจสอบความถูกต้องของ Lot., Serial No., Exp. ตามสติกเกอร์ยา</p></div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* SWAPPED TO THE BOTTOM AS REQUESTED */}
+                        <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+                            <img src="https://sawee-hosp.github.io/ic/2026.png" alt="วัคซีนไข้หวัดใหญ่ 2026" className="w-full h-auto object-cover" />
                         </div>
                     </div>
                 </div>
