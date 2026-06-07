@@ -122,6 +122,7 @@
             return null;
         };
 
+        // --- 2. UI COMPONENTS (ATOMS) ---
         const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
             <div>
                 <div className="flex justify-between items-end mb-1">
@@ -182,6 +183,14 @@
                 </div>
             );
         };
+
+        // NEW / FIXED: ประกาศคอมโพเนนต์ MenuBtn เพื่อแก้ไข ReferenceError ปลุกเมนูให้กลับมาทำงานได้
+        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
+            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
+                <div className={`p-4 rounded-full ${bg} shadow-inner`}><Icon name={icon} size={40} className={color} /></div>
+                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
+            </button>
+        );
 
         const ChartModal = ({ hn, field, title, value, year, onClose }) => {
             const canvasRef = useRef(null);
@@ -326,6 +335,75 @@
             );
         };
 
+        const RegistrationPage = ({ pendingProfile, codebook, onSubmit, onCancel }) => {
+            const [data, setData] = useState({ 
+                Title: 'นาย', 
+                Gender: 1, 
+                userId: pendingProfile?.userId || '',
+                pictureProfile: pendingProfile?.pictureUrl || '',
+                loginname: pendingProfile?.displayName || '' 
+            });
+            const [orgType, setOrgType] = useState('hospital'); 
+
+            const h = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleDob = (v) => {
+                h('dob', v);
+                if(v) {
+                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
+                    h('Age', age > 0 ? age : 0);
+                }
+            };
+
+            const validateAndSubmit = () => {
+                if (!data.cid || data.cid.trim().length !== 13) return alert("กรุณากรอกเลขบัตรประชาชน 13 หลัก ให้ถูกต้อง");
+                if (!data.Name || data.Name.trim() === "") return alert("กรุณากรอก ชื่อ-สกุล");
+                onSubmit(data);
+            };
+
+            const deptOptions = orgType === 'hospital' ? (codebook['department'] || []) : PCU_OPTIONS.map(name => ({ code: name, label: name }));
+            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
+
+            return (
+                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                        <button onClick={onCancel} className="text-slate-400 hover:text-white"><Icon name="arrow-left" /></button>
+                        <h2 className="text-lg font-bold text-orange-400 flex items-center gap-2"><Icon name="user-plus" /> ลงทะเบียนบุคลากรใหม่</h2>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow border-t-2 border-orange-500/50">
+                        <div className="p-3 bg-indigo-900/20 rounded-xl border border-indigo-500/30 text-center mb-2">
+                            {pendingProfile?.pictureUrl && <img src={pendingProfile.pictureUrl} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-indigo-500" />}
+                            <p className="text-[11px] text-slate-400">กรุณากรอกข้อมูลเพื่อลงทะเบียนเข้าสู่ระบบ</p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Field label="CID (เลขบัตร ปชช.) *" val={data.cid} onChange={v=>h('cid',v)} />
+                            <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
+                                <div className="col-span-8"><Field label="ชื่อ-สกุล *" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
+                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
+                            </div>
+                            
+                            <div className="pt-3 border-t border-slate-700/50">
+                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
+                                <div className="flex bg-slate-800 rounded p-1 mb-2">
+                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>รพ.สต.</button>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">{orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}</label><Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} /></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 bg-orange-600 hover:bg-orange-500 text-base shadow-lg shadow-orange-900/50">บันทึกและเข้าสู่ระบบ</button>
+                </div>
+            );
+        };
+
         const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
             const [data, setData] = useState({});
             const [orgType, setOrgType] = useState('hospital'); 
@@ -441,7 +519,7 @@
 
                             <div className="grid grid-cols-2 gap-2 pt-2">
                                 <div>
-                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน</label>
+                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน (กลุ่มงาน)</label>
                                     <select className="glass-input text-xs" value={data.Right} onChange={e=>h('Right',e.target.value)}>
                                         <option value="">- เลือก -</option>
                                         <option value="กลุ่มวิชาชีพสัมผัสผู้ป่วย">กลุ่มวิชาชีพสัมผัสผู้ป่วย</option>
@@ -515,11 +593,15 @@
 
             const handleBookSelf = async () => {
                 setLoading(true);
+                // NEW: คำนวณชื่อแผนกจริงเพื่อส่งบันทึกใน Col E
+                const isNetwork = user.Dept.includes('รพ.สต') || user.Dept.includes('สสอ');
+                const hospitalName = isNetwork ? user.Dept : 'รพ.สวี';
+
                 const payload = {
                     year,
                     name: user.Name,
                     hn: user.Dept.includes('รพ.สต') || user.Dept.includes('สสอ') ? user.cid : user.HN,
-                    hospital: user.Dept.includes('รพ.สต') || user.Dept.includes('สสอ') ? 'เครือข่าย' : 'รพ.สวี',
+                    hospital: hospitalName,
                     userId: user.userId || user.userid
                 };
                 try {
@@ -533,13 +615,21 @@
                 if (!otherData.name) return alert('กรุณาระบุชื่อผู้รับวัคซีน');
                 if (!otherData.dept) return alert('กรุณาระบุหน่วยงาน');
                 
+                // NEW: บังคับกรอก HN หากเลือกประเภทเป็น รพ.สวี
+                if (otherData.orgType === 'hospital' && !otherData.hn) {
+                    return alert('⚠️ กรุณาระบุรหัส HN สำหรับผู้รับวัคซีนสังกัด รพ.สวี');
+                }
+                
                 setLoading(true);
+                // NEW: ส่งชื่อหน่วยงานจริงตามเงื่อนไขเพื่อบันทึก Col E
+                const hospitalName = otherData.orgType === 'hospital' ? 'รพ.สวี' : otherData.dept;
+
                 const payload = {
                     year,
                     name: otherData.name,
                     hn: otherData.hn || '',
-                    hospital: otherData.orgType === 'network' ? 'เครือข่าย' : 'รพ.สวี',
-                    userId: user.userId || user.userid // บันทึก userId ของตัวเราเป็นผู้จอง
+                    hospital: hospitalName,
+                    userId: user.userId || user.userid // ผูกบัญชี Booker ID ใน Col J
                 };
                 try {
                     const res = await callGAS('bookVaccine', { payload });
@@ -554,7 +644,7 @@
             const handleConfirm = async (bookingNo) => {
                  setLoading(true);
                  try {
-                     const res = await callGAS('confirmVaccineReceived', { no: bookingNo, year });
+                     const res = await callGAS('confirmVaccineReceived', { payload: { no: bookingNo, year } });
                      if(res.success) fetchDashboard();
                      else alert('Error updating status');
                  } catch(e) {}
@@ -651,7 +741,7 @@
                                                 </div>
                                                 <div className="space-y-3">
                                                     <Field label="ชื่อ-สกุล *" val={otherData.name} onChange={v=>setOtherData({...otherData, name:v})} />
-                                                    <Field label="HN (เว้นว่างได้ถ้าไม่มี)" val={otherData.hn} onChange={v=>setOtherData({...otherData, hn:v})} />
+                                                    <Field label="HN (บังคับเฉพาะ รพ.สวี)" val={otherData.hn} onChange={v=>setOtherData({...otherData, hn:v})} />
                                                     
                                                     <div>
                                                         <div className="flex bg-slate-800 rounded p-1 mb-2">
@@ -895,13 +985,8 @@
                     else calculatedRiskCode = 5;
                 }
 
-                // Combine Chronic Diseases Array + Other String
-                let combinedChronic = [];
-                if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
-                if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
-
                 const additionalFields = {
-                    chronic_detail: data.has_chronic == 1 ? combinedChronic.join(', ') : '',
+                    chronic_detail: data.has_chronic == 1 ? (data.chronic_array || []).concat(data.chronic_other ? [data.chronic_other] : []).join(', ') : '',
                     urine_detail: data.urine_flag == 2 ? data.urine_detail || '' : '',
                     cbc_flag: data.cbc_flag || '',
                     cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
@@ -924,8 +1009,6 @@
             };
 
             const openChart = (field, title, val) => setModal({ open: true, field, title, value: val });
-            
-            // Hardcoded Options for specific fields
             const alcoholOpts = [{code:1,label:'ไม่ดื่ม'},{code:2,label:'นานๆครั้ง'},{code:3,label:'ดื่มเป็นประจำ'},{code:9,label:'ไม่มีข้อมูล'}];
             const helmetOpts = [{code:1,label:'ไม่สวม'},{code:2,label:'สวมบางครั้ง'},{code:3,label:'สวมทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
             const beltOpts = [{code:1,label:'ไม่คาด'},{code:2,label:'คาดบางครั้ง'},{code:3,label:'คาดทุกครั้ง'},{code:9,label:'ไม่มีข้อมูล'}];
@@ -1099,7 +1182,7 @@
                                             <select className="glass-input text-xs" value={data.treatment || 1} onChange={e=>handleChange('treatment', e.target.value)} disabled={isReadOnly}>
                                                 <option value="1">นัดตรวจสุขภาพประจำปี(ตามรอบปกติ)</option>
                                                 <option value="2">นัดติดตามผลเลือดอีกครั้งในอีก...เดือน(เร็วกว่าปกติ)</option>
-                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤติกรรมสุขภาพ</option>
+                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤฤติกรรมสุขภาพ</option>
                                                 <option value="4">วินิจฉัยเป็นโรคและให้เริ่มกินยา</option>
                                             </select>
                                         </div>
@@ -1590,10 +1673,154 @@
             );
         };
 
+        // NEW: หน้าจอมอนิเตอร์สำหรับแอดมินโดยเฉพาะ ไม่ต้องล็อกอินเพื่อความสะดวกสูงสุด
+        const AdminVaccineView = ({ codebook, onBack }) => {
+            const [year, setYear] = useState(new Date().getFullYear());
+            const [stats, setStats] = useState(null);
+            const [bookings, setBookings] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+
+            const fetchDashboard = async () => {
+                setLoading(true);
+                try {
+                    // ส่งค่า hn และ userId เป็นค่าว่างเพื่อดึงรายชื่อจองทั้งหมดของปีนั้นมาแสดงในตารางแอดมิน
+                    const res = await callGAS('getVaccineDashboard', { hn: '', year, userId: '' });
+                    setStats(res);
+                    setBookings(res.myBookings || res.allBookings || []);
+                } catch(e) {
+                    console.error(e);
+                }
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                fetchDashboard();
+            }, [year]);
+
+            const filteredBookings = useMemo(() => {
+                if (!searchQuery.trim()) return bookings;
+                const q = searchQuery.toLowerCase();
+                return bookings.filter(b => 
+                    String(b.no).toLowerCase().includes(q) ||
+                    String(b.hn).toLowerCase().includes(q) ||
+                    String(b.name).toLowerCase().includes(q) ||
+                    String(b.hospital).toLowerCase().includes(q) ||
+                    String(b.status).toLowerCase().includes(q)
+                );
+            }, [bookings, searchQuery]);
+
+            const years = [2025, 2026, 2027].filter(y => y <= new Date().getFullYear() + 1);
+
+            return (
+                <div className="pb-24 fade-in max-w-4xl mx-auto min-h-screen relative bg-[#0f172a] text-slate-100">
+                    <div className="bg-[#0f172a]/90 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                                <Icon name="arrow-left" className="text-slate-300" />
+                            </button>
+                            <div>
+                                <h2 className="font-bold text-white text-sm">ระบบบริหารจัดการวัคซีน (Admin)</h2>
+                                <p className="text-[10px] text-slate-400">Vaccine Administration Panel</p>
+                            </div>
+                        </div>
+                        <button onClick={fetchDashboard} className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="โหลดข้อมูลใหม่">
+                            <Icon name="refresh-cw" className={`text-slate-300 ${loading ? 'animate-spin' : ''}`} size={18} />
+                        </button>
+                    </div>
+
+                    <div className="p-4 space-y-6">
+                        <div className="flex gap-2">
+                            {years.map(y => (
+                                <button key={y} onClick={()=>setYear(y)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${year===y?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400'}`}>ปี {y}</button>
+                            ))}
+                        </div>
+
+                        {stats && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-indigo-500">
+                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">ยอดจัดสรรทั้งหมด</p>
+                                    <div className="text-3xl font-bold text-white">{stats.total} โดส</div>
+                                </div>
+                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-green-500">
+                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">วัคซีนคงเหลือ</p>
+                                    <div className="text-3xl font-bold text-green-400">{stats.remaining} โดส</div>
+                                </div>
+                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-blue-500">
+                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">จองแล้ว (รพ.สวี / เครือข่าย)</p>
+                                    <div className="text-2xl font-bold text-white">
+                                        {stats.total - stats.remaining} โดส
+                                        <span className="text-xs text-slate-400 block mt-1">({stats.hospCount['รพ.สวี']} / {stats.hospCount['เครือข่าย']})</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <h3 className="text-indigo-300 font-bold text-xs uppercase tracking-wider">รายชื่อผู้จองวัคซีนทั้งหมด</h3>
+                                <div className="relative w-full md:w-64">
+                                    <input 
+                                        type="text" 
+                                        className="glass-input pl-10" 
+                                        placeholder="ค้นหาชื่อ, HN, คิว, หน่วยงาน..." 
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                    />
+                                    <span className="absolute left-3 top-2.5 text-slate-400">
+                                        <Icon name="search" size={16} />
+                                    </span>
+                                </div>
+                            </div>
+
+                            {loading ? (
+                                <div className="text-center py-10 text-xs text-slate-500">กำลังโหลดข้อมูล...</div>
+                            ) : filteredBookings.length === 0 ? (
+                                <div className="text-center py-10 text-xs text-slate-500">ไม่พบข้อมูลการจองในปีนี้</div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse text-xs">
+                                        <thead>
+                                            <tr className="border-b border-slate-700 text-slate-400">
+                                                <th className="py-2 px-3">คิวที่</th>
+                                                <th className="py-2 px-3">HN</th>
+                                                <th className="py-2 px-3">ชื่อ-สกุล</th>
+                                                <th className="py-2 px-3">หน่วยงาน</th>
+                                                <th className="py-2 px-3">วันเวลาจอง</th>
+                                                <th className="py-2 px-3 text-center">สถานะ</th>
+                                                <th className="py-2 px-3">ผู้จอง (LINE ID)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredBookings.map((b, i) => (
+                                                <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
+                                                    <td className="py-3 px-3 font-mono font-bold text-indigo-400">{b.no}</td>
+                                                    <td className="py-3 px-3 font-mono text-slate-300">{b.hn || '-'}</td>
+                                                    <td className="py-3 px-3 font-bold text-white">{b.name}</td>
+                                                    <td className="py-3 px-3 text-slate-300">{b.hospital || '-'}</td>
+                                                    <td className="py-3 px-3 text-slate-400">{b.date}</td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${b.status === 'Received' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
+                                                            {b.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-slate-500 font-mono" title={b.userId}>{b.userId ? String(b.userId).substring(0, 10) + '...' : '-'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- MAIN APP COMPONENT ---
         const App = () => {
             const [user, setUser] = useState(null);
-            const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle
+            const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle, adminDashboard
             const [codebook, setCodebook] = useState({});
             const [pendingProfile, setPendingProfile] = useState(null);
             const urlParams = new URLSearchParams(window.location.search);
@@ -1605,6 +1832,12 @@
                         const cb = await callGAS('getCodebook');
                         setCodebook(cb || {});
                     } catch(e) { console.error("Codebook Error", e); }
+
+                    // NEW: ตรวจสอบโหมด Admin ก่อนล็อกอินเพื่อทะลุเข้าใช้งานได้ทันที
+                    if (mode === 'admin') {
+                        setPage('adminDashboard');
+                        return;
+                    }
 
                     const saved = localStorage.getItem('ic_sw_user');
                     if(saved) {
@@ -1692,11 +1925,18 @@
                 setPage('login');
             };
 
+            if (page === 'adminDashboard') {
+                return <AdminVaccineView codebook={codebook} onBack={() => { window.location.href = window.location.pathname; }} />;
+            }
+
             if (!user && page === 'login') return <LoginPage onLogin={handleLogin} onLiff={handleLiffLogin} />;
             if (!user && page === 'register') return <RegistrationPage pendingProfile={pendingProfile} codebook={codebook} onSubmit={handleRegister} onCancel={handleLogout} />;
             if (page === 'menu') return <MainMenu user={user} onSelect={setPage} onLogout={handleLogout} />;
             if (page === 'vaccineBooking') return <VaccineBooking user={user} onBack={() => setPage('menu')} onLogout={handleLogout} codebook={codebook} />;
             if (page === 'healthBook') return <HealthBook user={user} codebook={codebook} onBack={() => setPage('menu')} />;
+            if (page === 'sickLeave') return <SickLeave user={user} onBack={() => setPage('menu')} />;
+            if (page === 'needleInjury') return <NeedleInjury user={user} onBack={() => setPage('menu')} />;
+            if (page === 'exposure') return <ExposureTracking user={user} onBack={() => setPage('menu')} />;
 
             return <div className="text-white text-center mt-10">404 Not Found <br/><button onClick={()=>setPage('menu')}>Go Home</button></div>;
         };
