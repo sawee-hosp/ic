@@ -60,240 +60,31 @@
 
         const CHRONIC_DISEASES = ["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"];
 
-        const callGAS = async (action, payload = {}) => {
-            try {
-                const res = await fetch(GAS_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action, ...payload })
-                });
-                return await res.json();
-            } catch (error) {
-                console.error("API Error:", error);
-                throw error;
-            }
-        };
-
-        const Icon = ({ name, className, size=24 }) => {
-            const ref = useRef(null);
+        const Toast = ({ notification, onClose }) => {
             useEffect(() => {
-                if(ref.current) {
-                    ref.current.innerHTML = '';
-                    const i = document.createElement('i');
-                    i.setAttribute('data-lucide', name);
-                    i.className = className || '';
-                    ref.current.appendChild(i);
-                    lucide.createIcons({ root: ref.current, attrs: { width: size, height: size } });
+                if (notification) {
+                    const timer = setTimeout(() => onClose(), 4000);
+                    return () => clearTimeout(timer);
                 }
-            }, [name, className, size]);
-            return <span ref={ref} className="inline-flex items-center justify-center"></span>;
-        };
+            }, [notification, onClose]);
 
-        const Loading = ({ text }) => (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0f172a]/95 backdrop-blur-md">
-                <img src={LOGO_URL} className="w-20 h-20 mb-4 animate-pulse" />
-                <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
-                <p className="text-indigo-200 text-xs tracking-wider">{text}</p>
-            </div>
-        );
-
-        const getFlag = (t, v, s) => {
-            const n = parseFloat(v); if(!n) return null;
-            const dot = (c) => c === 'bg-green' ? 'bg-emerald-500' : c === 'bg-yellow' ? 'bg-amber-500' : 'bg-rose-500';
-            let res = null;
-            if(t=='bmi') res = n<18.5?{bg:'bg-yellow',label:'ผอม'}:n<23?{bg:'bg-green',label:'ปกติ'}:n<25?{bg:'bg-yellow',label:'ท้วม'}:{bg:'bg-red',label:'อ้วน'};
-            if(t=='bp') res = n<120?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='waist') { let lim=(s=='ชาย'||s=='1')?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
-            if(t=='pulse') res = (n>=60 && n<=100)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
-            if(t=='fbs') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<126?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
-            if(t=='chol') res = n<200?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='trig') res = n<150?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='hdl') res = n>=((s=='ชาย'||s=='1')?40:50)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ต่ำ'};
-            if(t=='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<160?{bg:'bg-yellow',label:'สูง'}:{bg:'bg-red',label:'สูงมาก'};
-            if(t=='bun') res = n<=20?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='cr') res = n<=1.44?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='uric') res = n<=8.2?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='sgot') res = n<35?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='sgpt') res = n<45?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='alk') res = n<=147?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
-            if(t=='hct') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?38:36) && n<=(isM?50:45))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
-            if(t=='hgb') { let isM=(s=='ชาย'||s=='1'); res = (n>=(isM?13.2:11.6) && n<=(isM?16.6:15.0))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
-            if(t=='urine') { let str = String(v).toLowerCase(); res = (str==='0'||str.includes('not')||str.includes('none')||str==='-')?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
-            if(res) return { ...res, dot: dot(res.bg) };
-            return null;
-        };
-
-        // --- 2. UI COMPONENTS (ATOMS) ---
-        const Field = ({ label, val, onChange, flag, onChart, readonly }) => (
-            <div>
-                <div className="flex justify-between items-end mb-1">
-                    <label className="text-[10px] text-slate-400">{label}</label>
-                    {onChart && !readonly && <button onClick={onChart} className="text-[10px] text-indigo-400 hover:text-white transition flex items-center gap-0.5"><Icon name="bar-chart-2" size={14} /> เทียบ</button>}
-                </div>
-                <div className="relative">
-                    <input type="text" className="glass-input pr-8" value={val||''} onChange={e=>onChange(e.target.value)} disabled={readonly} />
-                    {flag && <span className={`absolute right-1.5 top-2.5 w-2.5 h-2.5 rounded-full ${flag.dot} ring-2 ring-slate-800`}></span>}
-                </div>
-            </div>
-        );
-
-        const Card = ({ title, children }) => (
-            <div className="glass-panel p-5 rounded-2xl">
-                <h3 className="text-indigo-300 font-bold text-[11px] uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">{title}</h3>
-                {children}
-            </div>
-        );
-
-        const Select = ({ label, val, options, onChange, disabled }) => {
-            const found = options?.find(o => o.code == val);
-            return (
-                <div>
-                    {label && <label className="text-[10px] text-slate-400 block mb-1">{label}</label>}
-                    <select className="glass-input text-xs" value={val||''} onChange={e => onChange(e.target.value)} disabled={disabled}>
-                        <option value="">- เลือก -</option>
-                        {options?.map((o,i)=><option key={i} value={o.code}>{o.label}</option>)}
-                        {val && !found && <option value={val}>{val}</option>}
-                    </select>
-                </div>
-            );
-        };
-
-        const RadioBtn = ({ name, val, setVal, opts, disabled }) => (
-            <div className="flex bg-slate-800 rounded p-0.5 w-full">
-                {opts.map(o => (
-                    <button key={o.v} onClick={()=> !disabled && setVal(o.v)} 
-                        className={`flex-1 text-[10px] py-1 px-2 rounded transition-all ${val==o.v ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        {o.l}
-                    </button>
-                ))}
-            </div>
-        );
-
-        const FlagInput = ({ label, name, val, detail, onChange, opts, disabled }) => {
-            const hasDetail = (val==1 || val==2) && (name.includes('chronic') || name.includes('detail') || name.includes('flag')) && (val==1 || (name.includes('cxr') && val==2) || (name.includes('cbc') && val==2) || (name.includes('chemistry') && val==2));
-            const detailName = name.replace('flag','detail').replace('has_','').replace('_flag','_detail');
-            return (
-                <div className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-[10px] text-slate-400 w-1/3">{label}</label>
-                        <div className="w-2/3"><RadioBtn name={name} val={val} setVal={v=>onChange(name,v)} opts={opts} disabled={disabled} /></div>
-                    </div>
-                    {hasDetail && name !== 'has_chronic' && (
-                        <input className="glass-input text-xs mt-1" placeholder="ระบุรายละเอียด..." value={detail||''} onChange={e=>onChange(detailName, e.target.value)} disabled={disabled} />
-                    )}
-                </div>
-            );
-        };
-
-        // NEW / FIXED: ประกาศคอมโพเนนต์ MenuBtn เพื่อแก้ไข ReferenceError ปลุกเมนูให้กลับมาทำงานได้
-        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
-            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
-                <div className={`p-4 rounded-full ${bg} shadow-inner`}><Icon name={icon} size={40} className={color} /></div>
-                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
-            </button>
-        );
-
-        const ChartModal = ({ hn, field, title, value, year, onClose }) => {
-            const canvasRef = useRef(null);
-            const [mode, setMode] = useState('self');
-            const [loading, setLoading] = useState(true);
-            const [stats, setStats] = useState(null);
-
-            useEffect(() => {
-                const draw = async () => {
-                    setLoading(true);
-                    try {
-                        let config = {};
-                        if (mode === 'self') {
-                            setStats(null);
-                            const res = await callGAS('getSelfTrend', { hn, field });
-                            config = { 
-                                type: 'line', 
-                                data: { labels: res.map(d=>d.year), datasets: [{ label: 'แนวโน้ม', data: res.map(d=>d.value), borderColor: '#6366f1', tension: 0.4, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)' }] } 
-                            };
-                        } else {
-                            const res = await callGAS('getDistribution', { field, year, hn });
-                            const vals = res.values || [];
-                            const userVal = parseFloat(value) || res.userVal || 0;
-                            
-                            const n = vals.length;
-                            const sortedVals = [...vals].sort((a,b) => a - b);
-                            const rank = sortedVals.findIndex(v => v >= userVal) + 1 || n;
-                            setStats({ n, rank });
-
-                            const bins = 10;
-                            const min = Math.min(...vals, userVal);
-                            const max = Math.max(...vals, userVal);
-                            const buffer = (max - min) * 0.1 || 1;
-                            const rangeMin = Math.floor(min - buffer);
-                            const rangeMax = Math.ceil(max + buffer);
-                            const step = (rangeMax - rangeMin) / bins;
-                            const curveData = [];
-                            
-                            for(let i=0; i<bins; i++) {
-                                const start = rangeMin + (i*step);
-                                const end = start + step;
-                                const mid = start + (step/2);
-                                const count = vals.filter(v => v >= start && v < end).length;
-                                curveData.push({ x: mid, y: count });
-                            }
-                            
-                            if(curveData.length > 0) {
-                                curveData.unshift({ x: rangeMin, y: 0 });
-                                curveData.push({ x: rangeMax, y: 0 });
-                            }
-
-                            config = { 
-                                type: 'line', 
-                                data: { 
-                                    datasets: [
-                                        { label: 'กลุ่ม', data: curveData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', fill: true, tension: 0.4, pointRadius: 0 },
-                                        { type: 'scatter', label: 'คุณ', data: [{x: userVal, y: 0}], backgroundColor: '#f43f5e', pointRadius: 8, borderColor: 'white', borderWidth: 2, order: 0 }
-                                    ] 
-                                },
-                                options: { 
-                                    scales: { x: { type: 'linear', grid:{color:'#334155'}, ticks:{color:'#94a3b8'}, min: rangeMin, max: rangeMax }, y: { display:false, beginAtZero: true } },
-                                    plugins: { legend: { display: false } }
-                                }
-                            };
-                        }
-                        
-                        if (canvasRef.current) {
-                            const chart = Chart.getChart(canvasRef.current);
-                            if (chart) chart.destroy();
-                            new Chart(canvasRef.current, { ...config, options: { ...config.options, responsive: true, maintainAspectRatio: false } });
-                        }
-                    } catch(e) {}
-                    setLoading(false);
-                };
-                draw();
-            }, [mode]);
+            if (!notification) return null;
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in" onClick={onClose}>
-                    <div className="bg-[#1e293b] w-full max-w-sm rounded-2xl p-5 border border-slate-700 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
-                        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-white"><Icon name="x" size={20} /></button>
-                        <h3 className="text-white font-bold mb-1 flex items-center gap-2"><Icon name="bar-chart-2" className="text-indigo-400" size={20} /> วิเคราะห์: {title}</h3>
-                        <p className="text-xs text-slate-400 mb-4 ml-7">ค่าของคุณ: <span className="text-white font-bold">{value || '-'}</span></p>
-                        
-                        <div className="flex bg-slate-900 rounded p-1 mb-4">
-                            <button onClick={()=>setMode('self')} className={`flex-1 text-xs py-2 rounded ${mode==='self'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบตัวเอง</button>
-                            <button onClick={()=>setMode('others')} className={`flex-1 text-xs py-2 rounded ${mode==='others'?'bg-indigo-600 text-white shadow':'text-slate-400'}`}>เทียบกลุ่ม</button>
-                        </div>
-                        <div className="h-56 relative">{loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-500">สร้างกราฟ...</div>}<canvas ref={canvasRef}></canvas></div>
-                        {mode === 'others' && (
-                            <div className="mt-3 text-center">
-                                <p className="text-[10px] text-slate-500">* จุดสีแดงคือตำแหน่งของค่าที่บันทึกในกลุ่มบุคลากร</p>
-                                {stats && <p className="text-xs text-slate-300 mt-1">จำนวนข้อมูล (n) = <span className="font-bold text-white">{stats.n}</span> | ลำดับที่ <span className="font-bold text-white">{stats.rank}</span> (จากน้อยไปมาก)</p>}
-                            </div>
-                        )}
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
+                    <div className={`px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 border text-xs font-semibold ${
+                        notification.type === 'success' ? 'bg-emerald-950 border-emerald-500/30 text-emerald-400' : 
+                        notification.type === 'info' ? 'bg-blue-950 border-blue-500/30 text-blue-400' :
+                        'bg-rose-950 border-rose-500/30 text-rose-400'
+                    }`}>
+                        <Icon name={notification.type === 'success' ? 'check-circle' : 'alert-circle'} size={16} />
+                        <span>{notification.message}</span>
                     </div>
                 </div>
             );
         };
 
-        // --- 3. PAGE COMPONENTS ---
-
-        const LoginPage = ({ onLogin, onLiff }) => {
+        const LoginPage = ({ onLogin, onLiff, onRegister }) => {
             const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
             const isValid = useMemo(() => {
                 let count = 0;
@@ -329,8 +120,156 @@
                         </div>
                         <div className="mt-8 space-y-3 pt-6 border-t border-slate-700/50">
                             <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20">เข้าสู่ระบบด้วย LINE</button>
+                            <button onClick={onRegister} className="w-full py-3 rounded-xl border border-slate-600 text-slate-300 font-bold text-sm hover:bg-slate-800 transition-all">ลงทะเบียนผู้ใช้งานใหม่</button>
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
+            const [data, setData] = useState({});
+            const [orgType, setOrgType] = useState('hospital'); 
+
+            useEffect(() => { 
+                if(user) {
+                    const u = user; 
+                    const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
+                    let genderCode = u.Gender;
+                    if (u.Gender === 'ชาย') genderCode = 1;
+                    if (u.Gender === 'หญิง') genderCode = 2;
+                    const mapped = {
+                        loginname: u.loginname || u.LoginName || '',
+                        HN: u.HN || u.hn || '',
+                        cid: u.cid || u.CID || '',
+                        Title: u.Title || u.title || 'นาย',
+                        Name: u.Name || u.name || '',
+                        nickname: u.nickname || u.NickName || '',
+                        Gender: genderCode || 1,
+                        dob: u.dob || u.birthdate || '',
+                        Age: u.Age || u.age || '',
+                        Dept: u.Dept || u.dept || u.department || '',
+                        Job: u.Job || u.job || '',
+                        Right: u.Right || u.right || '',
+                        phone: cleanPhone(u.phone || u.Tel),
+                        email: u.email || u.Email || '',
+                        pictureProfile: u.pictureProfile || u.pictureprofile || ''
+                    };
+                    if (!mapped.Age && mapped.dob) {
+                        const d = new Date(mapped.dob);
+                        if(!isNaN(d.getTime())) mapped.Age = new Date().getFullYear() - d.getFullYear();
+                    }
+                    if (PCU_OPTIONS.includes(mapped.Dept)) setOrgType('network'); else setOrgType('hospital');
+                    setData(mapped); 
+                }
+            }, [user]);
+
+            const h = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleDob = (v) => {
+                h('dob', v);
+                if(v) {
+                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
+                    h('Age', age > 0 ? age : 0);
+                }
+            };
+
+            useEffect(() => {
+                if (data.Job && codebook?.job_map && codebook.job_map[data.Job]) {
+                     h('Right', codebook.job_map[data.Job]);
+                }
+            }, [data.Job, codebook]);
+
+            const validateAndSubmit = () => {
+                if (!data.cid || data.cid.trim().length !== 13) {
+                    alert("กรุณากรอกเลขบัตรประชาชน 13 หลัก ให้ถูกต้อง");
+                    return;
+                }
+                if (!data.Name || data.Name.trim() === "") {
+                    alert("กรุณากรอก ชื่อ-สกุล ให้ครบถ้วน");
+                    return;
+                }
+                onSubmit(data);
+            };
+
+            const deptOptions = orgType === 'hospital' 
+                ? (codebook['department'] || [])
+                : PCU_OPTIONS.map(name => ({ code: name, label: name }));
+            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
+
+            return (
+                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon name="user-cog" className="text-indigo-400" /> อัปเดตประวัติส่วนตัว</h2>
+                        <button onClick={onSkip} className="text-xs text-slate-400 border border-slate-600 px-3 py-1.5 rounded-full hover:bg-slate-800 transition-colors">ข้ามไปก่อน &rarr;</button>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow relative">
+                        <div className="flex justify-center mb-6">
+                            <div className="relative">
+                                <img src={data.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-24 h-24 rounded-full border-4 border-indigo-500/30 shadow-2xl object-cover" />
+                                <div className="absolute bottom-0 right-0 bg-slate-800 p-1.5 rounded-full border border-slate-600"><Icon name="camera" className="text-slate-300" size={16} /></div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/20 space-y-3">
+                            <h3 className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1"><Icon name="shield" size={12} /> ข้อมูลยืนยันตัวตน</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Field label="Login Name" val={data.loginname} onChange={v=>h('loginname',v)} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Field label="HN" val={data.HN} onChange={v=>h('HN',v)} />
+                                    <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
+                                <div className="col-span-8"><Field label="ชื่อ-สกุล" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="ชื่อเล่น" val={data.nickname} onChange={v=>h('nickname',v)} />
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
+                                <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
+                            </div>
+                            
+                            <div className="pt-2 border-t border-slate-700/50">
+                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
+                                <div className="flex bg-slate-800 rounded p-1 mb-2">
+                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-[10px] text-slate-400 block mb-1">
+                                            {orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}
+                                        </label>
+                                        <Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} />
+                                    </div>
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                <div>
+                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน (กลุ่มงาน)</label>
+                                    <select className="glass-input text-xs" value={data.Right} onChange={e=>h('Right',e.target.value)}>
+                                        <option value="">- เลือก -</option>
+                                        <option value="กลุ่มวิชาชีพสัมผัสผู้ป่วย">กลุ่มวิชาชีพสัมผัสผู้ป่วย</option>
+                                        <option value="กลุ่มสนับสนุนทางการแพทย์">กลุ่มสนับสนุนทางการแพทย์</option>
+                                        <option value="กลุ่มงานโภชนาการ">กลุ่มงานโภชนาการ</option>
+                                        <option value="กลุ่มงานทั่วไป">กลุ่มงานทั่วไป</option>
+                                    </select>
+                                </div>
+                                <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
+                            </div>
+                            <Field label="อีเมล" val={data.email} onChange={v=>h('email',v)} />
+                        </div>
+                    </div>
+                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
                 </div>
             );
         };
@@ -404,139 +343,6 @@
             );
         };
 
-        const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
-            const [data, setData] = useState({});
-            const [orgType, setOrgType] = useState('hospital'); 
-
-            useEffect(() => { 
-                if(user) {
-                    const u = user; 
-                    const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
-                    let genderCode = u.Gender;
-                    if (u.Gender === 'ชาย') genderCode = 1;
-                    if (u.Gender === 'หญิง') genderCode = 2;
-                    const mapped = {
-                        loginname: u.loginname || u.LoginName || '',
-                        HN: u.HN || u.hn || '',
-                        cid: u.cid || u.CID || '',
-                        Title: u.Title || u.title || 'นาย',
-                        Name: u.Name || u.name || '',
-                        nickname: u.nickname || u.NickName || '',
-                        Gender: genderCode || 1,
-                        dob: u.dob || u.birthdate || '',
-                        Age: u.Age || u.age || '',
-                        Dept: u.Dept || u.dept || u.department || '',
-                        Job: u.Job || u.job || '',
-                        Right: u.Right || u.right || '',
-                        phone: cleanPhone(u.phone || u.Tel),
-                        email: u.email || u.Email || '',
-                        pictureProfile: u.pictureProfile || u.pictureprofile || ''
-                    };
-                    if (!mapped.Age && mapped.dob) {
-                        const d = new Date(mapped.dob);
-                        if(!isNaN(d.getTime())) mapped.Age = new Date().getFullYear() - d.getFullYear();
-                    }
-                    if (PCU_OPTIONS.includes(mapped.Dept)) setOrgType('network'); else setOrgType('hospital');
-                    setData(mapped); 
-                }
-            }, [user]);
-
-            const h = (f, v) => setData(p => ({...p, [f]: v}));
-            const handleDob = (v) => {
-                h('dob', v);
-                if(v) {
-                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
-                    h('Age', age > 0 ? age : 0);
-                }
-            };
-
-            useEffect(() => {
-                if (data.Job && codebook?.job_map && codebook.job_map[data.Job]) {
-                     h('Right', codebook.job_map[data.Job]);
-                }
-            }, [data.Job, codebook]);
-
-            const validateAndSubmit = () => {
-                if (!data.cid || data.cid.trim().length !== 13) return alert("กรุณากรอกเลขบัตรประชาชน 13 หลัก ให้ถูกต้อง");
-                if (!data.Name || data.Name.trim() === "") return alert("กรุณากรอก ชื่อ-สกุล ให้ครบถ้วน");
-                onSubmit(data);
-            };
-
-            const deptOptions = orgType === 'hospital' ? (codebook['department'] || []) : PCU_OPTIONS.map(name => ({ code: name, label: name }));
-            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
-
-            return (
-                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon name="user-cog" className="text-indigo-400" /> อัปเดตประวัติส่วนตัว</h2>
-                        <button onClick={onSkip} className="text-xs text-slate-400 border border-slate-600 px-3 py-1.5 rounded-full hover:bg-slate-800 transition-colors">ข้ามไปก่อน &rarr;</button>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow relative">
-                        <div className="flex justify-center mb-6">
-                            <div className="relative">
-                                <img src={data.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-24 h-24 rounded-full border-4 border-indigo-500/30 shadow-2xl object-cover" />
-                                <div className="absolute bottom-0 right-0 bg-slate-800 p-1.5 rounded-full border border-slate-600"><Icon name="camera" className="text-slate-300" size={16} /></div>
-                            </div>
-                        </div>
-                        
-                        <div className="p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/20 space-y-3">
-                            <h3 className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1"><Icon name="shield" size={12} /> ข้อมูลยืนยันตัวตน</h3>
-                            <div className="grid grid-cols-1 gap-2">
-                                <Field label="Login Name / LINE" val={data.loginname} onChange={v=>h('loginname',v)} />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Field label="HN" val={data.HN} onChange={v=>h('HN',v)} />
-                                    <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                            <div className="grid grid-cols-12 gap-2">
-                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
-                                <div className="col-span-8"><Field label="ชื่อ-สกุล" val={data.Name} onChange={v=>h('Name',v)} /></div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Field label="ชื่อเล่น" val={data.nickname} onChange={v=>h('nickname',v)} />
-                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
-                                <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
-                            </div>
-                            
-                            <div className="pt-2 border-t border-slate-700/50">
-                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
-                                <div className="flex bg-slate-800 rounded p-1 mb-2">
-                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
-                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div><label className="text-[10px] text-slate-400 block mb-1">{orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}</label><Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} /></div>
-                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                <div>
-                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน (กลุ่มงาน)</label>
-                                    <select className="glass-input text-xs" value={data.Right} onChange={e=>h('Right',e.target.value)}>
-                                        <option value="">- เลือก -</option>
-                                        <option value="กลุ่มวิชาชีพสัมผัสผู้ป่วย">กลุ่มวิชาชีพสัมผัสผู้ป่วย</option>
-                                        <option value="กลุ่มสนับสนุนทางการแพทย์">กลุ่มสนับสนุนทางการแพทย์</option>
-                                        <option value="กลุ่มงานโภชนาการ">กลุ่มงานโภชนาการ</option>
-                                        <option value="กลุ่มงานทั่วไป">กลุ่มงานทั่วไป</option>
-                                    </select>
-                                </div>
-                                <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
-                            </div>
-                        </div>
-                    </div>
-                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
-                </div>
-            );
-        };
-
         const MainMenu = ({ user, onSelect, onLogout }) => (
             <div className="p-5 fade-in min-h-screen max-w-lg mx-auto">
                 <div className="flex justify-between items-center mb-8">
@@ -567,7 +373,7 @@
             </div>
         );
 
-        const VaccineBooking = ({ user, onBack, onLogout, codebook }) => {
+        const VaccineBooking = ({ user, onBack, onLogout, codebook, showToast }) => {
             const [year, setYear] = useState(new Date().getFullYear());
             const [stats, setStats] = useState(null);
             const [loading, setLoading] = useState(false);
@@ -593,7 +399,6 @@
 
             const handleBookSelf = async () => {
                 setLoading(true);
-                // NEW: คำนวณชื่อแผนกจริงเพื่อส่งบันทึกใน Col E
                 const isNetwork = user.Dept.includes('รพ.สต') || user.Dept.includes('สสอ');
                 const hospitalName = isNetwork ? user.Dept : 'รพ.สวี';
 
@@ -606,22 +411,24 @@
                 };
                 try {
                     const res = await callGAS('bookVaccine', { payload });
-                    if(res.success) fetchDashboard(); 
-                    else alert(res.error);
-                } catch(e) { alert('Network Error'); }
+                    if(res.success) {
+                        showToast('ลงทะเบียนจองวัคซีนสำหรับตัวเองสำเร็จ!', 'success');
+                        fetchDashboard(); 
+                    } else {
+                        showToast(res.error, 'error');
+                    }
+                } catch(e) { showToast('Network Error', 'error'); }
             };
 
             const handleBookOther = async () => {
-                if (!otherData.name) return alert('กรุณาระบุชื่อผู้รับวัคซีน');
-                if (!otherData.dept) return alert('กรุณาระบุหน่วยงาน');
+                if (!otherData.name) return showToast('กรุณาระบุชื่อผู้รับวัคซีน', 'error');
+                if (!otherData.dept) return showToast('กรุณาระบุหน่วยงาน', 'error');
                 
-                // NEW: บังคับกรอก HN หากเลือกประเภทเป็น รพ.สวี
                 if (otherData.orgType === 'hospital' && !otherData.hn) {
-                    return alert('⚠️ กรุณาระบุรหัส HN สำหรับผู้รับวัคซีนสังกัด รพ.สวี');
+                    return showToast('⚠️ กรุณาระบุรหัส HN สำหรับผู้รับวัคซีนสังกัด รพ.สวี', 'error');
                 }
                 
                 setLoading(true);
-                // NEW: ส่งชื่อหน่วยงานจริงตามเงื่อนไขเพื่อบันทึก Col E
                 const hospitalName = otherData.orgType === 'hospital' ? 'รพ.สวี' : otherData.dept;
 
                 const payload = {
@@ -629,25 +436,31 @@
                     name: otherData.name,
                     hn: otherData.hn || '',
                     hospital: hospitalName,
-                    userId: user.userId || user.userid // ผูกบัญชี Booker ID ใน Col J
+                    userId: user.userId || user.userid
                 };
                 try {
                     const res = await callGAS('bookVaccine', { payload });
                     if(res.success) {
+                        showToast('ลงทะเบียนจองวัคซีนให้คนอื่นสำเร็จ!', 'success');
                         setOtherData({ hn: '', name: '', dept: '', orgType: 'hospital' });
                         fetchDashboard(); 
+                    } else {
+                        showToast(res.error, 'error');
                     }
-                    else alert(res.error);
-                } catch(e) { alert('Network Error'); }
+                } catch(e) { showToast('Network Error', 'error'); }
             };
 
             const handleConfirm = async (bookingNo) => {
                  setLoading(true);
                  try {
                      const res = await callGAS('confirmVaccineReceived', { payload: { no: bookingNo, year } });
-                     if(res.success) fetchDashboard();
-                     else alert('Error updating status');
-                 } catch(e) {}
+                     if(res.success) {
+                         showToast('ยืนยันมารับวัคซีนเรียบร้อย!', 'success');
+                         fetchDashboard();
+                     } else {
+                         showToast('ไม่สามารถอัปเดตสถานะได้', 'error');
+                     }
+                 } catch(e) { showToast('Network Error', 'error'); }
                  setLoading(false);
              };
 
@@ -710,9 +523,20 @@
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
                                                         <h3 className="text-white font-bold text-base">{b.name}</h3>
-                                                        <p className="text-slate-400 text-xs">คิวที่ <span className="font-mono text-white text-sm bg-black/30 px-1.5 rounded">{b.no}</span></p>
+                                                        <p className="text-slate-400 text-[10px]">ผู้รับบริการ: {b.hospital}</p>
                                                     </div>
                                                     <span className={`text-[10px] px-2 py-1 rounded ${b.status === 'Received' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{b.status}</span>
+                                                </div>
+
+                                                {/* NEW Lot & Serial Details styled gorgeously */}
+                                                <div className="my-3 p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 border border-white/5 relative overflow-hidden shadow-inner text-center">
+                                                    <div className="absolute top-2 right-2 text-indigo-500/20"><Icon name="vial" size={64} /></div>
+                                                    <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Serial No.</div>
+                                                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-indigo-400 to-pink-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] font-mono my-2">{b.no}</div>
+                                                    <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5 text-[11px] text-slate-300">
+                                                        <div className="text-left bg-black/20 p-2 rounded-lg"><span className="block text-[9px] text-slate-500 uppercase tracking-wide">Lot No.</span><span className="font-bold font-mono text-indigo-300">{b.lot || '-'}</span></div>
+                                                        <div className="text-left bg-black/20 p-2 rounded-lg"><span className="block text-[9px] text-slate-500 uppercase tracking-wide">Exp. Date</span><span className="font-bold font-mono text-indigo-300">{b.expired || '-'}</span></div>
+                                                    </div>
                                                 </div>
                                                 
                                                 {b.status !== 'Received' && (
@@ -756,12 +580,6 @@
                                         )}
                                     </div>
                                 )}
-                                
-                                {!isPastYear && stats.remaining <= 0 && (
-                                    <div className="text-center p-4 border border-dashed border-slate-600 rounded-xl">
-                                        <p className="text-slate-400 text-sm">โควตาวัคซีนหมดแล้ว</p>
-                                    </div>
-                                )}
                              </>
                          )}
                     </div>
@@ -769,7 +587,7 @@
             );
         };
 
-        const HealthBook = ({ user, codebook, onBack }) => {
+        const HealthBook = ({ user, codebook, onBack, showToast }) => {
             const [years, setYears] = useState([]);
             const [selYear, setSelYear] = useState(new Date().getFullYear());
             const [data, setData] = useState({});
@@ -910,6 +728,15 @@
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
+            const toggleChronic = (disease) => {
+                if(isReadOnly) return;
+                setData(p => {
+                    const arr = p.chronic_array || [];
+                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
+                    return { ...p, chronic_array: newArr };
+                });
+            };
+
             const handleSave = async () => {
                 if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
@@ -985,8 +812,13 @@
                     else calculatedRiskCode = 5;
                 }
 
+                // Combine Chronic Diseases Array + Other String
+                let combinedChronic = [];
+                if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
+                if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
+
                 const additionalFields = {
-                    chronic_detail: data.has_chronic == 1 ? (data.chronic_array || []).concat(data.chronic_other ? [data.chronic_other] : []).join(', ') : '',
+                    chronic_detail: data.has_chronic == 1 ? combinedChronic.join(', ') : '',
                     urine_detail: data.urine_flag == 2 ? data.urine_detail || '' : '',
                     cbc_flag: data.cbc_flag || '',
                     cbc_detail: data.cbc_flag == 2 ? data.cbc_detail || '' : '',
@@ -1002,9 +834,9 @@
                 
                 try {
                     await callGAS('saveHealthData', { payload });
-                    alert('บันทึกสำเร็จ');
+                    showToast('บันทึกสำเร็จ', 'success');
                     setIsNewYear(false);
-                } catch { alert('บันทึกผิดพลาด'); }
+                } catch { showToast('บันทึกผิดพลาด', 'error'); }
                 setLoading(false);
             };
 
@@ -1048,8 +880,6 @@
 
                         {!loading && !noDataPastYear && (
                             <div className={`space-y-5 ${isReadOnly ? 'opacity-90' : ''}`}>
-                                {isReadOnly && <div className="text-center text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded-lg border border-yellow-500/30">คุณกำลังดูประวัติย้อนหลัง (ไม่สามารถแก้ไขได้)</div>}
-                                
                                 <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} disabled={isReadOnly} /></div>
 
                                 <Card title="1. สัญญาณชีพ & ร่างกาย">
@@ -1182,7 +1012,7 @@
                                             <select className="glass-input text-xs" value={data.treatment || 1} onChange={e=>handleChange('treatment', e.target.value)} disabled={isReadOnly}>
                                                 <option value="1">นัดตรวจสุขภาพประจำปี(ตามรอบปกติ)</option>
                                                 <option value="2">นัดติดตามผลเลือดอีกครั้งในอีก...เดือน(เร็วกว่าปกติ)</option>
-                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤฤติกรรมสุขภาพ</option>
+                                                <option value="3">วินิจฉัยเป็นโรคและให้ปรับปรุงพฤติกรรมสุขภาพ</option>
                                                 <option value="4">วินิจฉัยเป็นโรคและให้เริ่มกินยา</option>
                                             </select>
                                         </div>
@@ -1195,6 +1025,7 @@
                             </div>
                         )}
                     </div>
+
                     {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
                 </div>
             );
@@ -1619,16 +1450,6 @@
                                 <div className="glass-panel p-5 rounded-xl border border-white/5 mt-4"><h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Icon name="calendar-clock" /> Timeline การติดตามผล</h3><div className="space-y-4 border-l-2 border-slate-700 ml-2 pl-6 relative"><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-red-500 border-2 border-[#0f172a] shadow"></div><p className="text-xs text-red-400 font-bold">Day 0 (วันนี้)</p><p className="text-[11px] text-slate-300">Baseline Lab (HIV, HBV, HCV, CBC, Liver, Cr)</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">1 Month</p><p className="text-[11px] text-slate-500">Anti-HIV, CBC, Liver Function</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">3 Months</p><p className="text-[11px] text-slate-500">Anti-HIV, Anti-HCV</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">6 Months</p><p className="text-[11px] text-slate-500">Anti-HIV (ปิดเคส)</p></div></div></div>
                             </div>
                         )}
-                        {step === 'sos' && (
-                            <div className="space-y-6 fade-in">
-                                <div className="bg-red-600 rounded-2xl p-6 text-center shadow-lg shadow-red-900/50"><Icon name="alert-triangle" size={48} className="text-white mx-auto mb-2" /><h2 className="text-2xl font-bold text-white">ตั้งสติ! อย่าตกใจ</h2><p className="text-red-100 text-sm">ปฏิบัติตามคำแนะนำด้านล่างทันที</p></div>
-                                <div className="space-y-4">
-                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-orange-500"><h3 className="text-orange-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="droplet" /> กรณีเข็มตำ/ของมีคม</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดและสบู่ทันที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! บีบเค้นบาดแผล</b></li><li>เช็ดด้วย Alcohol 70% หรือ Betadine</li></ul></div>
-                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-blue-500"><h3 className="text-blue-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="eye" /> กรณีเข้าตา/เยื่อบุ</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดหรือ Normal Saline ปริมาณมาก</li><li>ล้างให้นานอย่างน้อย 15 นาที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! ขยี้ตา</b></li></ul></div>
-                                </div>
-                                <button onClick={() => setStep('form')} className="btn-primary w-full py-4 text-lg">รับทราบ และดำเนินการแจ้งเหตุ</button>
-                            </div>
-                        )}
                         {step === 'form' && !loading && (
                             <div className="space-y-5 fade-in">
                                 <div className="flex bg-slate-800 p-1 rounded-lg"><button onClick={()=>setReportType('Self')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='Self'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>Self Report</button><button onClick={()=>setReportType('ICN')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='ICN'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>ICN Report</button></div>
@@ -1687,7 +1508,8 @@
                     // ส่งค่า hn และ userId เป็นค่าว่างเพื่อดึงรายชื่อจองทั้งหมดของปีนั้นมาแสดงในตารางแอดมิน
                     const res = await callGAS('getVaccineDashboard', { hn: '', year, userId: '' });
                     setStats(res);
-                    setBookings(res.myBookings || res.allBookings || []);
+                    // FIXED: อ่านค่าจาก res.allBookings เพื่อแก้ปัญหาข้อมูลการจองไม่ยอมแสดงผล
+                    setBookings(res.allBookings || []);
                 } catch(e) {
                     console.error(e);
                 }
@@ -1782,11 +1604,13 @@
                                     <table className="w-full text-left border-collapse text-xs">
                                         <thead>
                                             <tr className="border-b border-slate-700 text-slate-400">
-                                                <th className="py-2 px-3">คิวที่</th>
+                                                <th className="py-2 px-3">คิวที่ (Serial)</th>
                                                 <th className="py-2 px-3">HN</th>
                                                 <th className="py-2 px-3">ชื่อ-สกุล</th>
                                                 <th className="py-2 px-3">หน่วยงาน</th>
                                                 <th className="py-2 px-3">วันเวลาจอง</th>
+                                                <th className="py-2 px-3">Lot No.</th>
+                                                <th className="py-2 px-3">Exp. Date</th>
                                                 <th className="py-2 px-3 text-center">สถานะ</th>
                                                 <th className="py-2 px-3">ผู้จอง (LINE ID)</th>
                                             </tr>
@@ -1799,12 +1623,14 @@
                                                     <td className="py-3 px-3 font-bold text-white">{b.name}</td>
                                                     <td className="py-3 px-3 text-slate-300">{b.hospital || '-'}</td>
                                                     <td className="py-3 px-3 text-slate-400">{b.date}</td>
+                                                    <td className="py-3 px-3 text-slate-300 font-mono">{b.lot || '-'}</td>
+                                                    <td className="py-3 px-3 text-slate-400 font-mono">{b.expired || '-'}</td>
                                                     <td className="py-3 px-3 text-center">
                                                         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${b.status === 'Received' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
                                                             {b.status}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-3 text-slate-500 font-mono" title={b.userId}>{b.userId ? String(b.userId).substring(0, 10) + '...' : '-'}</td>
+                                                    <td className="py-3 px-3 text-slate-500 font-mono" title={b.userId}>{b.userId ? String(b.userId).substring(0, 8) + '...' : '-'}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -1817,14 +1643,118 @@
             );
         };
 
+        // NEW: หน้าสถิติยอดวัคซีนคงเหลือสาธารณะ ไม่ต้องล็อกอิน (?mode=vaccine_left)
+        const VaccineLeftPage = ({ onBack }) => {
+            const [stats, setStats] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const currentYear = new Date().getFullYear();
+
+            const fetchStats = async () => {
+                setLoading(true);
+                try {
+                    const res = await callGAS('getVaccineDashboard', { hn: '', year: currentYear, userId: '' });
+                    setStats(res);
+                } catch (e) {
+                    console.error("Fetch Stats Error:", e);
+                }
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                fetchStats();
+            }, []);
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative bg-[#0f172a] text-slate-100 p-4">
+                    <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                        <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                            <Icon name="arrow-left" className="text-slate-300" />
+                        </button>
+                        <div>
+                            <h2 className="font-bold text-white text-sm">ยอดวัคซีนคงเหลือ</h2>
+                            <p className="text-[10px] text-slate-400">Flu Vaccine Left & Instructions</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* แบนเนอร์รูปภาพประชาสัมพันธ์ */}
+                        <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+                            <img src="https://sawee-hosp.github.io/ic/2026.png" alt="วัคซีนไข้หวัดใหญ่ 2026" className="w-full h-auto object-cover" />
+                        </div>
+
+                        {/* ยอดคงเหลือสาธารณะ */}
+                        {loading ? (
+                            <div className="glass-panel p-6 rounded-2xl text-center animate-pulse">
+                                <p className="text-slate-400 text-xs">กำลังคำนวณยอดคงเหลือ...</p>
+                            </div>
+                        ) : stats ? (
+                            <div className="glass-panel p-6 rounded-2xl text-center border-t-4 border-indigo-500">
+                                <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">จำนวนวัคซีนคงเหลืออัปเดตเรียลไทม์</p>
+                                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] font-mono mb-2">
+                                    {stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total} โดส</span>
+                                </div>
+                                <p className="text-[11px] text-indigo-300 mt-2 bg-indigo-950/40 p-2 rounded-lg border border-indigo-500/20 font-medium inline-block">
+                                    ช่วงเวลาบริการ: ตั้งแต่ 1 มิ.ย. 2569 - จนกว่าวัคซีนจะหมด
+                                </p>
+                            </div>
+                        ) : null}
+
+                        {/* ขั้นตอนการรับบริการ */}
+                        <div className="space-y-4">
+                            <h3 className="text-teal-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
+                                <Icon name="info" size={18} /> ขั้นตอนการรับบริการฉีดวัคซีน
+                            </h3>
+
+                            {/* 4-Stop Services */}
+                            <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-indigo-500">
+                                <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <Icon name="hospital" className="text-indigo-400" size={16} /> 
+                                    4-Stop Services (สำหรับการฉีดที่ รพ.)
+                                </h4>
+                                <div className="space-y-3 text-xs text-slate-300 relative pl-4 border-l border-white/10 ml-2">
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">1. เปิด Visit</p><p className="text-[11px] text-slate-400">แจ้งความประสงค์ว่า "ฉีดวัคซีนไข้หวัดใหญ่ 2026"</p></div>
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">2. ลงทะเบียนที่ห้องยา</p><p className="text-[11px] text-slate-400">ลงทะเบียนรับวัคซีนให้ตรงกับ Lot ที่ระบบกำหนด (โปรดเตรียมโทรศัพท์เพื่อสแกนลงทะเบียน)</p></div>
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">3. เข้ารับการฉีดวัคซีน</p><p className="text-[11px] text-slate-400">นำวัคซีนไปฉีดตามจุดบริการที่ต้องการ</p></div>
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">4. ปิดสิทธิ์การรักษา</p><p className="text-[11px] text-slate-400">ปิดสิทธิ์ที่ห้องการเงิน (หมายเหตุ: ขั้นตอนที่ 3-4 สามารถสลับกันได้ตามสะดวก)</p></div>
+                                </div>
+                            </div>
+
+                            {/* 1-Stop Service */}
+                            <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-teal-500">
+                                <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <Icon name="pill" className="text-teal-400" size={16} /> 
+                                    1-Stop Service at ห้องยา (สำหรับการนำกลับไปฉีดเอง)
+                                </h4>
+                                <div className="space-y-3 text-xs text-slate-300 relative pl-4 border-l border-teal-500/30 ml-2">
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-teal-500 rounded-full"></span><p className="font-bold text-white">1. ลงทะเบียนและรับยา</p><p className="text-[11px] text-slate-400">ลงทะเบียนที่ห้องยาให้ตรงกับ Lot (โปรดเตรียมโทรศัพท์เพื่อสแกนลงทะเบียน) และแจ้งห้องยาว่าจะนำไปฉีดพร้อมคีย์วัคซีนด้วยตัวเอง</p></div>
+                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-teal-500 rounded-full"></span><p className="font-bold text-white">2. คีย์บันทึกระบบวัคซีน</p><p className="text-[11px] text-slate-400">คีย์ระบบวัคซีนด้วยตนเอง โดยตรวจสอบความถูกต้องของ Lot., Serial No., Exp. ตามสติกเกอร์ยา</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- MAIN APP COMPONENT ---
         const App = () => {
             const [user, setUser] = useState(null);
-            const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle, adminDashboard
+            const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle, adminDashboard, vaccineLeft
             const [codebook, setCodebook] = useState({});
             const [pendingProfile, setPendingProfile] = useState(null);
+            const [notification, setNotification] = useState(null); // Custom Toast Glass notification state
+
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get('mode');
+
+            // Custom non-blocking glass notification triggers
+            const showToast = (message, type = 'error') => {
+                setNotification({ message, type });
+            };
+
+            const closeToast = () => {
+                setNotification(null);
+            };
 
             useEffect(() => {
                 const init = async () => {
@@ -1836,6 +1766,12 @@
                     // NEW: ตรวจสอบโหมด Admin ก่อนล็อกอินเพื่อทะลุเข้าใช้งานได้ทันที
                     if (mode === 'admin') {
                         setPage('adminDashboard');
+                        return;
+                    }
+
+                    // NEW: ตรวจสอบโหมด vaccine_left สาธารณะก่อนล็อกอิน
+                    if (mode === 'vaccine_left') {
+                        setPage('vaccineLeft');
                         return;
                     }
 
@@ -1868,13 +1804,13 @@
                         if (mode === 'vaccine') setPage('vaccineBooking');
                         else setPage('menu'); 
                     } else {
-                        alert('ไม่พบข้อมูลในระบบ หรือข้อมูลไม่ถูกต้อง');
+                        showToast('ไม่พบข้อมูลในระบบ หรือข้อมูลไม่ถูกต้อง', 'error');
                     }
-                } catch(e) { alert('Connection Error'); }
+                } catch(e) { showToast('Connection Error', 'error'); }
             };
 
             const handleLiffLogin = async () => {
-                if(!LIFF_ID) return alert("System Error: LIFF ID missing");
+                if(!LIFF_ID) return showToast("System Error: LIFF ID missing", 'error');
                 try {
                     if(!liff.isInClient() && !liff.isLoggedIn()) {
                         liff.login();
@@ -1899,7 +1835,7 @@
                         }
                     }
                 } catch (e) {
-                    alert("LIFF Login Error: " + e.message);
+                    showToast("LIFF Login Error: " + e.message, 'error');
                 }
             };
 
@@ -1911,8 +1847,8 @@
                         localStorage.setItem('ic_sw_user', JSON.stringify(res.data));
                         if (mode === 'vaccine') setPage('vaccineBooking');
                         else setPage('menu');
-                    } else alert("ลงทะเบียนล้มเหลว: " + res.error);
-                } catch(e) { alert('Connection Error'); }
+                    } else showToast("ลงทะเบียนล้มเหลว: " + res.error, 'error');
+                } catch(e) { showToast('Connection Error', 'error'); }
             }
 
             const handleLogout = () => {
@@ -1926,19 +1862,38 @@
             };
 
             if (page === 'adminDashboard') {
-                return <AdminVaccineView codebook={codebook} onBack={() => { window.location.href = window.location.pathname; }} />;
+                return (
+                    <React.Fragment>
+                        <AdminVaccineView codebook={codebook} onBack={() => { window.location.href = window.location.pathname; }} />
+                    </React.Fragment>
+                );
             }
 
-            if (!user && page === 'login') return <LoginPage onLogin={handleLogin} onLiff={handleLiffLogin} />;
-            if (!user && page === 'register') return <RegistrationPage pendingProfile={pendingProfile} codebook={codebook} onSubmit={handleRegister} onCancel={handleLogout} />;
-            if (page === 'menu') return <MainMenu user={user} onSelect={setPage} onLogout={handleLogout} />;
-            if (page === 'vaccineBooking') return <VaccineBooking user={user} onBack={() => setPage('menu')} onLogout={handleLogout} codebook={codebook} />;
-            if (page === 'healthBook') return <HealthBook user={user} codebook={codebook} onBack={() => setPage('menu')} />;
-            if (page === 'sickLeave') return <SickLeave user={user} onBack={() => setPage('menu')} />;
-            if (page === 'needleInjury') return <NeedleInjury user={user} onBack={() => setPage('menu')} />;
-            if (page === 'exposure') return <ExposureTracking user={user} onBack={() => setPage('menu')} />;
+            if (page === 'vaccineLeft') {
+                return (
+                    <React.Fragment>
+                        <VaccineLeftPage onBack={() => { window.location.href = window.location.pathname; }} />
+                    </React.Fragment>
+                );
+            }
 
-            return <div className="text-white text-center mt-10">404 Not Found <br/><button onClick={()=>setPage('menu')}>Go Home</button></div>;
+            return (
+                <React.Fragment>
+                    <Toast notification={notification} onClose={closeToast} />
+                    
+                    {!user && page === 'login' && <LoginPage onLogin={handleLogin} onLiff={handleLiffLogin} onRegister={() => { setUser({}); setPage('form'); }} />}
+                    {!user && page === 'register' && <RegistrationPage pendingProfile={pendingProfile} codebook={codebook} onSubmit={handleRegister} onCancel={handleLogout} />}
+                    {user && page === 'menu' && <MainMenu user={user} onSelect={setPage} onLogout={handleLogout} />}
+                    {user && page === 'vaccineBooking' && <VaccineBooking user={user} onBack={() => setPage('menu')} onLogout={handleLogout} codebook={codebook} showToast={showToast} />}
+                    {user && page === 'healthBook' && <HealthBook user={user} codebook={codebook} onBack={() => setPage('menu')} showToast={showToast} />}
+                    {user && page === 'sickLeave' && <SickLeave user={user} onBack={() => setPage('menu')} />}
+                    {user && page === 'needleInjury' && <NeedleInjury user={user} onBack={() => setPage('menu')} />}
+                    {user && page === 'exposure' && <ExposureTracking user={user} onBack={() => setPage('menu')} />}
+                    {user && !['login', 'register', 'menu', 'vaccineBooking', 'healthBook', 'sickLeave', 'needleInjury', 'exposure'].includes(page) && (
+                        <div className="text-white text-center mt-10">404 Not Found <br/><button onClick={()=>setPage('menu')}>Go Home</button></div>
+                    )}
+                </React.Fragment>
+            );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
