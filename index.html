@@ -60,6 +60,42 @@
 
         const CHRONIC_DISEASES = ["ความดันโลหิตสูง", "เบาหวาน", "ไขมันในเลือดสูง", "โรคหัวใจ", "โรคไต", "โรคหอบหืด/ถุงลมโป่งพอง", "โรคไทรอยด์", "โรคเก๊าท์", "โรคภูมิแพ้", "โรคไมเกรน"];
 
+        // --- 1. GLOBAL UTILS & HELPERS ---
+        const callGAS = async (action, payload = {}) => {
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action, ...payload })
+                });
+                return await res.json();
+            } catch (error) {
+                console.error("API Error:", error);
+                throw error;
+            }
+        };
+
+        const Icon = ({ name, className, size=24 }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if(ref.current) {
+                    ref.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    i.className = className || '';
+                    ref.current.appendChild(i);
+                    lucide.createIcons({ root: ref.current, attrs: { width: size, height: size } });
+                }
+            }, [name, className, size]);
+            return <span ref={ref} className="inline-flex items-center justify-center"></span>;
+        };
+
+        const MenuBtn = ({ icon, title, color, bg, onClick }) => (
+            <button onClick={onClick} className="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800/60 active:scale-95 transition-all h-36 border border-white/5 shadow-lg">
+                <div className={`p-4 rounded-full ${bg} shadow-inner`}><Icon name={icon} size={40} className={color} /></div>
+                <span className="text-sm font-medium text-slate-200 text-center leading-tight">{title}</span>
+            </button>
+        );
+
         const Toast = ({ notification, onClose }) => {
             useEffect(() => {
                 if (notification) {
@@ -266,7 +302,6 @@
                                 </div>
                                 <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
                             </div>
-                            <Field label="อีเมล" val={data.email} onChange={v=>h('email',v)} />
                         </div>
                     </div>
                     <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
@@ -342,36 +377,6 @@
                 </div>
             );
         };
-
-        const MainMenu = ({ user, onSelect, onLogout }) => (
-            <div className="p-5 fade-in min-h-screen max-w-lg mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-3.5">
-                        <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-12 h-12 rounded-full border-2 border-slate-500 shadow-md object-cover" />
-                        <div><h3 className="font-bold text-white text-base">{user.Name || 'User'}</h3><p className="text-xs text-slate-400">{user.Dept || '-'}</p></div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => onSelect('form')} className="w-10 h-10 flex items-center justify-center bg-slate-800/80 rounded-full hover:bg-slate-700 border border-slate-700 transition-colors"><Icon name="settings" size={20} className="text-slate-300" /></button>
-                        <button onClick={onLogout} className="w-10 h-10 flex items-center justify-center bg-red-900/30 rounded-full hover:bg-red-800/50 border border-red-500/30 transition-colors"><Icon name="log-out" size={18} className="text-red-400" /></button>
-                    </div>
-                </div>
-                
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 mb-8 border border-indigo-500/20 text-center relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-[50px] rounded-full"></div>
-                    <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
-                    <p className="text-xs text-indigo-300 relative z-10">ระบบสารสนเทศสุขภาพบุคลากร รพ.สวี</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <MenuBtn icon="activity" title="ผลตรวจสุขภาพ" color="text-blue-400" bg="bg-blue-500/10" onClick={() => onSelect('healthBook')} />
-                    <MenuBtn icon="syringe" title="จองวัคซีน" color="text-green-400" bg="bg-green-500/10" onClick={() => onSelect('vaccineBooking')} />
-                    <MenuBtn icon="thermometer" title="การลาป่วย" color="text-red-400" bg="bg-red-500/10" onClick={() => onSelect('sickLeave')} />
-                    <MenuBtn icon="bandage" title="อุบัติเหตุเข็มตำ" color="text-red-500" bg="bg-red-500/10" onClick={() => onSelect('needleInjury')} />
-                    <MenuBtn icon="biohazard" title="ติดตามผู้สัมผัส" color="text-orange-400" bg="bg-orange-500/10" onClick={() => onSelect('exposure')} />
-                    <MenuBtn icon="pie-chart" title="แดชบอร์ดสุขภาพ" color="text-purple-400" bg="bg-purple-500/10" onClick={() => window.location.href = 'https://sawee-hosp.github.io/ic/health-dashboard.html'} />
-                </div>
-            </div>
-        );
 
         const VaccineBooking = ({ user, onBack, onLogout, codebook, showToast }) => {
             const [year, setYear] = useState(new Date().getFullYear());
@@ -528,7 +533,7 @@
                                                     <span className={`text-[10px] px-2 py-1 rounded ${b.status === 'Received' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{b.status}</span>
                                                 </div>
 
-                                                {/* NEW Lot & Serial Details styled gorgeously */}
+                                                {/* Lot & Serial Details with Immersive Styling */}
                                                 <div className="my-3 p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 border border-white/5 relative overflow-hidden shadow-inner text-center">
                                                     <div className="absolute top-2 right-2 text-indigo-500/20"><Icon name="vial" size={64} /></div>
                                                     <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Serial No.</div>
@@ -801,7 +806,6 @@
                 if (has(data.rbc_ua)) codes.rbc_ua_flag = checkUrine(data.rbc_ua);
                 if (has(data.wbc_ua)) codes.wbc_ua_flag = checkUrine(data.wbc_ua);
 
-                // Calculate risk code from cvRisk
                 const cv = parseFloat(cvRisk);
                 let calculatedRiskCode = 9;
                 if (!isNaN(cv) && cv > 0) {
@@ -812,7 +816,6 @@
                     else calculatedRiskCode = 5;
                 }
 
-                // Combine Chronic Diseases Array + Other String
                 let combinedChronic = [];
                 if (data.chronic_array && data.chronic_array.length > 0) combinedChronic.push(...data.chronic_array);
                 if (data.chronic_other && data.chronic_other.trim()) combinedChronic.push(data.chronic_other.trim());
@@ -880,6 +883,8 @@
 
                         {!loading && !noDataPastYear && (
                             <div className={`space-y-5 ${isReadOnly ? 'opacity-90' : ''}`}>
+                                {isReadOnly && <div className="text-center text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded-lg border border-yellow-500/30">คุณกำลังดูประวัติย้อนหลัง (ไม่สามารถแก้ไขได้)</div>}
+                                
                                 <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} disabled={isReadOnly} /></div>
 
                                 <Card title="1. สัญญาณชีพ & ร่างกาย">
@@ -1025,7 +1030,6 @@
                             </div>
                         )}
                     </div>
-
                     {modal?.open && <ChartModal hn={user.HN} field={modal.field} title={modal.title} value={modal.value} year={selYear} onClose={()=>setModal(null)} />}
                 </div>
             );
@@ -1450,6 +1454,16 @@
                                 <div className="glass-panel p-5 rounded-xl border border-white/5 mt-4"><h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Icon name="calendar-clock" /> Timeline การติดตามผล</h3><div className="space-y-4 border-l-2 border-slate-700 ml-2 pl-6 relative"><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-red-500 border-2 border-[#0f172a] shadow"></div><p className="text-xs text-red-400 font-bold">Day 0 (วันนี้)</p><p className="text-[11px] text-slate-300">Baseline Lab (HIV, HBV, HCV, CBC, Liver, Cr)</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">1 Month</p><p className="text-[11px] text-slate-500">Anti-HIV, CBC, Liver Function</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">3 Months</p><p className="text-[11px] text-slate-500">Anti-HIV, Anti-HCV</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">6 Months</p><p className="text-[11px] text-slate-500">Anti-HIV (ปิดเคส)</p></div></div></div>
                             </div>
                         )}
+                        {step === 'sos' && (
+                            <div className="space-y-6 fade-in">
+                                <div className="bg-red-600 rounded-2xl p-6 text-center shadow-lg shadow-red-900/50"><Icon name="alert-triangle" size={48} className="text-white mx-auto mb-2" /><h2 className="text-2xl font-bold text-white">ตั้งสติ! อย่าตกใจ</h2><p className="text-red-100 text-sm">ปฏิบัติตามคำแนะนำด้านล่างทันที</p></div>
+                                <div className="space-y-4">
+                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-orange-500"><h3 className="text-orange-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="droplet" /> กรณีเข็มตำ/ของมีคม</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดและสบู่ทันที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! บีบเค้นบาดแผล</b></li><li>เช็ดด้วย Alcohol 70% หรือ Betadine</li></ul></div>
+                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-blue-500"><h3 className="text-blue-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="eye" /> กรณีเข้าตา/เยื่อบุ</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดหรือ Normal Saline ปริมาณมาก</li><li>ล้างให้นานอย่างน้อย 15 นาที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! ขยี้ตา</b></li></ul></div>
+                                </div>
+                                <button onClick={() => setStep('form')} className="btn-primary w-full py-4 text-lg">รับทราบ และดำเนินการแจ้งเหตุ</button>
+                            </div>
+                        )}
                         {step === 'form' && !loading && (
                             <div className="space-y-5 fade-in">
                                 <div className="flex bg-slate-800 p-1 rounded-lg"><button onClick={()=>setReportType('Self')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='Self'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>Self Report</button><button onClick={()=>setReportType('ICN')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='ICN'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>ICN Report</button></div>
@@ -1494,7 +1508,6 @@
             );
         };
 
-        // NEW: หน้าจอมอนิเตอร์สำหรับแอดมินโดยเฉพาะ ไม่ต้องล็อกอินเพื่อความสะดวกสูงสุด
         const AdminVaccineView = ({ codebook, onBack }) => {
             const [year, setYear] = useState(new Date().getFullYear());
             const [stats, setStats] = useState(null);
@@ -1505,10 +1518,8 @@
             const fetchDashboard = async () => {
                 setLoading(true);
                 try {
-                    // ส่งค่า hn และ userId เป็นค่าว่างเพื่อดึงรายชื่อจองทั้งหมดของปีนั้นมาแสดงในตารางแอดมิน
                     const res = await callGAS('getVaccineDashboard', { hn: '', year, userId: '' });
                     setStats(res);
-                    // FIXED: อ่านค่าจาก res.allBookings เพื่อแก้ปัญหาข้อมูลการจองไม่ยอมแสดงผล
                     setBookings(res.allBookings || []);
                 } catch(e) {
                     console.error(e);
@@ -1643,7 +1654,6 @@
             );
         };
 
-        // NEW: หน้าสถิติยอดวัคซีนคงเหลือสาธารณะ ไม่ต้องล็อกอิน (?mode=vaccine_left)
         const VaccineLeftPage = ({ onBack }) => {
             const [stats, setStats] = useState(null);
             const [loading, setLoading] = useState(false);
@@ -1677,12 +1687,10 @@
                     </div>
 
                     <div className="space-y-6">
-                        {/* แบนเนอร์รูปภาพประชาสัมพันธ์ */}
                         <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
                             <img src="https://sawee-hosp.github.io/ic/2026.png" alt="วัคซีนไข้หวัดใหญ่ 2026" className="w-full h-auto object-cover" />
                         </div>
 
-                        {/* ยอดคงเหลือสาธารณะ */}
                         {loading ? (
                             <div className="glass-panel p-6 rounded-2xl text-center animate-pulse">
                                 <p className="text-slate-400 text-xs">กำลังคำนวณยอดคงเหลือ...</p>
@@ -1699,13 +1707,11 @@
                             </div>
                         ) : null}
 
-                        {/* ขั้นตอนการรับบริการ */}
                         <div className="space-y-4">
                             <h3 className="text-teal-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
                                 <Icon name="info" size={18} /> ขั้นตอนการรับบริการฉีดวัคซีน
                             </h3>
 
-                            {/* 4-Stop Services */}
                             <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-indigo-500">
                                 <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                                     <Icon name="hospital" className="text-indigo-400" size={16} /> 
@@ -1719,7 +1725,6 @@
                                 </div>
                             </div>
 
-                            {/* 1-Stop Service */}
                             <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-teal-500">
                                 <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                                     <Icon name="pill" className="text-teal-400" size={16} /> 
@@ -1742,12 +1747,11 @@
             const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle, adminDashboard, vaccineLeft
             const [codebook, setCodebook] = useState({});
             const [pendingProfile, setPendingProfile] = useState(null);
-            const [notification, setNotification] = useState(null); // Custom Toast Glass notification state
+            const [notification, setNotification] = useState(null); 
 
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get('mode');
 
-            // Custom non-blocking glass notification triggers
             const showToast = (message, type = 'error') => {
                 setNotification({ message, type });
             };
@@ -1763,13 +1767,11 @@
                         setCodebook(cb || {});
                     } catch(e) { console.error("Codebook Error", e); }
 
-                    // NEW: ตรวจสอบโหมด Admin ก่อนล็อกอินเพื่อทะลุเข้าใช้งานได้ทันที
                     if (mode === 'admin') {
                         setPage('adminDashboard');
                         return;
                     }
 
-                    // NEW: ตรวจสอบโหมด vaccine_left สาธารณะก่อนล็อกอิน
                     if (mode === 'vaccine_left') {
                         setPage('vaccineLeft');
                         return;
@@ -1829,7 +1831,6 @@
                             if (mode === 'vaccine') setPage('vaccineBooking');
                             else setPage('menu');
                         } else {
-                            // ผู้ใช้ใหม่ เด้งไปหน้าลงทะเบียน
                             setPendingProfile(profile);
                             setPage('register');
                         }
