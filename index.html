@@ -55,7 +55,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
         const LIFF_ID = "2008690634-Mr6OanUA"; 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzG8WjNpWdC-JwFFIrRRJ2w7_sHdKx3D3ZIykPqwFuaWmvrPpOOJCv7CVYAGOY7tk60/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbx16YPdL2SVeLCn-dz_jm9nDWI1gNPYkXw_2MSsy283ycBJUxS917kDoBNjQ7m8ZFUHlw/exec";
         const LOGO_URL = "https://i.ibb.co/prMfmbsW/3x3cm-removebg-preview.png";
 
         const PCU_OPTIONS = [
@@ -72,6 +72,7 @@
             try {
                 const res = await fetch(GAS_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({ action, ...payload })
                 });
                 return await res.json();
@@ -94,6 +95,32 @@
                 }
             }, [name, className, size]);
             return <span ref={ref} className="inline-flex items-center justify-center"></span>;
+        };
+
+        const getFlag = (t, v, s) => {
+            const n = parseFloat(v); if(isNaN(n)) return null;
+            const dot = (c) => c === 'bg-green' ? 'bg-emerald-500' : c === 'bg-yellow' ? 'bg-amber-500' : 'bg-rose-500';
+            let res = null;
+            if(t==='bmi') res = n<18.5?{bg:'bg-yellow',label:'ผอม'}:n<23?{bg:'bg-green',label:'ปกติ'}:n<25?{bg:'bg-yellow',label:'ท้วม'}:n<30?{bg:'bg-red',label:'อ้วนระดับ 1'}:{bg:'bg-red',label:'อ้วนระดับ 2'};
+            if(t==='bp') res = n<120?{bg:'bg-green',label:'ปกติ'}:n<140?{bg:'bg-yellow',label:'กลุ่มเสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t==='waist') { let lim=(s==='ชาย'||s==='1')?90:80; res = n<lim?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เกิน'}; }
+            if(t==='pulse') res = (n>=60 && n<=100)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t==='fbs') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<126?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t==='chol') res = n<200?{bg:'bg-green',label:'ปกติ'}:n<240?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t==='trig') res = n<150?{bg:'bg-green',label:'ปกติ'}:n<200?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t==='hdl') { let minVal=(s==='ชาย'||s==='1')?40:50; res = n>=minVal?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'เสี่ยง'}; }
+            if(t==='ldl') res = n<100?{bg:'bg-green',label:'ปกติ'}:n<160?{bg:'bg-yellow',label:'เสี่ยง'}:{bg:'bg-red',label:'สูง'};
+            if(t==='bun') res = (n>=4 && n<=20)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'};
+            if(t==='cr') res = (n>=0.65 && n<=1.44)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t==='uric') res = (n>=2.3 && n<=8.2)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t==='sgot') res = n<35?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t==='sgpt') res = n<45?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t==='alk') res = (n>=44 && n<=147)?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'สูง'};
+            if(t==='hct') { let isM=(s==='ชาย'||s==='1'); res = (n>=(isM?38:36) && n<=(isM?50:45))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t==='hgb') { let isM=(s==='ชาย'||s==='1'); res = (n>=(isM?13.2:11.6) && n<=(isM?16.6:15.0))?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(t==='urine') { let str = String(v).toLowerCase(); res = (str==='0'||str.includes('not')||str.includes('none')||str==='-')?{bg:'bg-green',label:'ปกติ'}:{bg:'bg-red',label:'ผิดปกติ'}; }
+            if(res) return { ...res, dot: dot(res.bg) };
+            return null;
         };
 
         const Toast = ({ notification, onClose }) => {
@@ -287,7 +314,11 @@
             );
         };
 
-        const LoginPage = ({ onLogin, onLiff, onRegister }) => {
+        // ==========================================
+        // --- 3. THE PAGE ROUTER VIEWS COMPONENTS ---
+        // ==========================================
+
+        const LoginPage = ({ onLogin, onLiff }) => {
             const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
             const isValid = useMemo(() => {
                 let count = 0;
@@ -323,7 +354,6 @@
                         </div>
                         <div className="mt-8 space-y-3 pt-6 border-t border-slate-700/50">
                             <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20">เข้าสู่ระบบด้วย LINE</button>
-                            <button onClick={onRegister} className="w-full py-3 rounded-xl border border-slate-600 text-slate-300 font-bold text-sm hover:bg-slate-800 transition-all">ลงทะเบียนผู้ใช้งานใหม่</button>
                         </div>
                     </div>
                 </div>
@@ -398,6 +428,169 @@
                 </div>
             );
         };
+
+        const DataForm = ({ user, codebook, onSubmit, onSkip }) => {
+            const [data, setData] = useState({});
+            const [orgType, setOrgType] = useState('hospital'); 
+
+            useEffect(() => { 
+                if(user) {
+                    const u = user; 
+                    const cleanPhone = (val) => val ? String(val).replace(/^'/, '') : '';
+                    let genderCode = u.Gender;
+                    if (u.Gender === 'ชาย') genderCode = 1;
+                    if (u.Gender === 'หญิง') genderCode = 2;
+                    const mapped = {
+                        loginname: u.loginname || u.LoginName || '',
+                        HN: u.HN || u.hn || '',
+                        cid: u.cid || u.CID || '',
+                        Title: u.Title || u.title || 'นาย',
+                        Name: u.Name || u.name || '',
+                        nickname: u.nickname || u.NickName || '',
+                        Gender: genderCode || 1,
+                        dob: u.dob || u.birthdate || '',
+                        Age: u.Age || u.age || '',
+                        Dept: u.Dept || u.dept || u.department || '',
+                        Job: u.Job || u.job || '',
+                        Right: u.Right || u.right || '',
+                        phone: cleanPhone(u.phone || u.Tel),
+                        email: u.email || u.Email || '',
+                        pictureProfile: u.pictureProfile || u.pictureprofile || ''
+                    };
+                    if (!mapped.Age && mapped.dob) {
+                        const d = new Date(mapped.dob);
+                        if(!isNaN(d.getTime())) mapped.Age = new Date().getFullYear() - d.getFullYear();
+                    }
+                    if (PCU_OPTIONS.includes(mapped.Dept)) setOrgType('network'); else setOrgType('hospital');
+                    setData(mapped); 
+                }
+            }, [user]);
+
+            const h = (f, v) => setData(p => ({...p, [f]: v}));
+            const handleDob = (v) => {
+                h('dob', v);
+                if(v) {
+                    const age = new Date(Date.now() - new Date(v).getTime()).getUTCFullYear() - 1970;
+                    h('Age', age > 0 ? age : 0);
+                }
+            };
+
+            useEffect(() => {
+                if (data.Job && codebook?.job_map && codebook.job_map[data.Job]) {
+                     h('Right', codebook.job_map[data.Job]);
+                }
+            }, [data.Job, codebook]);
+
+            const validateAndSubmit = () => {
+                if (!data.cid || data.cid.trim().length !== 13) return alert("กรุณากรอกเลขบัตรประชาชน 13 หลัก ให้ถูกต้อง");
+                if (!data.Name || data.Name.trim() === "") return alert("กรุณากรอก ชื่อ-สกุล ให้ครบถ้วน");
+                onSubmit(data);
+            };
+
+            const deptOptions = orgType === 'hospital' ? (codebook['department'] || []) : PCU_OPTIONS.map(name => ({ code: name, label: name }));
+            const genderOptions = codebook['sex'] || [{code:1, label:'ชาย'}, {code:2, label:'หญิง'}];
+
+            return (
+                <div className="min-h-screen p-4 pb-10 fade-in max-w-lg mx-auto flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icon name="user-cog" className="text-indigo-400" /> อัปเดตประวัติส่วนตัว</h2>
+                        <button onClick={onSkip} className="text-xs text-slate-400 border border-slate-600 px-3 py-1.5 rounded-full hover:bg-slate-800 transition-colors">ข้ามไปก่อน &rarr;</button>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4 flex-grow relative">
+                        <div className="flex justify-center mb-6">
+                            <div className="relative">
+                                <img src={data.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-24 h-24 rounded-full border-4 border-indigo-500/30 shadow-2xl object-cover" />
+                                <div className="absolute bottom-0 right-0 bg-slate-800 p-1.5 rounded-full border border-slate-600"><Icon name="camera" className="text-slate-300" size={16} /></div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/20 space-y-3">
+                            <h3 className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-1"><Icon name="shield" size={12} /> ข้อมูลยืนยันตัวตน</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                <Field label="Login Name / LINE" val={data.loginname} onChange={v=>h('loginname',v)} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Field label="HN" val={data.HN} onChange={v=>h('HN',v)} />
+                                    <Field label="CID (เลขบัตร ปชช.)" val={data.cid} onChange={v=>h('cid',v)} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <div className="grid grid-cols-12 gap-2">
+                                <div className="col-span-4"><label className="text-[10px] text-slate-400 block mb-1">คำนำหน้า</label><select className="glass-input" value={data.Title} onChange={e=>h('Title',e.target.value)}><option>นาย</option><option>นาง</option><option>นางสาว</option></select></div>
+                                <div className="col-span-8"><Field label="ชื่อ-สกุล" val={data.Name} onChange={v=>h('Name',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="ชื่อเล่น" val={data.nickname} onChange={v=>h('nickname',v)} />
+                                <div><label className="text-[10px] text-slate-400 block mb-1">เพศ</label><Select val={data.Gender} options={genderOptions} onChange={v=>h('Gender',v)} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-[10px] text-slate-400 block mb-1">วันเกิด</label><input type="date" className="glass-input text-center" value={data.dob ? data.dob.split('T')[0] : ''} onChange={e=>handleDob(e.target.value)} /></div>
+                                <Field label="อายุ" val={data.Age} onChange={v=>h('Age',v)} readonly />
+                            </div>
+                            
+                            <div className="pt-2 border-t border-slate-700/50">
+                                <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
+                                <div className="flex bg-slate-800 rounded p-1 mb-2">
+                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">{orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}</label><Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} /></div>
+                                    <div><label className="text-[10px] text-slate-400 block mb-1">ตำแหน่ง</label><Select val={data.Job} options={codebook['job']} onChange={v=>h('Job',v)} /></div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                <div>
+                                    <label className="text-[10px] text-slate-400 block mb-1">สิทธิ์การใช้งาน (กลุ่มงาน)</label>
+                                    <select className="glass-input text-xs" value={data.Right} onChange={e=>h('Right',e.target.value)}>
+                                        <option value="">- เลือก -</option>
+                                        <option value="กลุ่มวิชาชีพสัมผัสผู้ป่วย">กลุ่มวิชาชีพสัมผัสผู้ป่วย</option>
+                                        <option value="กลุ่มสนับสนุนทางการแพทย์">กลุ่มสนับสนุนทางการแพทย์</option>
+                                        <option value="กลุ่มงานโภชนาการ">กลุ่มงานโภชนาการ</option>
+                                        <option value="กลุ่มงานทั่วไป">กลุ่มงานทั่วไป</option>
+                                    </select>
+                                </div>
+                                <Field label="เบอร์โทรศัพท์" val={data.phone} onChange={v=>h('phone',v)} />
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={validateAndSubmit} className="btn-primary mt-6 py-3.5 shadow-xl shadow-indigo-500/20 text-base">บันทึกข้อมูลและไปต่อ</button>
+                </div>
+            );
+        };
+
+        const MainMenu = ({ user, onSelect, onLogout }) => (
+            <div className="p-5 fade-in min-h-screen max-w-lg mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-3.5">
+                        <img src={user.pictureProfile || "https://cdn-icons-png.flaticon.com/512/847/847969.png"} className="w-12 h-12 rounded-full border-2 border-slate-500 shadow-md object-cover" />
+                        <div><h3 className="font-bold text-white text-base">{user.Name || 'User'}</h3><p className="text-xs text-slate-400">{user.Dept || '-'}</p></div>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => onSelect('form')} className="w-10 h-10 flex items-center justify-center bg-slate-800/80 rounded-full hover:bg-slate-700 border border-slate-700 transition-colors"><Icon name="settings" size={20} className="text-slate-300" /></button>
+                        <button onClick={onLogout} className="w-10 h-10 flex items-center justify-center bg-red-900/30 rounded-full hover:bg-red-800/50 border border-red-500/30 transition-colors"><Icon name="log-out" size={18} className="text-red-400" /></button>
+                    </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 mb-8 border border-indigo-500/20 text-center relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-[50px] rounded-full"></div>
+                    <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
+                    <p className="text-xs text-indigo-300 relative z-10">ระบบสารสนเทศสุขภาพบุคลากร รพ.สวี</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <MenuBtn icon="activity" title="ผลตรวจสุขภาพ" color="text-blue-400" bg="bg-blue-500/10" onClick={() => onSelect('healthBook')} />
+                    <MenuBtn icon="syringe" title="จองวัคซีน" color="text-green-400" bg="bg-green-500/10" onClick={() => onSelect('vaccineBooking')} />
+                    <MenuBtn icon="thermometer" title="การลาป่วย" color="text-red-400" bg="bg-red-500/10" onClick={() => onSelect('sickLeave')} />
+                    <MenuBtn icon="bandage" title="อุบัติเหตุเข็มตำ" color="text-red-500" bg="bg-red-500/10" onClick={() => onSelect('needleInjury')} />
+                    <MenuBtn icon="biohazard" title="ติดตามผู้สัมผัส" color="text-orange-400" bg="bg-orange-500/10" onClick={() => onSelect('exposure')} />
+                    <MenuBtn icon="pie-chart" title="แดชบอร์ดสุขภาพ" color="text-purple-400" bg="bg-purple-500/10" onClick={() => window.location.href = 'https://sawee-hosp.github.io/ic/health-dashboard.html'} />
+                </div>
+            </div>
+        );
 
         const VaccineBooking = ({ user, onBack, onLogout, codebook, showToast }) => {
             const [year, setYear] = useState(new Date().getFullYear());
@@ -661,7 +854,6 @@
                                 if(!isNaN(d.getTime())) h.visit_date = d.toISOString().split('T')[0];
                             }
                             
-                            // Map chronic_detail to Multiple Array and Other String
                             let chronicArr = [];
                             let chronicOther = '';
                             if (h.has_chronic == 1 && h.chronic_detail) {
@@ -700,29 +892,21 @@
 
             const bmi = useMemo(() => (data.weight_kg && data.height_cm) ? (data.weight_kg / Math.pow(data.height_cm/100, 2)).toFixed(2) : '', [data]);
             
-            // Calculate CV Risk Approximation
             const cvRisk = useMemo(() => {
                 if (!data.age) return 0;
-                
                 let base = 0;
                 const age = parseFloat(data.age);
                 const sbp = parseFloat(data.bp_systolic) || 120;
                 const fbs = parseFloat(data.fbs) || 90;
                 const chol = parseFloat(data.chol);
                 
-                // Age factor
                 if (age > 35) base += (age - 35) * 0.4;
-                // Sex factor (Men > Risk)
                 if (data.sex == '1' || data.sex === 'ชาย') base += 3;
-                // BP factor
                 if (sbp >= 140 && sbp < 160) base += 4;
                 if (sbp >= 160) base += 8;
-                // Smoking
                 if (data.smoking == '2') base += 7;
-                // DM (FBS > 130)
                 if (fbs > 130) base += 8;
                 
-                // Lipid or Obesity factor
                 if (chol) {
                     if (chol > 200 && chol <= 239) base += 3;
                     if (chol >= 240) base += 6;
@@ -730,7 +914,6 @@
                     const waistRatio = parseFloat(data.waist_cm) / parseFloat(data.height_cm);
                     if (waistRatio > 0.5) base += 4; 
                 }
-                
                 return Math.max(1, Math.min(base, 50)).toFixed(1); 
             }, [data.age, data.bp_systolic, data.fbs, data.chol, data.smoking, data.sex, data.waist_cm, data.height_cm]);
             
@@ -770,11 +953,19 @@
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
+            const toggleChronic = (disease) => {
+                if(isReadOnly) return;
+                setData(p => {
+                    const arr = p.chronic_array || [];
+                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
+                    return { ...p, chronic_array: newArr };
+                });
+            };
+
             const handleSave = async () => {
                 if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
 
-                // --- CALCULATION LOGIC BASED ON CODEBOOK ---
                 const v = (val) => parseFloat(val);
                 const has = (val) => val !== undefined && val !== null && val !== '';
                 const codes = {};
@@ -1063,9 +1254,487 @@
             );
         };
 
+        const SickLeave = ({ user, onBack, showToast }) => {
+            const [step, setStep] = useState('form');
+            const [stats, setStats] = useState({ totalDays: 0, history: [] });
+            const [formData, setFormData] = useState({
+                onset_date: '', leave_start: '', leave_end: '', temperature: '',
+                symptoms: [], diagnosis: '', doctor_visit: 'home',
+                travel_history: '', contact_history: ''
+            });
+            const [advice, setAdvice] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                const fetchStats = async () => {
+                    try {
+                        const res = await callGAS('getSickLeaveStats', { hn: user.HN });
+                        setStats(res);
+                    } catch(e) {}
+                };
+                fetchStats();
+            }, [user.HN]);
+
+            const totalRequestDays = useMemo(() => {
+                if(!formData.leave_start || !formData.leave_end) return 0;
+                const start = new Date(formData.leave_start);
+                const end = new Date(formData.leave_end);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+                return diffDays > 0 ? diffDays : 0;
+            }, [formData.leave_start, formData.leave_end]);
+
+            const h = (f,v) => setFormData(p => ({...p, [f]: v}));
+            const toggleSymptom = (sym) => {
+                setFormData(p => {
+                    const exists = p.symptoms.includes(sym);
+                    const newSym = exists ? p.symptoms.filter(s => s !== sym) : [...p.symptoms, sym];
+                    return { ...p, symptoms: newSym };
+                });
+            };
+
+            const handleSubmit = async () => {
+                if(!formData.onset_date) return showToast('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "วันที่เริ่มมีอาการ"', 'error');
+                if(!formData.leave_start) return showToast('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "วันที่เริ่มลา"', 'error');
+                if(!formData.leave_end) return showToast('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "วันที่สิ้นสุดการลา"', 'error');
+                if(!formData.temperature) return showToast('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "อุณหภูมิร่างกาย"', 'error');
+
+                setLoading(true);
+                let adv = [];
+                if(parseFloat(formData.temperature) >= 38) adv.push("มีไข้สูง ควรหยุดงานจนกว่าไข้จะลดลงอย่างน้อย 24 ชม.");
+                if(formData.symptoms.includes('ถ่ายเหลว') || formData.symptoms.includes('อาเจียน')) adv.push("อาการระบบทางเดินอาหาร: ควรหยุดงานจนกว่าจะไม่มีอาการ โดยเฉพาะผู้สัมผัสอาหาร");
+                if(formData.symptoms.includes('ผื่น/ตุ่มน้ำ')) adv.push("สงสัยโรคติดต่อทางผิวหนัง (สุกใส/งูสวัด) ควรพบแพทย์เพื่อวินิจฉัยและหยุดงานจนกว่าแผลแห้ง");
+                if(formData.symptoms.includes('ไอ/เจ็บคอ') || formData.symptoms.includes('หอบเหนื่อย')) adv.push("อาการทางเดินหายใจ: สวมหน้ากากอนามัย และแยกตัวสังเกตอาการ");
+
+                const payload = {
+                    ...formData,
+                    symptoms: formData.symptoms.join(', '),
+                    total_days: totalRequestDays,
+                    staff_name: user.Name, staff_hn: user.HN, staff_dept: user.Dept, staff_job: user.Job
+                };
+
+                try {
+                    const res = await callGAS('saveSickLeave', { payload });
+                    if(res.success) {
+                        setAdvice(adv);
+                        setStep('success');
+                        showToast('บันทึกใบลาสำเร็จ!', 'success');
+                    } else {
+                        showToast('บันทึกไม่สำเร็จ: ' + res.error, 'error');
+                    }
+                } catch(e) { showToast('การเชื่อมต่อขัดข้อง (Network Error) กรุณาลองใหม่', 'error'); }
+                setLoading(false);
+            };
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative bg-[#0f172a]">
+                    <div className="bg-[#0f172a]/90 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={onBack}><Icon name="arrow-left" className="text-slate-300 hover:text-white transition" /></button>
+                            <div><h2 className="font-bold text-white text-sm">แจ้งลาป่วย</h2><p className="text-[10px] text-slate-400">Sick Leave & Monitoring</p></div>
+                        </div>
+                        <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                            <span className="text-[10px] text-slate-400">ปีนี้ลาแล้ว</span>
+                            <span className="text-sm font-bold text-white ml-2">{stats.totalDays} <span className="text-[10px] font-normal">วัน</span></span>
+                        </div>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                        {loading && <div className="text-center text-xs text-orange-400 animate-pulse bg-orange-900/20 p-2 rounded">กำลังบันทึกข้อมูล...</div>}
+                        
+                        {step === 'form' && !loading && (
+                            <>
+                                <div className="glass-panel p-4 rounded-xl flex items-center justify-between border-l-4 border-indigo-500">
+                                    <div><p className="text-white font-bold text-sm">{user.Name}</p><p className="text-xs text-slate-400">{user.Dept}</p></div>
+                                    <div className="text-right"><p className="text-[10px] text-slate-500">HN</p><p className="text-xs text-slate-300">{user.HN}</p></div>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-orange-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="thermometer" size={14} /> อาการป่วย (Syndromic)</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs text-slate-300">อุณหภูมิร่างกาย (°C) <span className="text-red-500">*</span></label>
+                                            <input type="number" className="glass-input w-24 text-center" placeholder="37.0" value={formData.temperature} onChange={e=>h('temperature',e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-400 block mb-2">อาการเด่น (เลือกได้มากกว่า 1)</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['ไอ/เจ็บคอ', 'มีน้ำมูก', 'หอบเหนื่อย', 'ถ่ายเหลว', 'อาเจียน', 'ผื่น/ตุ่มน้ำ', 'ปวดกล้ามเนื้อ', 'ตาแดง'].map(sym => (
+                                                    <button key={sym} type="button" onClick={()=>toggleSymptom(sym)} className={`text-xs py-2 rounded border transition-all ${formData.symptoms.includes(sym)?'bg-orange-500 text-white border-orange-500':'bg-transparent text-slate-400 border-slate-700'}`}>{sym}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">วันที่เริ่มมีอาการ <span className="text-red-500">*</span></label><input type="date" className="glass-input text-xs w-full" value={formData.onset_date} onChange={e=>h('onset_date',e.target.value)} /></div>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-blue-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="stethoscope" size={14} /> การรักษา & วันลา</h3>
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div><label className="text-[10px] text-slate-400 block mb-1">การวินิจฉัย (ถ้ามี)</label><input className="glass-input text-xs" placeholder="เช่น ไข้หวัดใหญ่" value={formData.diagnosis} onChange={e=>h('diagnosis',e.target.value)} /></div>
+                                            <div><label className="text-[10px] text-slate-400 block mb-1">สถานะ</label><select className="glass-input text-xs" value={formData.doctor_visit} onChange={e=>h('doctor_visit',e.target.value)}><option value="home">พักรักษาตัวที่บ้าน</option><option value="doctor">ไปพบแพทย์แล้ว</option><option value="admit">Admit รพ.</option></select></div>
+                                        </div>
+                                        <div className="p-3 bg-slate-800/50 rounded-lg">
+                                            <label className="text-[10px] text-slate-400 block mb-2">ระยะเวลาที่ขอหยุดงาน <span className="text-red-500">*</span></label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="date" className="glass-input text-xs flex-1" value={formData.leave_start} onChange={e=>h('leave_start',e.target.value)} />
+                                                <span className="text-slate-500">-</span>
+                                                <input type="date" className="glass-input text-xs flex-1" value={formData.leave_end} onChange={e=>h('leave_end',e.target.value)} />
+                                            </div>
+                                            <p className="text-right text-[10px] text-slate-400 mt-1">รวม: <span className="text-white font-bold">{totalRequestDays}</span> วัน</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-slate-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="history" size={14} /> ประวัติเสี่ยง</h3>
+                                    <div className="space-y-2">
+                                        <input className="glass-input text-xs" placeholder="ประวัติเดินทาง (ถ้ามี)" value={formData.travel_history} onChange={e=>h('travel_history',e.target.value)} />
+                                        <input className="glass-input text-xs" placeholder="คนใกล้ชิดป่วย (ถ้ามี)" value={formData.contact_history} onChange={e=>h('contact_history',e.target.value)} />
+                                    </div>
+                                </div>
+                                <button onClick={handleSubmit} className="btn-primary w-full py-4 text-base shadow-lg shadow-indigo-500/30">ส่งใบลา / รายงานอาการ</button>
+                            </>
+                        )}
+                        {step === 'success' && (
+                            <div className="fade-in space-y-4">
+                                <div className="bg-green-600 rounded-2xl p-6 text-center shadow-lg shadow-green-900/50"><Icon name="check-circle" size={48} className="text-white mx-auto mb-2" /><h2 className="text-2xl font-bold text-white">บันทึกสำเร็จ</h2><p className="text-green-100 text-sm">ส่งข้อมูลเรียบร้อยแล้ว</p></div>
+                                {advice && advice.length > 0 && (
+                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-yellow-500"><h3 className="text-yellow-300 font-bold text-sm mb-3 flex items-center gap-2"><Icon name="info" /> คำแนะนำการหยุดงาน</h3><ul className="list-disc pl-5 space-y-2 text-xs text-slate-200">{advice.map((a,i) => <li key={i}>{a}</li>)}</ul></div>
+                                )}
+                                
+                                <div className="glass-panel p-4 rounded-xl">
+                                    <h3 className="text-indigo-300 font-bold text-xs uppercase mb-2">ประวัติการลาของคุณ</h3>
+                                    <div className="max-h-40 overflow-y-auto space-y-2">
+                                        {stats.history && stats.history.length > 0 ? stats.history.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center text-xs border-b border-slate-700/50 pb-2">
+                                                <div><span className="text-white block">{h.date}</span><span className="text-slate-500">{h.diagnosis}</span></div>
+                                                <div className="bg-slate-800 px-2 py-1 rounded text-slate-300">{h.days} วัน</div>
+                                            </div>
+                                        )) : <p className="text-xs text-slate-500 text-center">ยังไม่มีประวัติ</p>}
+                                    </div>
+                                </div>
+
+                                <button onClick={() => setStep('form')} className="btn-secondary w-full">กลับหน้าหลัก</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ExposureTracking = ({ user, onBack, showToast }) => {
+            const [step, setStep] = useState('menu');
+            const [loading, setLoading] = useState(false);
+            const [history, setHistory] = useState([]);
+            const [formData, setFormData] = useState({
+                disease: '', exposure_datetime: '', exposure_level: 'Low', ppe_used: [], location: '',
+                vaccine_status: 'Unknown', history_infection: 'No', risk_group: 'No',
+                source_hn: '', source_onset_date: ''
+            });
+            const [result, setResult] = useState(null);
+
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    try {
+                        const res = await callGAS('getExposureHistory', { hn: user.HN });
+                        setHistory(res);
+                    } catch(e) {}
+                };
+                fetchHistory();
+            }, [user.HN]);
+
+            const diseaseRules = {
+                'COVID-19': { risk: 'High', action: 'หยุดงาน/กักตัว (Home Isolation)', duration: '5-10 วัน หรือจนกว่า ATK เป็นลบ' },
+                'TB': { risk: 'High', action: 'หยุดงาน (ถ้าป่วยระยะแพร่เชื้อ)', duration: '2 สัปดาห์ หรือจนกว่าเสมหะเป็นลบ' },
+                'Measles': { risk: 'High', action: 'ต้องหยุดงาน (Quarantine)', duration: 'เริ่มหยุดวันที่ 5 หลังสัมผัส - ถึงวันที่ 21' },
+                'Varicella': { risk: 'High', action: 'ต้องหยุดงาน (Quarantine)', duration: 'เริ่มหยุดวันที่ 8 หลังสัมผัส - ถึงวันที่ 21' },
+                'Flu': { risk: 'Medium', action: 'หยุดงาน (Sick Leave)', duration: 'จนกว่าจะไม่มีไข้ > 24 ชม. หรือ 5-7 วัน' },
+                'Conjunctivitis': { risk: 'Medium', action: 'หยุดงาน', duration: 'จนกว่าจะหายดี' },
+                'Diarrhea': { risk: 'Medium', action: 'ห้ามปฏิบัติงาน (Food Handler)', duration: 'จนกว่าผลเพาะเชื้ออุจจาระเป็นลบ' },
+                'MDRO': { risk: 'Low', action: 'เฝระวังอาการ', duration: 'สังเกตอาการ' }
+            };
+
+            const togglePPE = (item) => {
+                setFormData(p => {
+                    const exists = p.ppe_used.includes(item);
+                    const newArr = exists ? p.ppe_used.filter(i => i !== item) : [...p.ppe_used, item];
+                    return { ...p, ppe_used: newArr };
+                });
+            };
+
+            const h = (f, v) => setFormData(p => ({...p, [f]: v}));
+
+            const handleSubmit = async () => {
+                if(!formData.disease) return showToast("⚠️ ข้อมูลไม่ครบ: กรุณาเลือก 'เชื้อ/โรคที่สัมผัส'", "error");
+                if(!formData.exposure_datetime) return showToast("⚠️ ข้อมูลไม่ครบ: กรุณาระบุ 'วัน-เวลาที่สัมผัส'", "error");
+                
+                setLoading(true);
+                let advice = diseaseRules[formData.disease] || { risk: 'Low', action: 'สังเกตอาการ (Self-monitoring)', duration: '14 วัน' };
+                
+                if (['Measles', 'Varicella', 'HBV'].includes(formData.disease) && (formData.vaccine_status === 'Received' || formData.history_infection === 'Yes')) {
+                    advice = { risk: 'Low', action: 'ไม่ต้องกักตัว (Immune)', duration: 'สังเกตอาการ 14-21 วัน' };
+                }
+
+                const payload = {
+                    ...formData,
+                    staff_name: user.Name, staff_hn: user.HN, staff_dept: user.Dept,
+                    ppe_used: formData.ppe_used.join(', '),
+                    system_advice: advice.action,
+                    quarantine_period: advice.duration,
+                    vaccine_history: formData.vaccine_status, 
+                    infection_history: formData.history_infection 
+                };
+
+                try {
+                    const res = await callGAS('saveExposure', { payload });
+                    if(res.success) {
+                        setResult({ ...advice, ticketId: res.ticketId });
+                        setStep('result');
+                        showToast('ส่งรายงานผู้สัมผัสสำเร็จ!', 'success');
+                    } else { showToast('บันทึกไม่สำเร็จ: ' + res.error, 'error'); }
+                } catch(e) { showToast('การเชื่อมต่อขัดข้อง (Network Error) กรุณาลองใหม่', 'error'); }
+                setLoading(false);
+            };
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative bg-[#0f172a]">
+                    <div className="bg-[#0f172a]/90 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={step==='menu'?onBack:()=>setStep('menu')}><Icon name="arrow-left" className="text-slate-300 hover:text-white transition" /></button>
+                            <div><h2 className="font-bold text-white text-sm">ติดตามผู้สัมผัส</h2><p className="text-[10px] text-slate-400">Exposure Tracking</p></div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                        {loading && <div className="text-center text-xs text-orange-400 animate-pulse bg-orange-900/20 p-2 rounded">กำลังประมวลผลข้อมูล...</div>}
+
+                        {step === 'menu' && !loading && (
+                            <div className="space-y-6">
+                                <div className="bg-indigo-900/30 border border-indigo-500/30 p-4 rounded-xl flex items-start gap-3"><Icon name="shield-alert" className="text-indigo-400 w-8 h-8 flex-shrink-0" /><div><h3 className="text-indigo-200 text-sm font-bold">ระบบประเมินความเสี่ยง</h3><p className="text-[11px] text-slate-400 leading-relaxed mt-1">ใช้สำหรับบุคลากรที่สัมผัสเชื้อโรคสำคัญ เพื่อพิจารณาการกักตัวหรือหยุดงานตามมาตรฐาน IC</p></div></div>
+                                <button onClick={() => setStep('form')} className="btn-primary w-full py-4 text-lg shadow-lg">เริ่มแบบประเมิน</button>
+                                
+                                <div className="glass-panel p-4 rounded-xl border border-white/5">
+                                    <h3 className="text-slate-400 text-xs font-bold uppercase mb-3 flex items-center gap-2"><Icon name="clock" size={14} /> ประวัติการรายงาน</h3>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                        {history.length > 0 ? history.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center bg-slate-800/50 p-2 rounded text-xs">
+                                                <div><p className="text-white font-bold">{h.disease}</p><p className="text-[10px] text-slate-500">{h.date}</p></div>
+                                                <span className="text-indigo-300 text-[10px]">{h.advice}</span>
+                                            </div>
+                                        )) : <p className="text-xs text-slate-500 text-center py-2">ยังไม่มีประวัติ</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'form' && !loading && (
+                            <div className="space-y-4 fade-in">
+                                <div className="glass-panel p-4 rounded-xl border-l-4 border-orange-500">
+                                    <h3 className="text-orange-300 font-bold text-xs uppercase mb-3">A. ข้อมูลเหตุการณ์ (Event)</h3>
+                                    <div className="space-y-3">
+                                        <div><label className="text-[10px] text-slate-400">เชื้อ/โรคที่สัมผัส <span className="text-red-500">*</span></label><select className="glass-input text-sm" value={formData.disease} onChange={e=>h('disease',e.target.value)}><option value="">-- เลือก --</option><option value="COVID-19">COVID-19</option><option value="TB">วัณโรค (TB)</option><option value="Measles">หัด (Measles)</option><option value="Varicella">สุกใส (Varicella)</option><option value="Flu">ไข้หวัดใหญ่ (Flu)</option><option value="Diarrhea">ท้องร่วง (Diarrhea)</option><option value="Conjunctivitis">ตาแดง</option><option value="MDRO">เชื้อดื้อยา (MDRO)</option></select></div>
+                                        <div><label className="text-[10px] text-slate-400">วัน-เวลาที่สัมผัส <span className="text-red-500">*</span></label><input type="datetime-local" className="glass-input text-sm" onChange={e=>h('exposure_datetime',e.target.value)} /></div>
+                                        <div><label className="text-[10px] text-slate-400">ลักษณะการสัมผัส</label><select className="glass-input text-sm" value={formData.exposure_level} onChange={e=>h('exposure_level',e.target.value)}><option value="Low">Low Risk (ใส่ PPE/สัมผัสสั้น)</option><option value="High">High Risk (ไม่ใส่ PPE/ห้องปิดนาน)</option></select></div>
+                                        <div><label className="text-[10px] text-slate-400 mb-2 block">PPE ที่ใส่ขณะสัมผัส</label><div className="flex flex-wrap gap-2">{['N95','Surgical Mask','Face Shield','Gown','Gloves'].map(p=><button key={p} type="button" onClick={()=>togglePPE(p)} className={`text-xs px-3 py-1 rounded-full border ${formData.ppe_used.includes(p)?'bg-indigo-600 text-white border-indigo-600':'border-slate-600 text-slate-400'}`}>{p}</button>)}</div></div>
+                                    </div>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl border-l-4 border-blue-500">
+                                    <h3 className="text-blue-300 font-bold text-xs uppercase mb-3">B. ข้อมูลผู้สัมผัส (Staff)</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-[10px] text-slate-400">เคยฉีดวัคซีนป้องกันโรคนี้?</label><select className="glass-input text-sm" onChange={e=>h('vaccine_status',e.target.value)}><option value="Unknown">ไม่ทราบ</option><option value="Received">เคยฉีดแล้ว</option><option value="Not">ไม่เคย</option></select></div>
+                                        <div><label className="text-[10px] text-slate-400">เคยติดเชื้อนี้มาก่อน?</label><select className="glass-input text-sm" onChange={e=>h('history_infection',e.target.value)}><option value="No">ไม่เคย</option><option value="Yes">เคยเป็นแล้ว</option></select></div>
+                                    </div>
+                                    <div className="mt-2"><label className="text-[10px] text-slate-400">กลุ่มเสี่ยง (ตั้งครรภ์/ภูมิคุ้มกันต่ำ)</label><select className="glass-input text-sm" onChange={e=>h('risk_group',e.target.value)}><option value="No">ไม่ใช่</option><option value="Yes">ใช่</option></select></div>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl border-l-4 border-red-500">
+                                    <h3 className="text-red-300 font-bold text-xs uppercase mb-3">C. ข้อมูลแหล่งโรค (Source)</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-[10px] text-slate-400">HN ผู้ป่วย</label><input className="glass-input text-sm" placeholder="ระบุ HN" onChange={e=>h('source_hn',e.target.value)} /></div>
+                                        <div><label className="text-[10px] text-slate-400">วันเริ่มป่วย (Onset)</label><input type="date" className="glass-input text-sm" onChange={e=>h('source_onset_date',e.target.value)} /></div>
+                                    </div>
+                                </div>
+                                <button onClick={handleSubmit} className="btn-primary w-full py-3 shadow-lg">ประเมินผล</button>
+                            </div>
+                        )}
+
+                        {step === 'result' && result && (
+                            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 fade-in">
+                                <div className={`w-24 h-24 rounded-full flex items-center justify-center border-4 ${result.risk==='High'?'border-red-500 bg-red-500/20 text-red-500':'border-green-500 bg-green-500/20 text-green-500'}`}>
+                                    <Icon name={result.risk==='High'?'alert-octagon':'shield-check'} size={48} />
+                                </div>
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-bold text-white mb-1">{result.action}</h2>
+                                    <p className="text-slate-400 text-sm">ระยะเวลา: <span className="text-indigo-300 font-bold">{result.duration}</span></p>
+                                </div>
+                                <div className="glass-panel p-4 rounded-xl w-full text-left">
+                                    <h3 className="text-xs text-slate-400 uppercase mb-2">คำแนะนำเพิ่มเติม</h3>
+                                    <ul className="text-sm text-slate-200 list-disc pl-5 space-y-1">
+                                        <li>สังเกตอาการตนเองอย่างใกล้ชิด</li>
+                                        <li>หากมีอาการผิดปกติ ให้รีบแจ้ง ICN</li>
+                                        <li>Ticket ID: {result.ticketId}</li>
+                                    </ul>
+                                </div>
+                                <button onClick={() => setStep('menu')} className="btn-secondary w-full">กลับหน้าหลัก</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const NeedleInjury = ({ user, onBack, showToast }) => {
+            const [step, setStep] = useState('menu'); 
+            const [reportType, setReportType] = useState('Self'); 
+            const [loading, setLoading] = useState(false);
+            const [history, setHistory] = useState([]);
+            const [formData, setFormData] = useState({
+                incident_datetime: '', location: '', injury_type: '', urgency: 'Medium', source_hn: '', source_risk: '',
+                staff_name: user.Name, staff_hn: user.HN || '', staff_dept: user.Dept
+            });
+            const [ticketId, setTicketId] = useState('');
+            const [orgType, setOrgType] = useState('hospital');
+
+            useEffect(() => {
+                const fetchHistory = async () => {
+                    try {
+                        const res = await callGAS('getSharpInjuryHistory', { hn: user.HN });
+                        setHistory(res);
+                    } catch(e) {}
+                };
+                fetchHistory();
+            }, [user.HN]);
+
+            const elapsed = useMemo(() => {
+                if(!formData.incident_datetime) return 0;
+                return Math.floor((new Date() - new Date(formData.incident_datetime)) / (1000 * 60 * 60));
+            }, [formData.incident_datetime]);
+
+            const handleSubmit = async () => {
+                if (!formData.incident_datetime) return alert('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "วัน-เวลาที่เกิดเหตุ"');
+                if (!formData.location) return alert('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "สถานที่เกิดเหตุ"');
+                if (!formData.injury_type) return alert('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "ประเภทการบาดเจ็บ"');
+                if (reportType === 'ICN' && !formData.staff_hn) return alert('⚠️ ข้อมูลไม่ครบ: กรุณาระบุ "HN เจ้าหน้าที่"');
+                
+                setLoading(true);
+                const payload = {
+                    ...formData, report_type: reportType,
+                    staff_name: reportType === 'Self' ? user.Name : formData.staff_name,
+                    staff_hn: reportType === 'Self' ? (user.HN || '-') : formData.staff_hn,
+                    staff_dept: reportType === 'Self' ? user.Dept : formData.staff_dept
+                };
+                try {
+                    const res = await callGAS('saveSharpInjury', { payload });
+                    if (res.success) { 
+                        setTicketId(res.ticketId); 
+                        setStep('success'); 
+                        showToast('บันทึกสถิติอุบัติเหตุสำเร็จ!', 'success');
+                    } else alert('บันทึกไม่สำเร็จ: ' + res.error);
+                } catch(e) { alert('การเชื่อมต่อขัดข้อง (Network Error) กรุณาลองใหม่'); }
+                setLoading(false);
+            };
+
+            const h = (f,v) => setFormData(p => ({...p, [f]: v}));
+            const deptOptions = orgType === 'hospital' ? [] : PCU_OPTIONS.map(name => ({ code: name, label: name }));
+
+            return (
+                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative bg-[#0f172a]">
+                    <div className="bg-[#0f172a]/90 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <button onClick={step === 'menu' ? onBack : () => setStep('menu')}><Icon name="arrow-left" className="text-slate-300 hover:text-white transition" /></button>
+                            <div><h2 className="font-bold text-white text-sm">SW-me (อุบัติเหตุ)</h2><p className="text-[10px] text-slate-400">รายงานการสัมผัสเชื้อและสารคัดหลั่ง</p></div>
+                        </div>
+                        {step === 'menu' && <button onClick={() => setStep('sos')} className="text-xs bg-red-600 px-3 py-1.5 rounded-full text-white font-bold shadow-lg animate-pulse">SOS ฉุกเฉิน</button>}
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                        {loading && <div className="text-center text-xs text-orange-400 animate-pulse bg-orange-900/20 p-2 rounded">กำลังบันทึกข้อมูล...</div>}
+
+                        {step === 'menu' && !loading && (
+                            <div className="space-y-6">
+                                <div className="bg-indigo-900/30 border border-indigo-500/30 p-4 rounded-xl flex items-start gap-3"><Icon name="shield-check" className="text-indigo-400 w-8 h-8 flex-shrink-0" /><div><h3 className="text-indigo-200 text-sm font-bold">Privacy Policy</h3><p className="text-[11px] text-slate-400 leading-relaxed mt-1">ข้อมูลของท่านจะถูกเก็บเป็นความลับตามมาตรฐาน HA และ PDPA เข้าถึงได้เฉพาะทีม ICN และแพทย์อาชีวเวชกรรมเท่านั้น</p></div></div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <button onClick={() => setStep('form')} className="glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-slate-800/50 transition group"><div className="flex items-center gap-4"><div className="p-3 bg-orange-500/20 rounded-full text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition"><Icon name="file-plus" size={28} /></div><div className="text-left"><h3 className="text-white font-bold">แจ้งเหตุใหม่</h3><p className="text-xs text-slate-400">Needle Stick / Splash / Others</p></div></div><Icon name="chevron-right" className="text-slate-500" /></button>
+                                    <button onClick={() => setStep('sos')} className="glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-red-900/20 transition group border-red-500/30"><div className="flex items-center gap-4"><div className="p-3 bg-red-500/20 rounded-full text-red-400 group-hover:bg-red-500 group-hover:text-white transition"><Icon name="siren" size={28} /></div><div className="text-left"><h3 className="text-red-200 font-bold">ฉุกเฉิน: ต้องทำอย่างไร?</h3><p className="text-xs text-red-400/70">แนวทางปฐมพยาบาลเบื้องต้น</p></div></div><Icon name="chevron-right" className="text-red-500/50" /></button>
+                                </div>
+                                <div className="mt-8"><h3 className="text-slate-400 text-xs font-bold uppercase mb-4 text-center">-- ขั้นตอนการดูแล (Flowchart) --</h3><div className="relative pl-8 border-l-2 border-slate-700 space-y-8">
+                                    <div className="relative"><div className="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 border-2 border-green-500 rounded-full"></div><p className="text-sm text-green-400 font-bold">1. ปฐมพยาบาลทันที</p><p className="text-[10px] text-slate-500">ล้างน้ำ/สบู่ ห้ามบีบแผล</p></div>
+                                    <div className="relative"><div className="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 border-2 border-blue-500 rounded-full"></div><p className="text-sm text-blue-400 font-bold">2. รายงาน & ประเมินความเสี่ยง</p><p className="text-[10px] text-slate-500">แจ้ง ICN / เจาะเลือด Source & Staff</p></div>
+                                    <div className="relative"><div className="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 border-2 border-yellow-500 rounded-full"></div><p className="text-sm text-yellow-400 font-bold">3. รับยาป้องกัน (PEP)</p><p className="text-[10px] text-slate-500">ถ้าจำเป็น (ภายใน 72 ชม.)</p></div>
+                                    <div className="relative"><div className="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 border-2 border-purple-500 rounded-full"></div><p className="text-sm text-purple-400 font-bold">4. ติดตามผล (Follow-up)</p><p className="text-[10px] text-slate-500">1M, 3M, 6M ผ่านระบบแจ้งเตือน</p></div>
+                                </div></div>
+                                
+                                <div className="glass-panel p-4 rounded-xl border border-white/5 mt-6">
+                                    <h3 className="text-slate-400 text-xs font-bold uppercase mb-3 flex items-center gap-2"><Icon name="clock" size={14} /> ประวัติการรายงาน</h3>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                        {history.length > 0 ? history.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center bg-slate-800/50 p-2 rounded text-xs">
+                                                <div><p className="text-white font-bold">{h.type}</p><p className="text-[10px] text-slate-500">{h.date}</p></div>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded ${h.status==='New'?'bg-blue-500/20 text-blue-300':'bg-slate-700 text-slate-400'}`}>{h.status}</span>
+                                            </div>
+                                        )) : <p className="text-xs text-slate-500 text-center py-2">ยังไม่มีประวัติ</p>}
+                                    </div>
+                                </div>
+
+                                <div className="glass-panel p-5 rounded-xl border border-indigo-500/20 mt-6"><h3 className="text-white font-bold text-sm mb-3 flex items-center gap-2"><Icon name="pill" className="text-indigo-400" /> สูตรยาต้านไวรัส (oPEP)</h3><div className="space-y-3"><div className="bg-indigo-900/30 p-3 rounded-lg border-l-2 border-indigo-500"><span className="text-[10px] text-indigo-300 font-bold uppercase">สูตรแนะนำ (Preferred)</span><p className="text-xs text-white mt-1">TDF/FTC (Tenofovir 300 + Emtricitabine 200) + DTG (Dolutegravir 50)</p><p className="text-[10px] text-slate-400 mt-1">* กินวันละ 1 ครั้ง นาน 28 วัน</p></div><div className="bg-slate-800/50 p-3 rounded-lg border-l-2 border-slate-600"><span className="text-[10px] text-slate-400 font-bold uppercase">สูตรทางเลือก (Alternative)</span><p className="text-[11px] text-slate-300 mt-1">ใช้ RPV, ATV/r หรือ DRV/r แทน DTG กรณีมีข้อจำกัด</p><p className="text-[11px] text-slate-300 mt-1">ไตบกพร่อง (CrCl &lt; 50): ใช้ AZT แทน TDF</p></div></div></div>
+                                <div className="glass-panel p-5 rounded-xl border border-white/5 mt-4"><h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Icon name="calendar-clock" /> Timeline การติดตามผล</h3><div className="space-y-4 border-l-2 border-slate-700 ml-2 pl-6 relative"><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-red-500 border-2 border-[#0f172a] shadow"></div><p className="text-xs text-red-400 font-bold">Day 0 (วันนี้)</p><p className="text-[11px] text-slate-300">Baseline Lab (HIV, HBV, HCV, CBC, Liver, Cr)</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">1 Month</p><p className="text-[11px] text-slate-500">Anti-HIV, CBC, Liver Function</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">3 Months</p><p className="text-[11px] text-slate-500">Anti-HIV, Anti-HCV</p></div><div className="relative"><div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-600 border-2 border-[#0f172a]"></div><p className="text-xs text-slate-400 font-bold">6 Months</p><p className="text-[11px] text-slate-500">Anti-HIV (ปิดเคส)</p></div></div></div>
+                            </div>
+                        )}
+                        {step === 'sos' && (
+                            <div className="space-y-6 fade-in">
+                                <div className="bg-red-600 rounded-2xl p-6 text-center shadow-lg shadow-red-900/50"><Icon name="alert-triangle" size={48} className="text-white mx-auto mb-2" /><h2 className="text-2xl font-bold text-white">ตั้งสติ! อย่าตกใจ</h2><p className="text-red-100 text-sm">ปฏิบัติตามคำแนะนำด้านล่างทันที</p></div>
+                                <div className="space-y-4">
+                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-orange-500"><h3 className="text-orange-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="droplet" /> กรณีเข็มตำ/ของมีคม</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดและสบู่ทันที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! บีบเค้นบาดแผล</b></li><li>เช็ดด้วย Alcohol 70% หรือ Betadine</li></ul></div>
+                                    <div className="glass-panel p-5 rounded-xl border-l-4 border-blue-500"><h3 className="text-blue-300 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="eye" /> กรณีเข้าตา/เยื่อบุ</h3><ul className="text-slate-300 text-sm space-y-2 list-disc pl-5"><li>ล้างด้วยน้ำสะอาดหรือ Normal Saline ปริมาณมาก</li><li>ล้างให้นานอย่างน้อย 15 นาที</li><li><b className="text-red-400 bg-red-900/20 px-1 rounded">ห้าม! ขยี้ตา</b></li></ul></div>
+                                </div>
+                                <button onClick={() => setStep('form')} className="btn-primary w-full py-4 text-lg">รับทราบ และดำเนินการแจ้งเหตุ</button>
+                            </div>
+                        )}
+                        {step === 'form' && !loading && (
+                            <div className="space-y-5 fade-in">
+                                <div className="flex bg-slate-800 p-1 rounded-lg"><button onClick={()=>setReportType('Self')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='Self'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>Self Report</button><button onClick={()=>setReportType('ICN')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${reportType==='ICN'?'bg-indigo-600 text-white shadow':'text-slate-400 hover:text-white'}`}>ICN Report</button></div>
+                                
+                                <div className="glass-panel p-4 rounded-xl border border-white/5">
+                                    <h3 className="text-indigo-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="user" size={14} /> ข้อมูลผู้บาดเจ็บ</h3>
+                                    {reportType === 'Self' ? (
+                                        <div className="flex items-center gap-3 p-2 bg-slate-800/50 rounded"><img src={user.pictureProfile || LOGO_URL} className="w-10 h-10 rounded-full" /><div><p className="text-white font-bold text-sm">{user.Name}</p><p className="text-slate-400 text-xs">{user.Dept} (Tel: {user.phone})</p></div></div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div><label className="text-[10px] text-slate-400 block mb-1">HN เจ้าหน้าที่</label><input className="glass-input text-sm w-full" value={formData.staff_hn} onChange={e=>h('staff_hn',e.target.value)} /></div>
+                                            <div className="border-t border-slate-700/50 pt-2">
+                                                <div className="flex bg-slate-800 rounded p-1 mb-2"><button type="button" onClick={() => setOrgType('hospital')} className={`flex-1 text-[10px] py-1 rounded ${orgType === 'hospital' ? 'bg-slate-600 text-white' : 'text-slate-400'}`}>รพ.สวี</button><button type="button" onClick={() => setOrgType('network')} className={`flex-1 text-[10px] py-1 rounded ${orgType === 'network' ? 'bg-slate-600 text-white' : 'text-slate-400'}`}>รพ.สต.</button></div>
+                                                <label className="text-[10px] text-slate-400 block mb-1">หน่วยงาน</label>
+                                                <Select val={formData.staff_dept} options={deptOptions} onChange={v=>h('staff_dept',v)} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="glass-panel p-4 rounded-xl border border-white/5"><h3 className="text-orange-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="alert-circle" size={14} /> รายละเอียดอุบัติการณ์</h3><div className="space-y-3"><div><label className="text-[10px] text-slate-400 block mb-1">วัน-เวลาที่เกิดเหตุ <span className="text-red-500">*</span></label><input type="datetime-local" className="glass-input text-sm w-full" onChange={e=>h('incident_datetime',e.target.value)} />{formData.incident_datetime && (<p className={`text-[10px] mt-1 text-right ${elapsed <= 72 ? 'text-green-400' : 'text-red-400'}`}>ผ่านไปแล้ว {elapsed} ชม. {elapsed <= 72 ? '(อยู่ใน Golden Period)' : '(เกิน 72 ชม.)'}</p>)}</div><div><label className="text-[10px] text-slate-400 block mb-1">สถานที่ (Location) <span className="text-red-500">*</span></label><input className="glass-input text-sm" placeholder="เช่น หอผู้ป่วยอายุรกรรมชาย" onChange={e=>h('location',e.target.value)} /></div><div className="grid grid-cols-2 gap-2"><div><label className="text-[10px] text-slate-400 block mb-1">ประเภท <span className="text-red-500">*</span></label><select className="glass-input text-sm" onChange={e=>h('injury_type',e.target.value)}><option value="">-- เลือก --</option><option value="Needle Stick">เข็มตำ</option><option value="Sharp Injury">ของมีคมบาด</option><option value="Splash">สารคัดหลั่งกระเด็น</option><option value="Other">อื่นๆ</option></select></div><div><label className="text-[10px] text-slate-400 block mb-1">ความเร่งด่วน</label><select className="glass-input text-sm" value={formData.urgency} onChange={e=>h('urgency',e.target.value)}><option value="High">High (เสี่ยงสูง)</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div></div></div></div>
+                                <div className="glass-panel p-4 rounded-xl border border-white/5 bg-slate-900/50"><h3 className="text-red-300 font-bold text-xs uppercase mb-3 flex items-center gap-2"><Icon name="lock" size={14} /> ข้อมูลแหล่งสัมผัส (Confidential)</h3><div className="grid grid-cols-2 gap-2"><div><label className="text-[10px] text-slate-400 block mb-1">HN ผู้ป่วย (Source)</label><input className="glass-input text-sm" placeholder="ระบุ HN" onChange={e=>h('source_hn',e.target.value)} /></div><div><label className="text-[10px] text-slate-400 block mb-1">สถานะเลือด</label><select className="glass-input text-sm" onChange={e=>h('source_risk',e.target.value)}><option value="Unknown">ไม่ทราบ/รอผล</option><option value="HIV">HIV Positive</option><option value="HBV">Hepatitis B</option><option value="HCV">Hepatitis C</option><option value="Negative">Negative (ผลลบ)</option></select></div></div><p className="text-[10px] text-slate-500 mt-2">* ข้อมูลนี้จะถูกเก็บเป็นความลับ เข้าถึงได้เฉพาะ ICN</p></div>
+                                <button onClick={handleSubmit} className="btn-primary w-full py-4 text-base shadow-lg shadow-indigo-500/30">ยืนยันการแจ้งเหตุ</button>
+                            </div>
+                        )}
+
+                        {step === 'success' && (
+                            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 fade-in text-center">
+                                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center border-2 border-green-500 text-green-500"><Icon name="check" size={40} /></div>
+                                <div><h2 className="text-2xl font-bold text-white">แจ้งเหตุสำเร็จ</h2><p className="text-slate-400 mt-1">Ticket ID: <span className="text-indigo-400 font-mono font-bold">{ticketId}</span></p></div>
+                                <div className="bg-slate-800 p-4 rounded-xl w-full max-w-xs text-left space-y-3 border border-slate-700">
+                                    <h3 className="text-white font-bold text-sm border-b border-slate-700 pb-2">สิ่งที่ต้องทำต่อ (Next Steps)</h3>
+                                    <div className="flex items-start gap-3"><div className="bg-indigo-500/20 p-1.5 rounded text-indigo-400 mt-0.5"><Icon name="test-tube" size={16} /></div><div><p className="text-sm text-slate-200 font-bold">เจาะเลือด Baseline</p><p className="text-xs text-slate-500">ภายในวันนี้ (Day 0) ที่ห้อง Lab</p></div></div>
+                                    <div className="flex items-start gap-3"><div className="bg-pink-500/20 p-1.5 rounded text-pink-400 mt-0.5"><Icon name="user-plus" size={16} /></div><div><p className="text-sm text-slate-200 font-bold">พบแพทย์</p><p className="text-xs text-slate-500">เพื่อประเมินความเสี่ยงและรับยา PEP</p></div></div>
+                                </div>
+                                <p className="text-xs text-slate-500">ระบบจะส่งการแจ้งเตือนติดตามผล (Follow-up) <br/>เมื่อครบกำหนด 1, 3 และ 6 เดือน ทาง LINE</p>
+                                <button onClick={() => setStep('menu')} className="btn-secondary w-full max-w-xs">กลับหน้าหลัก</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [user, setUser] = useState(null);
-            const [page, setPage] = useState('login'); // login, menu, form, healthBook, vaccine, sick, exposure, needle, adminDashboard, vaccineLeft
+            const [page, setPage] = useState('login'); 
             const [codebook, setCodebook] = useState({});
             const [pendingProfile, setPendingProfile] = useState(null);
             const [notification, setNotification] = useState(null); 
