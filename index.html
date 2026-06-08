@@ -406,7 +406,7 @@
                         showToast("⚠️ กรุณากรอกอย่างน้อย 1 ช่องทางสำหรับอ้างอิงตัวตน (HosXP Login Name, CID 13 หลัก, หรือ รหัส HN)", "error");
                         return;
                     }
-                    if (data.cid && data.cid.trim().length !== 13) {
+                    if (data.cid && data.cid.trim().length !== 13 && data.cid.trim().length > 0) {
                         showToast("⚠️ กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก", "error");
                         return;
                     }
@@ -579,8 +579,8 @@
                             <div className="pt-2 border-t border-slate-700/50">
                                 <label className="text-[10px] text-indigo-300 font-bold block mb-2">สังกัดหน่วยงาน</label>
                                 <div className="flex bg-slate-800 rounded p-1 mb-2">
-                                    <button onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
-                                    <button onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
+                                    <button type="button" onClick={() => setOrgType('hospital')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'hospital' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>รพ.สวี</button>
+                                    <button type="button" onClick={() => setOrgType('network')} className={`flex-1 text-xs py-1.5 rounded transition-all ${orgType === 'network' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400'}`}>เครือข่าย รพ.สต.</button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div><label className="text-[10px] text-slate-400 block mb-1">{orgType === 'hospital' ? 'แผนก/ฝ่าย' : 'รพ.สต.'}</label><Select val={data.Dept} options={deptOptions} onChange={v=>h('Dept',v)} /></div>
@@ -764,6 +764,7 @@
                                     <div className="text-5xl font-bold text-white mb-2">{stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total}</span></div>
                                     <div className="mt-6">
                                         <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                                            {/* Safely handle cases where stats.hospCount is undefined using Optional Chaining */}
                                             <span>รพ.สวี ({stats?.hospCount?.['รพ.สวี'] || 0})</span>
                                             <span>เครือข่าย ({stats?.hospCount?.['เครือข่าย'] || 0})</span>
                                         </div>
@@ -793,6 +794,7 @@
                                                     <span className={`text-[10px] px-2 py-1 rounded ${b.status === 'Received' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{b.status}</span>
                                                 </div>
 
+                                                {/* Premium Serial Card */}
                                                 <div className="my-3 p-4 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 border border-white/20 relative overflow-hidden shadow-2xl text-center">
                                                     <div className="absolute top-2 right-2 text-white/10 opacity-30">
                                                         <Icon name="vial" size={64} />
@@ -1452,13 +1454,13 @@
                                                         </button>
                                                     ))}
                                                 </div>
-                                                <input className="glass-input text-xs w-full" placeholder="ระบุโรคประจำตัวอื่นๆ (ถ้ามี)..." value={data.chronic_other || ''} onChange={e => handleChange('chronic_other', e.target.value)} disabled={isReadOnly} />
+                                                <input className="glass-input text-xs w-full font-bold" placeholder="ระบุโรคประจำตัวอื่นๆ (ถ้ามี)..." value={data.chronic_other || ''} onChange={e => handleChange('chronic_other', e.target.value)} disabled={isReadOnly} />
                                             </div>
                                         )}
                                     </div>
                                     <FlagInput label="ประวัติครอบครัว" name="family_history_flag" val={data.family_history_flag} detail={data.family_history_detail} onChange={handleChange} opts={[{v:1,l:'มี'},{v:2,l:'ไม่มี'}]} disabled={isReadOnly} />
                                     <FlagInput label="X-Ray ปอด (CXR)" name="cxr_flag" val={data.cxr_flag} detail={data.cxr_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
-                                    <FlagInput label="เม็ดเลือด (CBC)" name="cbc_flag" val={data.cbc_flag} detail={data.cbc_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
+                                    <FlagInput label="Spacer CBC" name="cbc_flag" val={data.cbc_flag} detail={data.cbc_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
                                     <FlagInput label="เคมีในเลือด (Chemistry)" name="chemistry_flag" val={data.chemistry_flag} detail={data.chemistry_detail} onChange={handleChange} opts={[{v:1,l:'ปกติ'},{v:2,l:'ผิดปกติ'}]} disabled={isReadOnly} />
                                 </Card>
 
@@ -1690,7 +1692,7 @@
                                                 <div><span className="text-white block">{h.date}</span><span className="text-slate-500">{h.diagnosis}</span></div>
                                                 <div className="bg-slate-800 px-2 py-1 rounded text-slate-300">{h.days} วัน</div>
                                             </div>
-                                        )) : <p className="text-xs text-slate-500 text-center">ยังไม่มีประวัติ</p>}
+                                        )) : <p className="text-xs text-slate-500 text-center py-2">ยังไม่มีประวัติ</p>}
                                     </div>
                                 </div>
 
@@ -1902,18 +1904,18 @@
                         const userData = JSON.parse(saved);
                         setUser(userData);
                         if (mode === 'vaccine') setPage('vaccineBooking');
-                        else setPage('menu'); 
+                        else setPage('form'); // <--- ปรับแก้ตามสั่ง: เมื่อเข้าสู่ระบบจาก localStorage ให้ออโต้ล็อกอินแล้ววิ่งไปโชว์หน้า Form ประวัติเลย
                     }
 
                     try {
                         if (typeof liff !== 'undefined' && LIFF_ID && LIFF_ID.trim().length > 0 && LIFF_ID !== "YOUR_LIFF_ID") {
                             await liff.init({ liffId: LIFF_ID });
                             if (liff.isLoggedIn() && !saved) {
-                                // Optional auto-login if LINE is available
+                                handleLiffLogin(true); // Auto-login if LINE is logged in but no localStorage
                             }
                         }
                     } catch(e) {
-                        console.warn("LIFF Init Error:", e);
+                        console.warn("LIFF Init Error bypass:", e);
                     }
                 };
                 init();
@@ -1926,18 +1928,18 @@
                         setUser(res.data);
                         localStorage.setItem('ic_sw_user', JSON.stringify(res.data));
                         if (mode === 'vaccine') setPage('vaccineBooking');
-                        else setPage('menu'); 
+                        else setPage('form'); // เข้าสู่หน้าอัปเดตประวัติเลย
                     } else {
                         showToast('ไม่พบข้อมูลในระบบ หรือข้อมูลไม่ถูกต้อง', 'error');
                     }
                 } catch(e) { showToast('Connection Error', 'error'); }
             };
 
-            const handleLiffLogin = async () => {
+            const handleLiffLogin = async (auto = false) => {
                 if(!LIFF_ID || LIFF_ID.trim() === '') return showToast("System Error: LIFF ID missing", 'error');
                 try {
                     if(!liff.isInClient() && !liff.isLoggedIn()) {
-                        liff.login();
+                        if(!auto) liff.login();
                     } else {
                         const profile = await liff.getProfile();
                         const res = await callGAS('loginUser', { criteria: { userId: profile.userId } });
@@ -1951,7 +1953,7 @@
                             setUser(currentUser);
                             localStorage.setItem('ic_sw_user', JSON.stringify(currentUser));
                             if (mode === 'vaccine') setPage('vaccineBooking');
-                            else setPage('menu');
+                            else setPage('form'); // วิ่งเข้าหน้า Form สำหรับรีวิวประวัติหลังล็อกอินสำเร็จ
                         } else {
                             setPendingProfile(profile);
                             setPage('register');
@@ -1969,7 +1971,7 @@
                         setUser(res.data);
                         localStorage.setItem('ic_sw_user', JSON.stringify(res.data));
                         if (mode === 'vaccine') setPage('vaccineBooking');
-                        else setPage('menu');
+                        else setPage('form');
                     } else showToast("ลงทะเบียนล้มเหลว: " + res.error, 'error');
                 } catch(e) { showToast('Connection Error', 'error'); }
             }
@@ -2021,7 +2023,7 @@
                 <React.Fragment>
                     <Toast notification={notification} onClose={closeToast} />
                     
-                    {!user && page === 'login' && <LoginPage onLogin={handleLogin} onLiff={handleLiffLogin} />}
+                    {!user && page === 'login' && <LoginPage onLogin={handleLogin} onLiff={() => handleLiffLogin(false)} />}
                     {!user && page === 'register' && <RegistrationPage pendingProfile={pendingProfile} codebook={codebook} onSubmit={handleRegister} onCancel={handleLogout} showToast={showToast} />}
                     {user && page === 'form' && <DataForm user={user} codebook={codebook} onSubmit={handleUpdateProfile} onSkip={() => setPage('menu')} />}
                     {user && page === 'menu' && <MainMenu user={user} onSelect={setPage} onLogout={handleLogout} />}
