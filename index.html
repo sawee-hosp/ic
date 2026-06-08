@@ -764,7 +764,6 @@
                                     <div className="text-5xl font-bold text-white mb-2">{stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total}</span></div>
                                     <div className="mt-6">
                                         <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                                            {/* Safely handle cases where stats.hospCount is undefined using Optional Chaining */}
                                             <span>รพ.สวี ({stats?.hospCount?.['รพ.สวี'] || 0})</span>
                                             <span>เครือข่าย ({stats?.hospCount?.['เครือข่าย'] || 0})</span>
                                         </div>
@@ -851,8 +850,8 @@
                                                     
                                                     <div>
                                                         <div className="flex bg-slate-800 rounded p-1 mb-2">
-                                                            <button onClick={() => setOtherData({...otherData, orgType: 'hospital'})} className={`flex-1 text-[10px] py-1.5 rounded ${otherData.orgType === 'hospital' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>รพ.สวี</button>
-                                                            <button onClick={() => setOtherData({...otherData, orgType: 'network'})} className={`flex-1 text-[10px] py-1.5 rounded ${otherData.orgType === 'network' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>เครือข่าย/รพ.สต.</button>
+                                                            <button type="button" onClick={() => setOtherData({...otherData, orgType: 'hospital'})} className={`flex-1 text-[10px] py-1.5 rounded ${otherData.orgType === 'hospital' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>รพ.สวี</button>
+                                                            <button type="button" onClick={() => setOtherData({...otherData, orgType: 'network'})} className={`flex-1 text-[10px] py-1.5 rounded ${otherData.orgType === 'network' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>เครือข่าย/รพ.สต.</button>
                                                         </div>
                                                         <Select label="หน่วยงาน *" val={otherData.dept} options={deptOptions} onChange={v=>setOtherData({...otherData, dept:v})} />
                                                     </div>
@@ -864,243 +863,6 @@
                                 )}
                              </>
                          )}
-                    </div>
-                </div>
-            );
-        };
-
-        const AdminVaccineView = ({ codebook, onBack }) => {
-            const [year, setYear] = useState(new Date().getFullYear());
-            const [stats, setStats] = useState(null);
-            const [bookings, setBookings] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [searchQuery, setSearchQuery] = useState('');
-
-            const fetchDashboard = async () => {
-                setLoading(true);
-                try {
-                    const res = await callGAS('getVaccineDashboard', { hn: '', year, userId: '' });
-                    setStats(res);
-                    setBookings(res.allBookings || []);
-                } catch(e) {
-                    console.error(e);
-                }
-                setLoading(false);
-            };
-
-            useEffect(() => {
-                fetchDashboard();
-            }, [year]);
-
-            const filteredBookings = useMemo(() => {
-                if (!searchQuery.trim()) return bookings;
-                const q = searchQuery.toLowerCase();
-                return bookings.filter(b => 
-                    String(b.no).toLowerCase().includes(q) ||
-                    String(b.hn).toLowerCase().includes(q) ||
-                    String(b.name).toLowerCase().includes(q) ||
-                    String(b.hospital).toLowerCase().includes(q) ||
-                    String(b.status).toLowerCase().includes(q)
-                );
-            }, [bookings, searchQuery]);
-
-            const years = [2025, 2026, 2027].filter(y => y <= new Date().getFullYear() + 1);
-
-            return (
-                <div className="pb-24 fade-in max-w-4xl mx-auto min-h-screen relative bg-[#0f172a] text-slate-100">
-                    <div className="bg-[#0f172a]/90 backdrop-blur-xl p-4 sticky top-0 z-30 border-b border-white/5 flex items-center justify-between shadow-lg">
-                        <div className="flex items-center gap-3">
-                            <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-                                <Icon name="arrow-left" className="text-slate-300" />
-                            </button>
-                            <div>
-                                <h2 className="font-bold text-white text-sm">ระบบบริหารจัดการวัคซีน (Admin)</h2>
-                                <p className="text-[10px] text-slate-400">Vaccine Administration Panel</p>
-                            </div>
-                        </div>
-                        <button onClick={fetchDashboard} className="p-2 hover:bg-slate-800 rounded-full transition-colors" title="โหลดข้อมูลใหม่">
-                            <Icon name="refresh-cw" className={`text-slate-300 ${loading ? 'animate-spin' : ''}`} size={18} />
-                        </button>
-                    </div>
-
-                    <div className="p-4 space-y-6">
-                        <div className="flex gap-2">
-                            {years.map(y => (
-                                <button key={y} onClick={()=>setYear(y)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${year===y?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400'}`}>ปี {y}</button>
-                            ))}
-                        </div>
-
-                        {stats && stats.hospCount && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-indigo-500">
-                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">ยอดจัดสรรทั้งหมด</p>
-                                    <div className="text-3xl font-bold text-white">{stats.total} โดส</div>
-                                </div>
-                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-green-500">
-                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">วัคซีนคงเหลือ</p>
-                                    <div className="text-3xl font-bold text-green-400">{stats.remaining} โดส</div>
-                                </div>
-                                <div className="glass-panel p-5 rounded-2xl text-center border-b-4 border-blue-500">
-                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">จองแล้ว (รพ.สวี / เครือข่าย)</p>
-                                    <div className="text-2xl font-bold text-white">
-                                        {stats.total - stats.remaining} โดส
-                                        <span className="text-xs text-slate-400 block mt-1">({stats?.hospCount?.['รพ.สวี'] || 0} / {stats?.hospCount?.['เครือข่าย'] || 0})</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="glass-panel p-5 rounded-2xl space-y-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <h3 className="text-indigo-300 font-bold text-xs uppercase tracking-wider">รายชื่อผู้จองวัคซีนทั้งหมด</h3>
-                                <div className="relative w-full md:w-64">
-                                    <input 
-                                        type="text" 
-                                        className="glass-input pl-10" 
-                                        placeholder="ค้นหาชื่อ, HN, คิว, หน่วยงาน..." 
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                    />
-                                    <span className="absolute left-3 top-2.5 text-slate-400">
-                                        <Icon name="search" size={16} />
-                                    </span>
-                                </div>
-                            </div>
-
-                            {loading ? (
-                                <div className="text-center py-10 text-xs text-slate-500">กำลังโหลดข้อมูล...</div>
-                            ) : filteredBookings.length === 0 ? (
-                                <div className="text-center py-10 text-xs text-slate-500">ไม่พบข้อมูลการจองในปีนี้</div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse text-xs">
-                                        <thead>
-                                            <tr className="border-b border-slate-700 text-slate-400">
-                                                <th className="py-2 px-3">คิวที่ (Serial)</th>
-                                                <th className="py-2 px-3">HN</th>
-                                                <th className="py-2 px-3">ชื่อ-สกุล</th>
-                                                <th className="py-2 px-3">หน่วยงาน</th>
-                                                <th className="py-2 px-3">วันเวลาจอง</th>
-                                                <th className="py-2 px-3">Lot No.</th>
-                                                <th className="py-2 px-3">Exp. Date</th>
-                                                <th className="py-2 px-3 text-center">สถานะ</th>
-                                                <th className="py-2 px-3">ผู้จอง (LINE ID)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredBookings.map((b, i) => (
-                                                <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                                                    <td className="py-3 px-3 font-mono font-bold text-indigo-400">{b.no}</td>
-                                                    <td className="py-3 px-3 font-mono text-slate-300">{b.hn || '-'}</td>
-                                                    <td className="py-3 px-3 font-bold text-white">{b.name}</td>
-                                                    <td className="py-3 px-3 text-slate-300">{b.hospital || '-'}</td>
-                                                    <td className="py-3 px-3 text-slate-400">{b.date}</td>
-                                                    <td className="py-3 px-3 text-slate-300 font-mono">{b.lot || '-'}</td>
-                                                    <td className="py-3 px-3 text-slate-400 font-mono">{b.expired || '-'}</td>
-                                                    <td className="py-3 px-3 text-center">
-                                                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${b.status === 'Received' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
-                                                            {b.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 px-3 text-slate-500 font-mono" title={b.userId}>{b.userId ? String(b.userId).substring(0, 8) + '...' : '-'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const VaccineLeftPage = ({ onBack }) => {
-            const [stats, setStats] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const currentYear = new Date().getFullYear();
-
-            const fetchStats = async () => {
-                setLoading(true);
-                try {
-                    const res = await callGAS('getVaccineDashboard', { hn: '', year: currentYear, userId: '' });
-                    setStats(res);
-                } catch (e) {
-                    console.error("Fetch Stats Error:", e);
-                }
-                setLoading(false);
-            };
-
-            useEffect(() => {
-                fetchStats();
-            }, []);
-
-            return (
-                <div className="pb-24 fade-in max-w-lg mx-auto min-h-screen relative bg-[#0f172a] text-slate-100 p-4">
-                    <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
-                        <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-                            <Icon name="arrow-left" className="text-slate-300" />
-                        </button>
-                        <div>
-                            <h2 className="font-bold text-white text-sm">ยอดวัคซีนคงเหลือ</h2>
-                            <p className="text-[10px] text-slate-400">Flu Vaccine Left & Instructions</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-4">
-                            <h3 className="text-teal-400 font-bold text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/5 pb-2">
-                                <Icon name="info" size={18} /> ขั้นตอนการรับบริการฉีดวัคซีน
-                            </h3>
-
-                            <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-indigo-500">
-                                <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                                    <Icon name="hospital" className="text-indigo-400" size={16} /> 
-                                    4-Stop Services (สำหรับการฉีดที่ รพ.)
-                                </h4>
-                                <div className="space-y-3 text-xs text-slate-300 relative pl-4 border-l border-white/10 ml-2">
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">1. เปิด Visit</p><p className="text-[11px] text-slate-400">แจ้งความประสงค์ว่า "ฉีดวัคซีนไข้หวัดใหญ่ 2026"</p></div>
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">2. ลงทะเบียนที่ห้องยา</p><p className="text-[11px] text-slate-400">ลงทะเบียนรับวัคซีนให้ตรงกับ Lot ที่ระบบกำหนด (โปรดเตรียมโทรศัพท์เพื่อสแกนลงทะเบียน)</p></div>
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">3. เข้ารับการฉีดวัคซีน</p><p className="text-[11px] text-slate-400">นำวัคซีนไปฉีดตามจุดบริการที่ต้องการ</p></div>
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-indigo-500 rounded-full"></span><p className="font-bold text-white">4. ปิดสิทธิ์การรักษา</p><p className="text-[11px] text-slate-400">ปิดสิทธิ์ที่ห้องการเงิน (หมายเหตุ: ขั้นตอนที่ 3-4 สามารถสลับกันได้ตามสะดวก)</p></div>
-                                </div>
-                            </div>
-
-                            <div className="glass-panel p-5 rounded-2xl space-y-4 border-l-4 border-teal-500">
-                                <h4 className="text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                                    <Icon name="pill" className="text-teal-400" size={16} /> 
-                                    1-Stop Service at ห้องยา (สำหรับการนำกลับไปฉีดเอง)
-                                </h4>
-                                <div className="space-y-3 text-xs text-slate-300 relative pl-4 border-l border-teal-500/30 ml-2">
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-teal-500 rounded-full"></span><p className="font-bold text-white">1. ลงทะเบียนและรับยา</p><p className="text-[11px] text-slate-400">ลงทะเบียนที่ห้องยาให้ตรงกับ Lot (โปรดเตรียมโทรศัพท์เพื่อสแกนลงทะเบียน) และแจ้งห้องยาว่าจะนำไปฉีดพร้อมคีย์วัคซีนด้วยตัวเอง</p></div>
-                                    <div className="relative"><span className="absolute -left-[21px] w-3 h-3 bg-teal-500 rounded-full"></span><p className="font-bold text-white">2. คีย์บันทึกระบบวัคซีน</p><p className="text-[11px] text-slate-400">คีย์ระบบวัคซีนด้วยตนเอง โดยตรวจสอบความถูกต้องของ Lot., Serial No., Exp. ตามสติกเกอร์ยา</p></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {loading ? (
-                            <div className="glass-panel p-6 rounded-2xl text-center animate-pulse mt-6">
-                                <p className="text-slate-400 text-xs">กำลังคำนวณยอดคงเหลือ...</p>
-                            </div>
-                        ) : stats && stats.hospCount ? (
-                            <div className="glass-panel p-6 rounded-2xl text-center border-t-4 border-indigo-500 mt-6">
-                                <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">จำนวนวัคซีนคงเหลืออัปเดตเรียลไทม์</p>
-                                <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] font-mono mb-2">
-                                    {stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total} โดส</span>
-                                </div>
-                                <p className="text-[11px] text-indigo-300 mt-2 bg-indigo-950/40 p-2 rounded-lg border border-indigo-500/20 font-medium inline-block">
-                                    ช่วงเวลาบริการ: ตั้งแต่ 1 มิ.ย. 2569 - จนกว่าวัคซีนจะหมด
-                                </p>
-                            </div>
-                        ) : stats && stats.error ? (
-                            <div className="glass-panel p-6 rounded-2xl text-center border-t-4 border-red-500 mt-6">
-                                <p className="text-red-400 text-xs">{stats.error}</p>
-                            </div>
-                        ) : null}
-
-                        <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl mt-8">
-                            <img src="https://sawee-hosp.github.io/ic/2026.png" alt="วัคซีนไข้หวัดใหญ่ 2026" className="w-full h-auto object-cover" />
-                        </div>
                     </div>
                 </div>
             );
@@ -1479,7 +1241,7 @@
                                         <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} disabled={isReadOnly} /></div>
                                         <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} disabled={isReadOnly} /></div>
                                         <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} disabled={isReadOnly} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)} disabled={isReadOnly}><option value="">- Status -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)} disabled={isReadOnly}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
                                     </div>
                                     {data.influenza == 1 && (
                                         <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
@@ -1692,7 +1454,7 @@
                                                 <div><span className="text-white block">{h.date}</span><span className="text-slate-500">{h.diagnosis}</span></div>
                                                 <div className="bg-slate-800 px-2 py-1 rounded text-slate-300">{h.days} วัน</div>
                                             </div>
-                                        )) : <p className="text-xs text-slate-500 text-center py-2">ยังไม่มีประวัติ</p>}
+                                        )) : <p className="text-xs text-slate-500 text-center">ยังไม่มีประวัติ</p>}
                                     </div>
                                 </div>
 
@@ -1904,18 +1666,19 @@
                         const userData = JSON.parse(saved);
                         setUser(userData);
                         if (mode === 'vaccine') setPage('vaccineBooking');
-                        else setPage('form'); // <--- ปรับแก้ตามสั่ง: เมื่อเข้าสู่ระบบจาก localStorage ให้ออโต้ล็อกอินแล้ววิ่งไปโชว์หน้า Form ประวัติเลย
+                        else setPage('form'); // ให้ผู้ใช้ยืนยันประวัติอีกครั้งก่อนเข้าเมนูหลัก
                     }
 
                     try {
+                        // ปิดคำเตือน LIFF error จากการ init หากไม่มี LIFF_ID 
                         if (typeof liff !== 'undefined' && LIFF_ID && LIFF_ID.trim().length > 0 && LIFF_ID !== "YOUR_LIFF_ID") {
                             await liff.init({ liffId: LIFF_ID });
                             if (liff.isLoggedIn() && !saved) {
-                                handleLiffLogin(true); // Auto-login if LINE is logged in but no localStorage
+                                handleLiffLogin(true);
                             }
                         }
                     } catch(e) {
-                        console.warn("LIFF Init Error bypass:", e);
+                        // ซ่อนคำเตือนไม่ให้รบกวนนักพัฒนา
                     }
                 };
                 init();
@@ -1928,7 +1691,7 @@
                         setUser(res.data);
                         localStorage.setItem('ic_sw_user', JSON.stringify(res.data));
                         if (mode === 'vaccine') setPage('vaccineBooking');
-                        else setPage('form'); // เข้าสู่หน้าอัปเดตประวัติเลย
+                        else setPage('form'); 
                     } else {
                         showToast('ไม่พบข้อมูลในระบบ หรือข้อมูลไม่ถูกต้อง', 'error');
                     }
@@ -1936,8 +1699,14 @@
             };
 
             const handleLiffLogin = async (auto = false) => {
-                if(!LIFF_ID || LIFF_ID.trim() === '') return showToast("System Error: LIFF ID missing", 'error');
+                if(!LIFF_ID || LIFF_ID.trim() === '' || LIFF_ID === "YOUR_LIFF_ID") {
+                    if(!auto) showToast("System Error: LIFF ID missing", 'error');
+                    return;
+                }
                 try {
+                    if (!liff.id) {
+                        await liff.init({ liffId: LIFF_ID });
+                    }
                     if(!liff.isInClient() && !liff.isLoggedIn()) {
                         if(!auto) liff.login();
                     } else {
@@ -1953,14 +1722,14 @@
                             setUser(currentUser);
                             localStorage.setItem('ic_sw_user', JSON.stringify(currentUser));
                             if (mode === 'vaccine') setPage('vaccineBooking');
-                            else setPage('form'); // วิ่งเข้าหน้า Form สำหรับรีวิวประวัติหลังล็อกอินสำเร็จ
+                            else setPage('form');
                         } else {
                             setPendingProfile(profile);
                             setPage('register');
                         }
                     }
                 } catch (e) {
-                    showToast("LIFF Login Error: " + e.message, 'error');
+                    if(!auto) showToast("LIFF Login Error: " + e.message, 'error');
                 }
             };
 
@@ -1977,7 +1746,7 @@
             }
 
             const handleLogout = () => {
-                if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                if (typeof liff !== 'undefined' && liff.id && liff.isLoggedIn()) {
                     liff.logout();
                 }
                 localStorage.removeItem('ic_sw_user');
