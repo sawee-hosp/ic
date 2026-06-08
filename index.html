@@ -49,7 +49,7 @@
         const { useState, useEffect, useRef, useMemo } = React;
 
         // =========================================================================
-        // --- 1. CORE UTILS AND HOOK-LEVEL ELEMENTS (MUST BE DECLARED FIRST!) ---
+        // --- 1. CORE UTILS AND HOOK-LEVEL ELEMENTS ---
         // =========================================================================
         const callGAS = async (action, payload = {}) => {
             try {
@@ -297,9 +297,51 @@
             );
         };
 
-        // =========================================================
-        // --- 3. SEPARATE PAGE SCREENS (FIXED DUPLICATE BUGS) ---
-        // =========================================================
+        // ==========================================
+        // --- 3. THE PAGE ROUTER VIEWS COMPONENTS ---
+        // ==========================================
+
+        const LoginPage = ({ onLogin, onLiff }) => {
+            const [c, setC] = useState({ loginname: '', HN: '', cid: '' });
+            const isValid = useMemo(() => {
+                let count = 0;
+                if(c.loginname.trim()) count++; if(c.HN.trim()) count++; if(c.cid.trim()) count++;
+                return (count >= 2) || (c.cid.trim().length === 13);
+            }, [c]);
+
+            const attemptLogin = () => {
+                if(!isValid) return alert("กรุณากรอกข้อมูลตามเงื่อนไข");
+                const cleanCriteria = { ...c, cid: c.cid.replace(/[^0-9]/g, '') };
+                onLogin(cleanCriteria);
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 fade-in relative overflow-hidden">
+                    <div className="w-full max-w-sm text-center z-10">
+                        <div className="mb-6 relative inline-block">
+                            <div className="absolute inset-0 bg-indigo-500 blur-[40px] opacity-20 rounded-full"></div>
+                            <img src={LOGO_URL} className="w-28 h-28 mx-auto relative z-10 drop-shadow-2xl" />
+                        </div>
+                        <h1 className="text-xl font-bold text-white mb-1 relative z-10">IC SW-1 Digital Health</h1>
+                        <h2 className="text-lg text-indigo-300 font-medium mb-2 tracking-wide">Digital Health Book</h2>
+                        <p className="text-[11px] text-slate-400 mb-8 font-light leading-relaxed opacity-80">สมุดบันทึกสุขภาพบุคลากร<br/>งานป้องกันและควบคุมการติดเชื้อในโรงพยาบาลสวี</p>
+
+                        <div className="glass-panel p-6 rounded-2xl space-y-4 text-left border-t border-white/10">
+                            <label className="text-xs text-indigo-200 block text-center font-medium bg-indigo-500/10 py-2 rounded border border-indigo-500/20">กรุณากรอกข้อมูลยืนยันตัวตนอย่างน้อย 2 ช่อง</label>
+                            <div className="space-y-2">
+                                <input className="glass-input text-center" placeholder="HosXP Login Name" value={c.loginname} onChange={e=>setC({...c, loginname:e.target.value})} />
+                                <input className="glass-input text-center" placeholder="รหัส HN" value={c.HN} onChange={e=>setC({...c, HN:e.target.value})} />
+                                <input className="glass-input text-center" placeholder="เลขบัตรประชาชน (CID)" maxLength="13" value={c.cid} onChange={e=>setC({...c, cid:e.target.value})} />
+                            </div>
+                            <button onClick={attemptLogin} disabled={!isValid} className={`btn-primary mt-2 shadow-lg shadow-indigo-500/30 w-full transition-all ${!isValid ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>เข้าสู่ระบบ</button>
+                        </div>
+                        <div className="mt-8 space-y-3 pt-6 border-t border-slate-700/50">
+                            <button onClick={onLiff} className="w-full py-3 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20">เข้าสู่ระบบด้วย LINE</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
         const RegistrationPage = ({ pendingProfile, codebook, onSubmit, onCancel }) => {
             const [data, setData] = useState({ 
@@ -496,7 +538,6 @@
                                     <div className="text-5xl font-bold text-white mb-2">{stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total}</span></div>
                                     <div className="mt-6">
                                         <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                                            {/* FIXED: Added Optional Chaining safeguards against Undefined Exception */}
                                             <span>รพ.สวี ({stats?.hospCount?.['รพ.สวี'] || 0})</span>
                                             <span>เครือข่าย ({stats?.hospCount?.['เครือข่าย'] || 0})</span>
                                         </div>
@@ -742,15 +783,6 @@
 
             const handleChange = (f, v) => setData(p => ({...p, [f]: v}));
             
-            const toggleChronic = (disease) => {
-                if(isReadOnly) return;
-                setData(p => {
-                    const arr = p.chronic_array || [];
-                    const newArr = arr.includes(disease) ? arr.filter(d => d !== disease) : [...arr, disease];
-                    return { ...p, chronic_array: newArr };
-                });
-            };
-
             const handleSave = async () => {
                 if(isReadOnly || noDataPastYear) return;
                 setLoading(true);
@@ -892,8 +924,6 @@
 
                         {!loading && !noDataPastYear && (
                             <div className={`space-y-5 ${isReadOnly ? 'opacity-90' : ''}`}>
-                                {isReadOnly && <div className="text-center text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded-lg border border-yellow-500/30">คุณกำลังดูประวัติย้อนหลัง (ไม่สามารถแก้ไขได้)</div>}
-                                
                                 <div className="mb-2"><label className="text-[10px] text-slate-400 block mb-1">วันที่ตรวจสุขภาพ</label><input type="date" className="glass-input w-full text-center" value={data.visit_date} onChange={e=>handleChange('visit_date',e.target.value)} disabled={isReadOnly} /></div>
 
                                 <Card title="1. สัญญาณชีพ & ร่างกาย">
@@ -986,7 +1016,7 @@
                                         <div><label className="text-[10px] text-slate-400 block mb-1">HBV (ไวรัสตับอักเสบบี)</label><Select val={data.hbv} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('hbv',v)} disabled={isReadOnly} /></div>
                                         <div><label className="text-[10px] text-slate-400 block mb-1">MMR (หัด-คางทูม)</label><Select val={data.mmr} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('mmr',v)} disabled={isReadOnly} /></div>
                                         <div><label className="text-[10px] text-slate-400 block mb-1">COVID-19</label><Select val={data.covid} options={[{code:1,label:'ได้รับแล้ว'},{code:2,label:'ยังไม่ได้รับ'}]} onChange={v=>handleChange('covid',v)} disabled={isReadOnly} /></div>
-                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)} disabled={isReadOnly}><option value="">- สถานะ -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
+                                        <div><label className="text-[10px] text-slate-400 block mb-1">ไข้หวัดใหญ่ {selYear}</label><select className="glass-input text-xs" value={data.influenza} onChange={e=>handleChange('influenza',e.target.value)} disabled={isReadOnly}><option value="">- Status -</option><option value="1">ได้รับแล้ว</option><option value="2">ยังไม่ได้รับ</option></select></div>
                                     </div>
                                     {data.influenza == 1 && (
                                         <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg mb-3">
@@ -1594,7 +1624,7 @@
                                     <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">จองแล้ว (รพ.สวี / เครือข่าย)</p>
                                     <div className="text-2xl font-bold text-white">
                                         {stats.total - stats.remaining} โดส
-                                        <span className="text-xs text-slate-400 block mt-1">({stats.hospCount['รพ.สวี'] || 0} / {stats.hospCount['เครือข่าย'] || 0})</span>
+                                        <span className="text-xs text-slate-400 block mt-1">({stats?.hospCount?.['รพ.สวี'] || 0} / {stats?.hospCount?.['เครือข่าย'] || 0})</span>
                                     </div>
                                 </div>
                             </div>
@@ -1708,7 +1738,7 @@
                                 <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-indigo-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] font-mono mb-2">
                                     {stats.remaining} <span className="text-base font-normal text-slate-500">/ {stats.total} โดส</span>
                                 </div>
-                                <p className="text-[11px] text-indigo-300 mt-2 bg-indigo-900/40 p-2 rounded-lg border border-indigo-500/20 font-medium inline-block">
+                                <p className="text-[11px] text-indigo-300 mt-2 bg-indigo-950/40 p-2 rounded-lg border border-indigo-500/20 font-medium inline-block">
                                     ช่วงเวลาบริการ: ตั้งแต่ 1 มิ.ย. 2569 - จนกว่าวัคซีนจะหมด
                                 </p>
                             </div>
@@ -1800,7 +1830,7 @@
                     }
 
                     try {
-                        // FIXED: Added check for LIFF_ID and empty string placeholder to avoid necesario warn
+                        // FIXED: Added check for liff existence to avoid necesario init warn
                         if (typeof liff !== 'undefined' && LIFF_ID && LIFF_ID.trim().length > 0 && LIFF_ID !== "YOUR_LIFF_ID") {
                             await liff.init({ liffId: LIFF_ID });
                             if (liff.isLoggedIn() && !saved) {
