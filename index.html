@@ -678,9 +678,21 @@
             const fetchDashboard = async () => {
                 setLoading(true);
                 try {
-                    const res = await callGAS('getVaccineDashboard', { hn: user.HN, year, userId: user.userId || user.userid });
+                    const currentUserId = String(user.userId || user.userid);
+                    const res = await callGAS('getVaccineDashboard', { hn: user.HN, year, userId: currentUserId });
                     setStats(res);
-                    setMyBookings(res.myBookings || []);
+                    
+                    // นำ userId ไปเทียบเพื่อดึงรายการทั้งหมดที่ user คนนี้เป็นคนกดจอง (Col J)
+                    let userBookings = [];
+                    if (res.allBookings && Array.isArray(res.allBookings)) {
+                        // ถ้า backend ส่ง allBookings มาให้ ให้กรองด้วย userId ที่หน้าบ้าน
+                        userBookings = res.allBookings.filter(b => String(b.userId) === currentUserId);
+                    } else if (res.myBookings && Array.isArray(res.myBookings)) {
+                        // ถ้า backend กรองมาให้แล้วใน myBookings
+                        userBookings = res.myBookings;
+                    }
+                    
+                    setMyBookings(userBookings);
                 } catch(e) { console.error(e); }
                 setLoading(false);
                 setShowOtherForm(false);
@@ -823,7 +835,7 @@
 
                                 {myBookings.length > 0 && (
                                     <div className="space-y-4 mb-6">
-                                        <h3 className="text-slate-400 text-xs font-bold uppercase border-b border-slate-700 pb-2">รายการจองวัคซีนทั้งหมดของคุณ</h3>
+                                        <h3 className="text-slate-400 text-xs font-bold uppercase border-b border-slate-700 pb-2">รายการจองวัคซีนทั้งหมดภายใต้บัญชีคุณ</h3>
                                         {myBookings.map((b, idx) => (
                                             <div key={idx} className={`p-4 rounded-xl shadow-lg relative overflow-hidden transition-all duration-500 border ${b.status === 'Received' ? 'bg-gradient-to-br from-green-900/40 to-slate-900 border-green-500/30' : 'bg-gradient-to-br from-indigo-900/40 to-slate-900 border-indigo-500/50'}`}>
                                                 <div className="flex justify-between items-start mb-2">
