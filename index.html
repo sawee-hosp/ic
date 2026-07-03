@@ -678,17 +678,27 @@
             const fetchDashboard = async () => {
                 setLoading(true);
                 try {
-                    const currentUserId = String(user.userId || user.userid);
-                    const res = await callGAS('getVaccineDashboard', { hn: user.HN, year, userId: currentUserId });
+                    const currentUserId = String(user.userId || user.userid || '').trim();
+                    const currentHN = String(user.HN || '').trim();
+                    const currentName = String(user.Name || '').trim();
+
+                    // ส่งข้อมูล hn และ userId ไปหา Backend 
+                    const res = await callGAS('getVaccineDashboard', { hn: currentHN, year, userId: currentUserId });
                     setStats(res);
                     
-                    // นำ userId ไปเทียบเพื่อดึงรายการทั้งหมดที่ user คนนี้เป็นคนกดจอง (Col J)
                     let userBookings = [];
                     if (res.allBookings && Array.isArray(res.allBookings)) {
-                        // ถ้า backend ส่ง allBookings มาให้ ให้กรองด้วย userId ที่หน้าบ้าน
-                        userBookings = res.allBookings.filter(b => String(b.userId) === currentUserId);
+                        // กรองจาก allBookings หาก Backend ส่งมาทั้งหมด
+                        userBookings = res.allBookings.filter(b => {
+                            // ตรวจสอบกับ Col J (userId) ที่ Backend ต้องส่งกลับมาเป็น b.userId ด้วย
+                            const matchUserId = currentUserId !== '' && b.userId && String(b.userId).trim() === currentUserId;
+                            const matchHN = currentHN !== '' && b.hn && String(b.hn).trim() === currentHN;
+                            const matchName = currentName !== '' && b.name && String(b.name).trim() === currentName;
+                            
+                            return matchUserId || matchHN || matchName;
+                        });
                     } else if (res.myBookings && Array.isArray(res.myBookings)) {
-                        // ถ้า backend กรองมาให้แล้วใน myBookings
+                        // ใช้ข้อมูลที่ Backend กรองมาให้
                         userBookings = res.myBookings;
                     }
                     
