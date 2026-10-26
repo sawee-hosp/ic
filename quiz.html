@@ -359,6 +359,12 @@ table.data th{color:var(--muted);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
+(() => {
+'use strict';
+/* กันโค้ดทำงานซ้ำ หากสคริปต์ถูกโหลด 2 รอบ */
+if (window.__IC_ELEARNING_LOADED__) return;
+window.__IC_ELEARNING_LOADED__ = true;
+
 /* ================= CONFIG ================= */
 const API_URL = 'https://script.google.com/macros/s/AKfycbwnC68RulLn9VmUthq1T73sboVSBUPGhU-hsXan2kvvY0rFedz7hm4GX-Ywr9r24p3_/exec';
 const LETTERS = ['ก','ข','ค','ง','จ'];
@@ -415,7 +421,7 @@ const MODULES = [
 ];
 
 /* ================= HELPERS ================= */
-const S = { token:null, user:null, cfg:null, quiz:null, result:null, charts:{}, view:'', hist:[] };
+const S = { token:null, user:null, cfg:null, quiz:null, result:null, charts:{}, view:'', hist:[], timer:null, adminRows:[] };
 const $ = s => document.querySelector(s);
 const $ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -633,7 +639,7 @@ async function loadHistory(){
 
 /* ================= ADMIN ================= */
 function drawChart(id,type,labels,datasets){
-  S.charts[id]?.destroy();
+  if(S.charts[id]) S.charts[id].destroy();
   Chart.defaults.color='#8aa0bf'; Chart.defaults.font.family='Prompt';
   S.charts[id] = new Chart($('#chart-'+id),{ type,
     data:{ labels, datasets:datasets.map((d,i)=>({ ...d, backgroundColor:PALETTE[i]+(type==='radar'?'33':'cc'), borderColor:PALETTE[i], borderWidth:2, borderRadius:8, pointBackgroundColor:PALETTE[i] })) },
@@ -703,7 +709,7 @@ function bindEvents(){
   $('#modalClose').onclick=closeModal; $('#modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
   $('#linkVerify').onclick=e=>{ e.preventDefault(); show('verify'); };
   $('#formVerify').onsubmit=e=>{ e.preventDefault(); doVerify(); };
-  $('#btnVerifyBack').onclick=()=>{ history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
+  $('#btnVerifyBack').onclick=()=>{ window.history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
   $('#wardFilter').onchange=loadAdmin; $('#btnRefresh').onclick=loadAdmin; $('#btnCSV').onclick=exportCSV;
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape') closeModal();
@@ -728,6 +734,7 @@ async function init(){
   S.user ? enterApp() : show('auth');
 }
 init();
+})();
 </script>
 </body>
 </html>
