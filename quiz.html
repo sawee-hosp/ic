@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IC e-Learning | Infection Control Competency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050b18;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--txt:#e6f1ff;--muted:#8aa0bf;
+--c1:#22d3ee;--c2:#a78bfa;--c3:#34d399;--bad:#fb7185;--gold:#fbbf24;--r:20px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Prompt',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+.hidden{display:none!important}
+main{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+
+/* animated background */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:float 18s ease-in-out infinite}
+.b1{width:520px;height:520px;background:#0891b2;top:-140px;left:-120px}
+.b2{width:460px;height:460px;background:#7c3aed;bottom:-160px;right:-100px;animation-delay:-6s}
+.b3{width:340px;height:340px;background:#059669;top:40%;left:45%;animation-delay:-12s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,50px) scale(.95)}}
+.grid{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+background-size:48px 48px;-webkit-mask-image:radial-gradient(circle at 50% 30%,#000,transparent 70%);mask-image:radial-gradient(circle at 50% 30%,#000,transparent 70%);opacity:.3}
+
+/* base */
+.glass{background:var(--card);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:var(--r);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.card{padding:24px}
+.view{animation:viewIn .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.grad{background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.muted{color:var(--muted)}.small{font-size:.85rem}
+h1{font-size:clamp(2rem,4vw,3.2rem);line-height:1.25;margin:14px 0}
+h2{font-size:1.6rem}h3{font-size:1.15rem;margin:28px 0 12px}h4{margin-bottom:10px}
+
+/* buttons */
+.btn{font-family:inherit;border:0;border-radius:14px;padding:12px 20px;font-size:1rem;cursor:pointer;color:var(--txt);transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--c1),var(--c2));color:#06101f;font-weight:600;box-shadow:0 8px 24px rgba(34,211,238,.3)}
+.btn.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.55),transparent 70%);transform:translateX(-100%);transition:transform .6s}
+.btn.primary:hover::after{transform:translateX(100%)}
+.btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line)}
+.btn.gold{background:linear-gradient(135deg,#fde68a,#f59e0b);color:#3a2500;font-weight:600}
+.btn.lg{padding:16px 28px;font-size:1.1rem}.btn.sm{padding:6px 12px;font-size:.85rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.w100{width:100%}
+.icon-btn{background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:12px;cursor:pointer}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;background:rgba(5,11,24,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:10px;align-items:center}.brand small{display:block;color:var(--muted);font-size:.75rem}
+.logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c2));color:#06101f}
+nav{display:flex;gap:6px}
+.nav-btn{background:none;border:0;color:var(--muted);font-family:inherit;font-size:.95rem;padding:8px 14px;border-radius:10px;cursor:pointer;transition:.2s}
+.nav-btn:hover,.nav-btn.active{color:var(--txt);background:rgba(255,255,255,.08)}
+.user{display:flex;align-items:center;gap:10px}.uinfo small{display:block;color:var(--muted);font-size:.75rem}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--c3),var(--c1));color:#06101f;font-weight:700}
+
+/* auth */
+.auth-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;min-height:calc(100vh - 80px)}
+.pill{display:inline-block;padding:6px 14px;border-radius:99px;border:1px solid var(--line);background:rgba(34,211,238,.1);color:var(--c1);font-size:.85rem}
+.feat{list-style:none;margin-top:24px;display:grid;gap:10px}
+.feat li{padding:12px 16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);animation:viewIn .6s backwards}
+.feat li:nth-child(2){animation-delay:.12s}.feat li:nth-child(3){animation-delay:.24s}
+.tabs{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.05);border-radius:14px;padding:4px;margin-bottom:20px}
+.tab{position:relative;z-index:1;background:none;border:0;color:var(--muted);font-family:inherit;font-size:1rem;padding:10px;cursor:pointer;transition:color .3s}
+.tab.active{color:#06101f;font-weight:600}
+.tab-ink{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:10px;background:linear-gradient(135deg,var(--c1),var(--c2));transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.tabs.reg .tab-ink{transform:translateX(100%)}
+.form{display:grid;gap:14px;margin-bottom:16px}
+label{display:grid;gap:6px;font-size:.9rem;color:var(--muted)}
+input,select{font-family:inherit;font-size:1rem;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--txt);outline:none;transition:border .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--c1);box-shadow:0 0 0 4px rgba(34,211,238,.15)}
+select option{background:#0b1426}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* rings */
+.hero-row{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
+.ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}.ring-wrap.big{width:180px;height:180px}
+.ring{width:100%;height:100%;transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:10}
+.ring-bg{stroke:rgba(255,255,255,.08)}
+.ring-fg{stroke:var(--c1);stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 6px currentColor)}
+.ring-text{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring-text b{font-size:1.6rem}.big .ring-text b{font-size:2.4rem}.ring-text small{color:var(--muted);font-size:.8rem}
+
+/* modules */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.module{cursor:pointer;padding:22px;position:relative;overflow:hidden;transition:transform .3s,border-color .3s;animation:viewIn .5s backwards}
+.module:hover{transform:translateY(-6px) scale(1.02);border-color:var(--mc)}
+.module::before{content:'';position:absolute;width:160px;height:160px;border-radius:50%;background:var(--mc);filter:blur(60px);opacity:.25;top:-60px;right:-60px;transition:opacity .3s}
+.module:hover::before{opacity:.55}
+.module .ic{font-size:2.2rem}.module h4{margin:12px 0 4px;font-size:1rem}.module p{font-size:.85rem;color:var(--muted)}
+.badge{position:absolute;top:14px;right:14px;font-size:.72rem;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.08)}
+.badge.done{background:rgba(52,211,153,.2);color:var(--c3)}
+.cta{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:24px;flex-wrap:wrap}
+
+/* modal & lesson */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:20px;animation:fade .3s}
+@keyframes fade{from{opacity:0}}
+.modal-card{width:min(880px,100%);max-height:90vh;overflow:auto;padding:28px;position:relative;background:rgba(12,22,42,.92);animation:pop .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{opacity:0;transform:scale(.92) translateY(20px)}}
+.close{position:absolute;top:16px;right:16px}
+.lesson h4{margin:20px 0 8px;color:var(--c1)}
+.lesson ul,.lesson ol{padding-left:22px;display:grid;gap:6px;line-height:1.7;font-family:'Sarabun',sans-serif;font-size:1.02rem}
+.lesson table{width:100%;border-collapse:collapse;margin:6px 0;font-family:'Sarabun',sans-serif}
+.lesson td,.lesson th{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.lesson th{background:rgba(34,211,238,.08)}
+.tip{margin-top:14px;padding:12px 16px;border-left:4px solid var(--gold);background:rgba(251,191,36,.08);border-radius:10px;font-family:'Sarabun',sans-serif}
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.video{aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000}
+.video iframe{width:100%;height:100%;border:0}
+.video.empty{display:grid;place-items:center;color:var(--muted);font-size:.85rem;text-align:center;padding:10px}
+
+/* quiz */
+.quiz-top{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.progress{flex:1;height:10px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+#qBar{height:100%;width:0;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:99px;transition:width .4s;position:relative;overflow:hidden}
+#qBar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:shimmer 1.6s infinite}
+@keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.timer{font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.06)}
+.qcard{padding:32px;min-height:340px}
+.qcard.anim{animation:slideIn .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}}
+.qcat{font-size:.8rem;color:var(--c1);letter-spacing:.4px}
+.qtext{font-size:1.25rem;line-height:1.7;margin:10px 0 22px;font-family:'Sarabun',sans-serif;font-weight:600}
+.choice{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;font-family:'Sarabun',sans-serif;font-size:1.05rem;line-height:1.6;padding:14px 16px;margin-bottom:10px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--txt);cursor:pointer;transition:.2s}
+.choice:hover{border-color:var(--c1);background:rgba(34,211,238,.06);transform:translateX(4px)}
+.choice .lt{flex-shrink:0;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-family:'Prompt';font-weight:600;transition:.2s}
+.choice.sel{border-color:var(--c1);background:rgba(34,211,238,.12);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+.choice.sel .lt{background:var(--c1);color:#06101f;transform:scale(1.1)}
+.quiz-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px}
+.dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.dot{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);font-size:.75rem;cursor:pointer;font-family:inherit;transition:.2s}
+.dot.ans{background:rgba(34,211,238,.2);color:var(--txt)}.dot.cur{outline:2px solid var(--c2)}
+
+/* result */
+.result-hero{display:flex;gap:32px;align-items:center;flex-wrap:wrap}
+.cat-break{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:20px}
+.cat-item{padding:16px}
+.mini-bar{height:6px;background:rgba(255,255,255,.08);border-radius:9px;margin-top:8px;overflow:hidden}
+.mini-bar i{display:block;height:100%;border-radius:9px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.review-item{padding:20px;margin-bottom:12px;border-left:4px solid var(--c3);animation:viewIn .5s backwards}
+.review-item.wrong{border-left-color:var(--bad)}
+.opt{padding:8px 12px;border-radius:10px;margin:4px 0;font-family:'Sarabun',sans-serif}
+.opt.right{background:rgba(52,211,153,.15);color:#a7f3d0}.opt.picked{background:rgba(251,113,133,.15);color:#fecdd3}
+.explain{margin-top:10px;padding:12px 14px;border-radius:12px;background:rgba(167,139,250,.1);font-family:'Sarabun',sans-serif;line-height:1.6}
+
+/* tables & admin */
+.table-wrap{overflow:auto;padding:8px}
+table.data{width:100%;border-collapse:collapse;font-size:.92rem}
+table.data th,table.data td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.data th{color:var(--muted);font-weight:500}
+.tag{padding:3px 10px;border-radius:99px;font-size:.8rem}
+.tag.ok{background:rgba(52,211,153,.18);color:var(--c3)}.tag.no{background:rgba(251,113,133,.18);color:var(--bad)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:18px 0}
+.stat{padding:20px}.stat small{color:var(--muted)}.stat b{display:block;font-size:1.8rem;margin-top:6px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-box{position:relative;height:300px}
+
+/* verify */
+.verify-wrap{max-width:640px;margin:40px auto}
+.verify-form{display:flex;gap:10px;margin:16px 0}.verify-form input{flex:1}
+.vres{padding:22px;border-left:4px solid var(--c3);line-height:1.8}.vres.no{border-left-color:var(--bad)}
+
+/* loader & toast */
+.loader{position:fixed;inset:0;z-index:100;display:grid;place-content:center;justify-items:center;gap:14px;background:rgba(5,11,24,.75);backdrop-filter:blur(6px)}
+.spinner{width:56px;height:56px;border-radius:50%;border:4px solid rgba(255,255,255,.1);border-top-color:var(--c1);border-right-color:var(--c2);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,140px);z-index:110;padding:14px 22px;border-radius:14px;background:#0f1b33;border:1px solid var(--c1);box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .4s cubic-bezier(.2,.8,.2,1);max-width:90vw}
+.toast.show{transform:translate(-50%,0)}.toast.err{border-color:var(--bad)}
+
+/* certificate (A4 landscape 1123x794) */
+.cert-wrap{position:fixed;left:-10000px;top:0;z-index:90}
+.cert{width:1123px;height:794px;background:#fffdf7;color:#1e293b;padding:24px;font-family:'Sarabun',sans-serif}
+.cert-border{height:100%;border:6px solid #0e7490;padding:8px}
+.cert-inner{position:relative;height:100%;border:2px solid #c9a227;display:flex;flex-direction:column;align-items:center;text-align:center;padding:36px 70px 0;background:linear-gradient(180deg,#ecfeff 0%,#fffdf7 45%)}
+.cert-org{font-family:'Prompt';font-size:22px;color:#0e7490;font-weight:600}
+.cert-title{font-family:'Prompt';font-size:54px;font-weight:700;color:#b8860b;line-height:1.3}
+.cert-sub{letter-spacing:6px;text-transform:uppercase;color:#64748b;font-size:14px;margin-bottom:14px}
+.cert-name{font-family:'Prompt';font-size:40px;font-weight:600;color:#0f172a;border-bottom:2px solid #c9a227;padding:0 40px 4px;margin:6px 0}
+.cert p{font-size:19px;line-height:1.7}
+.cert-seal{position:absolute;top:30px;right:50px;width:104px;height:104px;border-radius:50%;background:radial-gradient(#fde68a,#d97706);display:grid;place-items:center;color:#7c2d12;font-family:'Prompt';font-weight:700;font-size:15px;line-height:1.2;border:4px dashed #fff}
+.cert-foot{position:absolute;left:44px;right:44px;bottom:28px;display:flex;justify-content:space-between;align-items:flex-end}
+.cert .qr{background:#fff;padding:6px;border:1px solid #e2e8f0}
+.sign{text-align:center;font-size:16px}.sign .line{width:280px;border-top:1px solid #334155;margin:0 auto 6px}.sign small{display:block;color:#475569}
+.cid{text-align:right;font-size:13px;color:#475569;line-height:1.6}.cid b{font-size:16px;color:#0f172a}
+
+@media(max-width:860px){
+  .auth-wrap{grid-template-columns:1fr;gap:24px;min-height:auto;padding-top:12px}
+  .charts{grid-template-columns:1fr}.row2{grid-template-columns:1fr}
+  .topbar{flex-wrap:wrap;padding:10px 14px}.uinfo{display:none}nav{order:3;width:100%;justify-content:center}
+  .hero-row{flex-direction:column;align-items:flex-start}.qcard{padding:22px}.quiz-nav .dots{display:none}
+}
+</style>
+</head>
+<body>
+<div class="bg"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><div class="grid"></div></div>
+<div id="loader" class="loader hidden"><div class="spinner"></div><p>กำลังโหลด...</p></div>
+<div id="toast" class="toast"></div>
+
+<header id="topbar" class="topbar hidden">
+  <div class="brand"><div class="logo">IC</div><div><b>IC e-Learning</b><small id="orgName"></small></div></div>
+  <nav>
+    <button data-nav="home" class="nav-btn">หน้าหลัก</button>
+    <button data-nav="history" class="nav-btn">ประวัติ</button>
+    <button data-nav="admin" class="nav-btn admin-only hidden">Dashboard</button>
+  </nav>
+  <div class="user"><div class="avatar" id="avatar"></div><div class="uinfo"><b id="uName"></b><small id="uWard"></small></div>
+    <button id="btnLogout" class="icon-btn" title="ออกจากระบบ">⏻</button></div>
+</header>
+
+<main>
+<!-- AUTH -->
+<section id="view-auth" class="view hidden">
+  <div class="auth-wrap">
+    <div>
+      <div class="pill">Infection Control Competency</div>
+      <h1>เรียนรู้ • ประเมิน •<br><span class="grad">รับประกาศนียบัตร</span></h1>
+      <p class="muted">ระบบ e-Learning &amp; Micro-Assessment สมรรถนะการป้องกันและควบคุมการติดเชื้อสำหรับพยาบาลวิชาชีพ</p>
+      <ul class="feat"><li>📚 Micro-learning 5 หมวดความรู้หลัก IC</li><li>⚡ เฉลยพร้อมเหตุผลทันที (Instant Feedback)</li><li>🏅 ประกาศนียบัตร PDF พร้อม QR ตรวจสอบ</li></ul>
+    </div>
+    <div class="card glass auth-card">
+      <div class="tabs"><span class="tab-ink"></span><button class="tab active" data-tab="login">เข้าสู่ระบบ</button><button class="tab" data-tab="register">ลงทะเบียน</button></div>
+      <form id="formLogin" class="form">
+        <label>ชื่อผู้ใช้<input name="username" required autocomplete="username"></label>
+        <label>รหัสผ่าน<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary w100">เข้าสู่ระบบ</button>
+      </form>
+      <form id="formRegister" class="form hidden">
+        <label>ชื่อ-นามสกุล<input name="fullName" required></label>
+        <div class="row2">
+          <label>ตำแหน่ง<input name="position" value="พยาบาลวิชาชีพ" required></label>
+          <label>หอผู้ป่วย<select name="ward" id="wardSelect" required></select></label>
+        </div>
+        <label>ชื่อผู้ใช้ (อังกฤษ/ตัวเลข ≥4 ตัว)<input name="username" pattern="[A-Za-z0-9_.]{4,}" required></label>
+        <label>รหัสผ่าน (≥6 ตัว)<input name="password" type="password" minlength="6" required></label>
+        <button class="btn primary w100">สร้างบัญชี</button>
+      </form>
+      <a href="#" id="linkVerify" class="muted small">🔎 ตรวจสอบประกาศนียบัตร</a>
+    </div>
+  </div>
+</section>
+
+<!-- HOME -->
+<section id="view-home" class="view hidden">
+  <div class="hero-row">
+    <div><h2>สวัสดี, <span id="hiName" class="grad"></span> 👋</h2><p class="muted">ทบทวนบทเรียนให้ครบ 5 หมวด แล้วเริ่มทำแบบทดสอบได้เลย</p></div>
+    <div class="ring-wrap"><svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="lessonRing"/></svg>
+      <div class="ring-text"><b id="lessonPct">0%</b><small>บทเรียน</small></div></div>
+  </div>
+  <div id="moduleGrid" class="module-grid"></div>
+  <div class="card glass cta">
+    <div><h3 style="margin:0 0 4px">📝 แบบทดสอบสมรรถนะ IC</h3><p class="muted" id="quizInfo"></p></div>
+    <button id="btnStart" class="btn primary lg">เริ่มทำแบบทดสอบ →</button>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section id="view-quiz" class="view hidden">
+  <div class="quiz-top">
+    <div>ข้อ <b id="qNo">1</b>/<span id="qTotal"></span></div>
+    <div class="progress"><div id="qBar"></div></div>
+    <div class="timer">⏱ <span id="qTimer">00:00</span></div>
+  </div>
+  <div id="qCard" class="card glass qcard"></div>
+  <div class="quiz-nav">
+    <button id="btnPrev" class="btn ghost">← ก่อนหน้า</button>
+    <div id="qDots" class="dots"></div>
+    <button id="btnNext" class="btn primary">ถัดไป →</button>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="view-result" class="view hidden">
+  <div class="card glass result-hero">
+    <div class="ring-wrap big"><svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="resultRing"/></svg>
+      <div class="ring-text"><b id="resPct">0%</b><small id="resScore"></small></div></div>
+    <div style="flex:1;min-width:260px">
+      <h2 id="resTitle"></h2><p id="resMsg" class="muted"></p>
+      <div class="btns">
+        <button id="btnCert" class="btn gold">🏅 ดาวน์โหลดประกาศนียบัตร</button>
+        <button id="btnRetry" class="btn ghost">↻ ทำใหม่</button>
+        <button data-nav="home" class="btn ghost">หน้าหลัก</button>
+      </div>
+    </div>
+  </div>
+  <div id="catBreak" class="cat-break"></div>
+  <h3>📖 เฉลยและเหตุผล (ข้อที่ตอบผิดแสดงก่อน)</h3>
+  <div id="review"></div>
+</section>
+
+<!-- HISTORY -->
+<section id="view-history" class="view hidden">
+  <h2>📜 ประวัติการประเมิน</h2><p class="muted">ดาวน์โหลดประกาศนียบัตรย้อนหลังได้จากรายการที่ผ่านเกณฑ์</p>
+  <div class="card glass table-wrap" style="margin-top:16px"><table class="data">
+    <thead><tr><th>วันที่</th><th>คะแนน</th><th>ร้อยละ</th><th>เวลา</th><th>ผล</th><th>ประกาศนียบัตร</th></tr></thead>
+    <tbody id="histBody"></tbody></table></div>
+</section>
+
+<!-- ADMIN -->
+<section id="view-admin" class="view hidden">
+  <div class="toolbar">
+    <div><h2>📊 IC Competency Dashboard</h2><p class="muted">ข้อมูล Real-time จาก Google Sheets</p></div>
+    <div class="btns" style="margin:0"><select id="wardFilter"><option value="">ทุกหอผู้ป่วย</option></select>
+      <button id="btnRefresh" class="btn ghost">↻ รีเฟรช</button><button id="btnCSV" class="btn ghost">⬇ CSV</button></div>
+  </div>
+  <div id="stats" class="stats"></div>
+  <div class="charts">
+    <div class="card glass"><h4>ภาพรวมรายหอผู้ป่วย</h4><div class="chart-box"><canvas id="chart-ward"></canvas></div></div>
+    <div class="card glass"><h4>ร้อยละตอบถูกรายหมวด</h4><div class="chart-box"><canvas id="chart-cat"></canvas></div></div>
+  </div>
+  <h3>🎯 ข้อที่ตอบผิดบ่อย — ใช้วางแผน Bedside Coaching</h3>
+  <div class="card glass table-wrap"><table class="data">
+    <thead><tr><th>#</th><th>คำถาม</th><th>หมวด</th><th>จำนวนครั้ง</th><th>% ตอบผิด</th></tr></thead><tbody id="missBody"></tbody></table></div>
+  <h3>🗂 ผลการประเมินล่าสุด</h3>
+  <div class="card glass table-wrap"><table class="data">
+    <thead><tr><th>วันที่</th><th>ชื่อ-สกุล</th><th>หอผู้ป่วย</th><th>คะแนน</th><th>ร้อยละ</th><th>ผล</th><th>เลขที่</th></tr></thead><tbody id="resBody"></tbody></table></div>
+</section>
+
+<!-- VERIFY -->
+<section id="view-verify" class="view hidden">
+  <div class="verify-wrap">
+    <h2>🔎 ตรวจสอบประกาศนียบัตร</h2>
+    <form id="formVerify" class="card glass verify-form"><input id="verifyInput" placeholder="เลขที่ เช่น IC2506-AB12CD"><button class="btn primary">ตรวจสอบ</button></form>
+    <div id="verifyResult"></div>
+    <button id="btnVerifyBack" class="btn ghost" style="margin-top:16px">← กลับ</button>
+  </div>
+</section>
+</main>
+
+<!-- MODAL -->
+<div id="modal" class="modal hidden"><div class="modal-card glass"><button class="icon-btn close" id="modalClose">✕</button><div id="modalBody"></div></div></div>
+
+<!-- CERTIFICATE TEMPLATE -->
+<div id="certWrap" class="cert-wrap"><div id="cert" class="cert"><div class="cert-border"><div class="cert-inner">
+  <div class="cert-seal">IC<br>PASSED</div>
+  <div class="cert-org" id="cOrg"></div>
+  <div class="cert-title">ประกาศนียบัตร</div>
+  <div class="cert-sub">Certificate of Competency</div>
+  <p>ขอมอบไว้เพื่อแสดงว่า</p>
+  <div class="cert-name" id="cName"></div>
+  <p id="cPos"></p>
+  <p>ได้ผ่านการเรียนรู้และประเมินสมรรถนะด้านการป้องกันและควบคุมการติดเชื้อในโรงพยาบาล<br>(IC Common Competency) ด้วยคะแนนร้อยละ <b id="cScore"></b></p>
+  <p>ให้ไว้ ณ วันที่ <span id="cDate"></span></p>
+  <div class="cert-foot">
+    <div class="qr" id="cQR"></div>
+    <div class="sign"><div class="line"></div><div id="cSigner"></div><small id="cSignerTitle"></small></div>
+    <div class="cid">เลขที่ประกาศนียบัตร<br><b id="cId"></b><br><small>สแกน QR เพื่อตรวจสอบ</small></div>
+  </div>
+</div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<script>
+(() => {
+'use strict';
+/* กันโค้ดทำงานซ้ำ หากสคริปต์ถูกโหลด 2 รอบ */
+if (window.__IC_ELEARNING_LOADED__) return;
+window.__IC_ELEARNING_LOADED__ = true;
+
+/* ================= CONFIG ================= */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwnC68RulLn9VmUthq1T73sboVSBUPGhU-hsXan2kvvY0rFedz7hm4GX-Ywr9r24p3_/exec';
+const LETTERS = ['ก','ข','ค','ง','จ'];
+const PALETTE = ['#22d3ee','#a78bfa','#34d399','#fbbf24'];
+
+/* ใส่ YouTube Video ID (ส่วนหลัง v= ในลิงก์) ใน youtubeId */
+const MODULES = [
+ { id:1, icon:'🧼', color:'#22d3ee', title:'Hand Hygiene & Standard Precautions', th:'สุขอนามัยของมือและมาตรการมาตรฐาน',
+   html:`<h4>5 Moments of Hand Hygiene (WHO)</h4>
+   <table><tr><th>จังหวะ</th><th>ตัวอย่างหน้างาน</th></tr>
+   <tr><td>1. ก่อนสัมผัสผู้ป่วย</td><td>ก่อนวัด V/S, ก่อนพยุงลุกนั่ง, ก่อนตรวจร่างกาย</td></tr>
+   <tr><td>2. ก่อนทำหัตถการสะอาด/ปลอดเชื้อ ⚡ (ตอบผิดบ่อย)</td><td>ก่อนทำแผล, ก่อนฉีดยา/เปิดข้อต่อ IV line, ก่อนใส่สายสวนปัสสาวะ, ก่อนดูดเสมหะ</td></tr>
+   <tr><td>3. หลังสัมผัสสารคัดหลั่ง</td><td>หลังเทถุงปัสสาวะ, หลังดูดเสมหะ, หลังทำแผล, หลังถอดถุงมือ</td></tr>
+   <tr><td>4. หลังสัมผัสผู้ป่วย</td><td>หลังวัด V/S, หลังเปลี่ยนเสื้อผ้าผู้ป่วย, หลังตรวจร่างกาย</td></tr>
+   <tr><td>5. หลังสัมผัสสิ่งแวดล้อมรอบตัวผู้ป่วย</td><td>หลังจับราวเตียง, ปรับเตียง, จับเสาน้ำเกลือ, ปุ่มเรียกพยาบาล (แม้ไม่ได้จับตัวผู้ป่วย)</td></tr></table>
+   <h4>ล้างมือ 7 ขั้นตอน (ขั้นละ 5 ครั้ง สลับทั้ง 2 ข้าง)</h4>
+   <ol><li>ฝ่ามือถูฝ่ามือ</li><li>ฝ่ามือถูหลังมือ และนิ้วถูซอกนิ้ว</li><li>ฝ่ามือถูฝ่ามือ และนิ้วถูซอกนิ้ว (ประสานนิ้ว)</li>
+   <li>หลังนิ้วมือถูฝ่ามือ (นิ้วล็อกกัน)</li><li>ถูนิ้วหัวแม่มือโดยรอบด้วยฝ่ามือ</li><li>ปลายนิ้วมือถูวนที่ฝ่ามือ</li><li>ถูรอบข้อมือ</li></ol>
+   <h4>Alcohol Hand Rub หรือ น้ำ + สบู่?</h4>
+   <ul><li>ใช้ Alcohol hand rub เป็นหลัก (20–30 วินาที)</li>
+   <li>ต้องใช้น้ำ + สบู่ (40–60 วินาที) เมื่อมือเปื้อนที่มองเห็นได้ หรือดูแลผู้ป่วย C. difficile เพราะแอลกอฮอล์ไม่ทำลายสปอร์</li></ul>
+   <h4>Standard Precautions</h4>
+   <ul><li>ถือว่าเลือด สารคัดหลั่ง เยื่อบุ และผิวหนังที่ไม่สมบูรณ์ของผู้ป่วยทุกรายมีโอกาสแพร่เชื้อ โดยไม่ต้องรอผลแล็บ</li>
+   <li>Cough etiquette: ไอจามใส่ทิชชูแล้วทิ้งทันทีและล้างมือ หรือไอใส่ข้อพับแขน</li></ul>`,
+   videos:[{title:'การล้างมืออย่างถูกวิธี 7 ขั้นตอน — กรมอนามัย',youtubeId:''},{title:'ล้างมือ 7 ขั้นตอน — กองโรคติดต่อทั่วไป กรมควบคุมโรค',youtubeId:''},{title:'7 Steps of Hand Hygiene — IC-TUH',youtubeId:''}] },
+ { id:2, icon:'😷', color:'#a78bfa', title:'PPE & Transmission-Based Precautions', th:'อุปกรณ์ป้องกันและการแยกผู้ป่วย',
+   html:`<h4>เลือกมาตรการตามการแพร่เชื้อ</h4>
+   <table><tr><th>ประเภท</th><th>ตัวอย่างโรค</th><th>มาตรการหลัก</th></tr>
+   <tr><td>Airborne</td><td>TB, หัด, อีสุกอีใส</td><td>ห้องความดันลบ + N95 (Fit/Seal check)</td></tr>
+   <tr><td>Droplet</td><td>Influenza, ไอกรน</td><td>Surgical mask ในระยะ 1–2 เมตร, ผู้ป่วยสวม mask เมื่อออกนอกห้อง (ทำ AGP ใช้ N95)</td></tr>
+   <tr><td>Contact</td><td>MRSA, CRE, VRE, C. difficile</td><td>Gown + ถุงมือ, แยกอุปกรณ์เฉพาะราย</td></tr></table>
+   <div class="tip">💡 งานที่เสี่ยงต่อการกระเด็น (ทำแผลใหญ่, Suction) ให้เพิ่ม Surgical mask + Face shield/Goggle เสมอ</div>
+   <h4>ลำดับการใส่ (Donning)</h4><ol><li>ล้างมือ</li><li>Gown/Coverall</li><li>Mask/N95</li><li>Goggles/Face shield</li><li>ถุงมือ (ดึงขอบทับปลายแขนเสื้อ)</li></ol>
+   <h4>ลำดับการถอด (Doffing) — ช่วงเสี่ยงปนเปื้อนที่สุด!</h4>
+   <ol><li>ถอดถุงมือ</li><li>ล้างมือ</li><li>ถอด Gown (ม้วนด้านนอกเข้าด้านใน)</li><li>ล้างมือ</li><li>ถอด Face shield/Goggles</li><li>ถอด Mask (จับที่สาย)</li><li>ล้างมือปิดท้าย</li></ol>`,
+   videos:[{title:'ขั้นตอนการใส่และถอด PPE แบบ Coverall — กองการพยาบาล',youtubeId:''},{title:'ขั้นตอนการใส่ PPE — Ramathibodi Channel',youtubeId:''},{title:'Airborne PPE set — Siriraj Channel',youtubeId:''}] },
+ { id:3, icon:'💉', color:'#34d399', title:'Aseptic Technique & Line Care', th:'เทคนิคปลอดเชื้อและการดูแลสายต่างๆ',
+   html:`<h4>Sterile Field</h4><ul><li>ทำความสะอาดจากบริเวณสะอาดมากไปสะอาดน้อย</li><li>ห้ามใช้น้ำยาฆ่าเชื้อที่เปิดทิ้งข้ามวันหรือไม่ได้ลงวันที่เปิด</li></ul>
+   <h4>CAUTI Bundle</h4><ul><li>ถุงปัสสาวะอยู่ต่ำกว่าระดับกระเพาะปัสสาวะเสมอ และห้ามแตะพื้น</li><li>คงระบบปิด (Closed drainage) ไม่ปลดข้อต่อโดยไม่จำเป็น</li><li>ประเมินทุกวันและถอดเมื่อหมดข้อบ่งชี้</li></ul>
+   <h4>CLABSI Bundle</h4><ul><li>เตรียมผิวด้วย 2% Chlorhexidine in 70% Alcohol และรอให้แห้งสนิท</li><li>Scrub the hub ด้วย 70% Alcohol อย่างน้อย 10–15 วินาที ก่อนฉีดยาทุกครั้ง</li><li>ประเมินแผลทุกเวร ไม่เปลี่ยนสายตามรอบเวลา และถอดเมื่อไม่จำเป็น</li></ul>`,
+   videos:[] },
+ { id:4, icon:'🚨', color:'#fb7185', title:'Safety & Waste Management', th:'อาชีวอนามัยและการจัดการขยะ',
+   html:`<h4>เมื่อถูกเข็มตำ (Needle-stick Injury)</h4><ol><li>ล้างด้วยน้ำสะอาดและสบู่ ให้น้ำไหลผ่านทันที <b>ห้ามบีบเค้นแผล</b></li><li>รายงานหัวหน้าเวร / IC ทันที</li><li>ประเมินผู้ป่วยต้นทาง ตรวจเลือด และพิจารณาให้ PEP โดยเร็ว (ภายใน 2 ชม. ดีที่สุด)</li><li>เขียนรายงานอุบัติการณ์</li></ol>
+   <h4>Sharps Safety</h4><ul><li>ห้ามสวมปลอกเข็มด้วยสองมือ ถ้าจำเป็นใช้ One-handed scoop</li><li>ทิ้งทันที ณ จุดใช้งาน และเปลี่ยนกล่องเมื่อเต็ม 3/4</li></ul>
+   <h4>ขยะติดเชื้อ (ถุงแดง)</h4><ul><li>เฉพาะขยะที่ปนเปื้อนเลือด/สารคัดหลั่ง เช่น ก๊อซชุ่มหนอง สาย Suction</li><li>ทิชชูเช็ดมือ ขวดน้ำเกลือที่ไม่ปนเปื้อน = ขยะทั่วไป/รีไซเคิล</li></ul>
+   <h4>Environmental Cleaning</h4><ul><li>เช็ด High-touch surfaces ด้วยน้ำยาฆ่าเชื้อตามมาตรฐานอย่างน้อยวันละ 1–2 ครั้ง หรือเมื่อสกปรก</li></ul>`,
+   videos:[] },
+ { id:5, icon:'🧫', color:'#fbbf24', title:'Bundle of Care & ASP', th:'แนวปฏิบัติแบบชุดและการใช้ยาต้านจุลชีพ',
+   html:`<h4>Bundle of Care</h4><ul><li>ชุดแนวปฏิบัติเชิงประจักษ์ 3–5 ข้อ ต้องทำ <b>ครบทุกข้อ (All-or-none)</b> จึงลดการติดเชื้อได้</li></ul>
+   <h4>HAP Bundle</h4><ul><li>Oral care อย่างน้อยวันละ 2 ครั้ง</li><li>ศีรษะสูง 30–45° ขณะให้อาหารและหลังอาหาร 1 ชม.</li><li>Early mobility — หลีกเลี่ยง Complete bed rest โดยไม่จำเป็น</li><li>Deep breathing &amp; Effective coughing</li></ul>
+   <h4>Antimicrobial Stewardship</h4><ul><li>เก็บ Culture ด้วยเทคนิคปลอดเชื้อ <b>ก่อน</b> ให้ยาปฏิชีวนะมื้อแรก</li><li>ให้ยาตรงเวลา ห้ามปรับขนาดยาเอง</li></ul>
+   <h4>เมื่อพบเชื้อดื้อยา (CRE/VRSA)</h4><ul><li>เริ่ม Contact Precautions ทันที ติดป้าย แยกห้อง/กั้นอาณาเขต และแจ้งทีม IC</li></ul>`,
+   videos:[] }
+];
+
+/* ================= HELPERS ================= */
+const S = { token:null, user:null, cfg:null, quiz:null, result:null, charts:{}, view:'', hist:[], timer:null, adminRows:[] };
+const $ = s => document.querySelector(s);
+const $ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const fmtDate = d => new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+const fmtTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+function loading(on, text='กำลังโหลด...'){ $('#loader').classList.toggle('hidden',!on); $('#loader p').textContent = text; }
+let toastT;
+function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',3500); }
+
+async function api(action, payload={}, silent=false){
+  if(!silent) loading(true);
+  try{
+    const r = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action, payload, token:S.token }) });
+    const j = await r.json();
+    if(!j.ok){
+      if(j.error==='SESSION_EXPIRED'){ logout(true); throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
+      throw new Error(j.error);
+    }
+    return j.data;
+  } finally { if(!silent) loading(false); }
+}
+
+function show(view){
+  S.view = view;
+  $('.view').forEach(v=>v.classList.add('hidden'));
+  const el = $('#view-'+view); el.classList.remove('hidden');
+  el.style.animation='none'; void el.offsetHeight; el.style.animation='';
+  $('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
+  $('#topbar').classList.toggle('hidden', !S.user);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function setRing(el, pct){ const C=326.7; setTimeout(()=>el.style.strokeDashoffset = C - C*pct/100, 60); }
+function countUp(el, to, suf=''){
+  const t0=performance.now(), d=1300;
+  const step=t=>{ const p=Math.min(1,(t-t0)/d); el.textContent=Math.round(to*(1-Math.pow(1-p,3)))+suf; if(p<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ================= AUTH ================= */
+function saveSession(d){ S.token=d.token; S.user=d.user; localStorage.setItem('ic_session', JSON.stringify(d)); }
+function logout(silent){
+  if(!silent && S.token) api('logout',{},true).catch(()=>{});
+  S.token=null; S.user=null; localStorage.removeItem('ic_session'); stopTimer(); show('auth');
+}
+function enterApp(){
+  const u=S.user;
+  $('#uName').textContent=u.fullName; $('#uWard').textContent=`${u.position} • ${u.ward}`;
+  $('#avatar').textContent=String(u.fullName).trim().charAt(0);
+  $('.admin-only').forEach(e=>e.classList.toggle('hidden', u.role!=='admin'));
+  renderHome(); show('home');
+}
+
+/* ================= HOME & LESSONS ================= */
+const readKey = () => 'ic_read_'+S.user.userId;
+const getRead = () => JSON.parse(localStorage.getItem(readKey())||'[]');
+
+function renderHome(){
+  $('#hiName').textContent = S.user.fullName;
+  const read = getRead();
+  $('#moduleGrid').innerHTML = MODULES.map((m,i)=>`
+    <div class="module glass" style="--mc:${m.color};animation-delay:${i*.08}s" data-mod="${m.id}">
+      <span class="badge ${read.includes(m.id)?'done':''}">${read.includes(m.id)?'✓ อ่านแล้ว':'ยังไม่อ่าน'}</span>
+      <div class="ic">${m.icon}</div><h4>${i+1}. ${m.title}</h4><p>${m.th}</p></div>`).join('');
+  $('.module').forEach(el=>el.onclick=()=>openModule(+el.dataset.mod));
+  const pct = Math.round(read.length/MODULES.length*100);
+  $('#lessonPct').textContent = pct+'%'; setRing($('#lessonRing'), pct);
+  const ready = read.length >= MODULES.length;
+  $('#btnStart').disabled = !ready;
+  $('#quizInfo').textContent = `${S.cfg.perTest} ข้อ (สุ่มลำดับ) • เกณฑ์ผ่าน ${S.cfg.passPercent}% • ` +
+    (ready ? 'พร้อมเริ่มทำแบบทดสอบแล้ว' : 'กรุณาอ่านบทเรียนให้ครบ 5 หมวดก่อน');
+}
+
+function openModule(id){
+  const m = MODULES.find(x=>x.id===id);
+  const vids = m.videos.map(v => v.youtubeId
+    ? `<div><div class="video"><iframe src="https://www.youtube.com/embed/${esc(v.youtubeId)}" loading="lazy" allowfullscreen></iframe></div><small class="muted">${esc(v.title)}</small></div>`
+    : `<div class="video empty">ยังไม่ได้ใส่ YouTube ID<br>${esc(v.title)}</div>`).join('');
+  $('#modalBody').innerHTML = `<div class="lesson"><div class="qcat">หมวดที่ ${m.id}</div><h2>${m.icon} ${m.title}</h2><p class="muted">${m.th}</p>
+    ${m.html}${m.videos.length?`<h4>🎥 วิดีโอประกอบ</h4><div class="video-grid">${vids}</div>`:''}
+    <button class="btn primary w100" id="btnRead" style="margin-top:24px">✓ ทำความเข้าใจแล้ว</button></div>`;
+  $('#modal').classList.remove('hidden');
+  $('#btnRead').onclick = () => {
+    const r = getRead(); if(!r.includes(id)){ r.push(id); localStorage.setItem(readKey(), JSON.stringify(r)); }
+    closeModal(); renderHome(); toast(`บันทึกการเรียนหมวด ${id} แล้ว ✓`);
+  };
+}
+function closeModal(){ $('#modal').classList.add('hidden'); $('#modalBody').innerHTML=''; }
+
+/* ================= QUIZ ================= */
+function startTimer(){ stopTimer(); S.timer=setInterval(()=>{ S.quiz.sec++; $('#qTimer').textContent=fmtTime(S.quiz.sec); },1000); }
+function stopTimer(){ clearInterval(S.timer); }
+
+async function startQuiz(){
+  try{
+    const d = await api('startQuiz');
+    S.quiz = { attemptId:d.attemptId, qs:d.questions.map(q=>({...q, choices:shuffle(q.choices)})), answers:{}, i:0, sec:0 };
+    $('#qTotal').textContent = S.quiz.qs.length; $('#qTimer').textContent='00:00';
+    show('quiz'); renderQ(); startTimer();
+  }catch(e){ toast(e.message,true); }
+}
+
+function renderQ(){
+  const { qs, i, answers } = S.quiz, q = qs[i], c = $('#qCard');
+  c.innerHTML = `<div class="qcat">${esc(q.category)}</div><div class="qtext">${i+1}. ${esc(q.question)}</div>` +
+    q.choices.map((ch,k)=>`<button class="choice ${answers[q.id]===ch.key?'sel':''}" data-key="${ch.key}"><span class="lt">${LETTERS[k]}</span><span>${esc(ch.text)}</span></button>`).join('');
+  c.classList.remove('anim'); void c.offsetWidth; c.classList.add('anim');
+  c.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    answers[q.id]=b.dataset.key;
+    c.querySelectorAll('.choice').forEach(x=>x.classList.toggle('sel', x===b));
+    updateNav(); renderDots();
+    const idx=i; if(idx<qs.length-1) setTimeout(()=>{ if(S.view==='quiz' && S.quiz.i===idx) go(1); },380);
+  });
+  $('#qNo').textContent=i+1; updateNav(); renderDots();
+}
+function updateNav(){
+  const { qs, i, answers } = S.quiz;
+  $('#qBar').style.width = (Object.keys(answers).length/qs.length*100)+'%';
+  $('#btnPrev').disabled = i===0;
+  $('#btnNext').textContent = i===qs.length-1 ? 'ส่งคำตอบ ✓' : 'ถัดไป →';
+}
+function renderDots(){
+  const { qs, i, answers } = S.quiz;
+  $('#qDots').innerHTML = qs.map((q,k)=>`<button class="dot ${answers[q.id]?'ans':''} ${k===i?'cur':''}" data-k="${k}">${k+1}</button>`).join('');
+  $('#qDots .dot').forEach(d=>d.onclick=()=>{ S.quiz.i=+d.dataset.k; renderQ(); });
+}
+function go(d){
+  const q=S.quiz;
+  if(d>0 && q.i===q.qs.length-1) return submitQuiz();
+  q.i=Math.max(0,Math.min(q.qs.length-1,q.i+d)); renderQ();
+}
+async function submitQuiz(){
+  const q=S.quiz, left=q.qs.length-Object.keys(q.answers).length;
+  if(!confirm(left ? `ยังไม่ได้ตอบ ${left} ข้อ ต้องการส่งคำตอบหรือไม่?` : 'ยืนยันการส่งคำตอบ?')) return;
+  stopTimer();
+  try{ S.result = await api('submitQuiz',{ attemptId:q.attemptId, answers:q.answers }); renderResult(); }
+  catch(e){ toast(e.message,true); if(S.view==='quiz') startTimer(); }
+}
+
+/* ================= RESULT ================= */
+function renderResult(){
+  const r=S.result, qmap=Object.fromEntries(S.quiz.qs.map(q=>[q.id,q]));
+  show('result');
+  countUp($('#resPct'), r.percent, '%');
+  $('#resScore').textContent = `${r.score}/${r.total} คะแนน`;
+  const ring=$('#resultRing'); ring.style.transition='none'; ring.style.strokeDashoffset=326.7; void ring.offsetWidth; ring.style.transition='';
+  ring.style.stroke = r.passed ? 'var(--c3)' : 'var(--bad)'; setRing(ring, r.percent);
+  $('#resTitle').innerHTML = r.passed ? '🎉 ยินดีด้วย! คุณผ่านการประเมิน' : '💪 ยังไม่ผ่านเกณฑ์ ลองอีกครั้งนะ';
+  $('#resMsg').textContent = r.passed
+    ? `เกณฑ์ผ่าน ${r.passPercent}% • เลขที่ประกาศนียบัตร ${r.certId} • ใช้เวลา ${fmtTime(r.durationSec)}`
+    : `เกณฑ์ผ่าน ${r.passPercent}% — ทบทวนเฉลยด้านล่าง แล้วกดทำใหม่ได้ทันที`;
+  $('#btnCert').classList.toggle('hidden', !r.passed);
+
+  const cats={}; r.feedback.forEach(f=>{ const c=cats[f.category]||(cats[f.category]={n:0,ok:0}); c.n++; if(f.correct) c.ok++; });
+  $('#catBreak').innerHTML = Object.entries(cats).map(([k,v])=>{ const p=Math.round(v.ok/v.n*100);
+    return `<div class="cat-item glass"><small class="muted">${esc(k)}</small><div><b>${v.ok}/${v.n}</b> (${p}%)</div>
+      <div class="mini-bar"><i data-w="${p}" style="background:${p>=80?'var(--c3)':p>=50?'var(--gold)':'var(--bad)'}"></i></div></div>`; }).join('');
+  setTimeout(()=>$('#catBreak i').forEach(i=>i.style.width=i.dataset.w+'%'),80);
+
+  const fb=[...r.feedback].sort((a,b)=>a.correct-b.correct);
+  $('#review').innerHTML = fb.map((f,idx)=>{ const q=qmap[f.id]; return `
+    <div class="review-item glass ${f.correct?'':'wrong'}" style="animation-delay:${Math.min(idx*.05,1)}s">
+      <div class="qcat">${f.correct?'✅ ตอบถูก':'❌ ตอบผิด'} • ${esc(f.category)}</div>
+      <div class="qtext" style="font-size:1.05rem;margin:8px 0">${esc(q.question)}</div>
+      ${q.choices.map((ch,k)=>{ const right=ch.key===f.answer, picked=ch.key===f.selected&&!f.correct;
+        return `<div class="opt ${right?'right':''} ${picked?'picked':''}">${LETTERS[k]}. ${esc(ch.text)}${right?' ✓':''}${picked?' ✗ (คำตอบของคุณ)':''}</div>`; }).join('')}
+      ${!f.selected?'<div class="opt picked">— ไม่ได้ตอบข้อนี้ —</div>':''}
+      <div class="explain">💡 <b>เหตุผล:</b> ${esc(f.explanation)}</div></div>`; }).join('');
+
+  if(r.passed && window.confetti){
+    confetti({particleCount:160,spread:90,origin:{y:.6}});
+    setTimeout(()=>confetti({particleCount:100,angle:60,spread:70,origin:{x:0}}),400);
+    setTimeout(()=>confetti({particleCount:100,angle:120,spread:70,origin:{x:1}}),700);
+  }
+}
+
+/* ================= CERTIFICATE ================= */
+async function downloadCert(d){
+  loading(true,'กำลังสร้างประกาศนียบัตร...');
+  const wrap=$('#certWrap');
+  try{
+    $('#cOrg').textContent=S.cfg.orgName; $('#cName').textContent=d.fullName;
+    $('#cPos').textContent=`ตำแหน่ง ${d.position} • ${d.ward}`; $('#cScore').textContent=d.percent;
+    $('#cDate').textContent=fmtDate(d.date); $('#cId').textContent=d.certId;
+    $('#cSigner').textContent=S.cfg.signerName; $('#cSignerTitle').textContent=S.cfg.signerTitle;
+    const qr=$('#cQR'); qr.innerHTML='';
+    new QRCode(qr,{ text:`${location.origin}${location.pathname}?verify=${d.certId}`, width:96, height:96, correctLevel:QRCode.CorrectLevel.M });
+    await document.fonts.ready; await new Promise(r=>setTimeout(r,350));
+    wrap.style.left='0';
+    const canvas = await html2canvas($('#cert'),{ scale:2, backgroundColor:'#ffffff', width:1123, height:794, windowWidth:1200 });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,297,210);
+    pdf.save(`IC-Certificate-${d.certId}.pdf`);
+    toast('ดาวน์โหลดประกาศนียบัตรแล้ว 🏅');
+  }catch(e){ toast('สร้างไฟล์ไม่สำเร็จ: '+e.message,true); }
+  finally{ wrap.style.left='-10000px'; loading(false); }
+}
+
+/* ================= HISTORY ================= */
+async function loadHistory(){
+  show('history');
+  try{
+    S.hist = await api('history');
+    $('#histBody').innerHTML = S.hist.length ? S.hist.map((r,i)=>`<tr>
+      <td>${fmtDate(r.submittedAt)} ${new Date(r.submittedAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${r.score}/${r.total}</td><td><b>${r.percent}%</b></td><td>${fmtTime(+r.durationSec||0)}</td>
+      <td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td>
+      <td>${r.certId?`<button class="btn gold sm" data-h="${i}">🏅 ${esc(r.certId)}</button>`:'-'}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="muted">ยังไม่มีประวัติการทำแบบทดสอบ</td></tr>';
+    $('[data-h]').forEach(b=>b.onclick=()=>{ const r=S.hist[+b.dataset.h]; downloadCert({...S.user, percent:r.percent, certId:r.certId, date:r.submittedAt}); });
+  }catch(e){ toast(e.message,true); }
+}
+
+/* ================= ADMIN ================= */
+function drawChart(id,type,labels,datasets){
+  if(S.charts[id]) S.charts[id].destroy();
+  Chart.defaults.color='#8aa0bf'; Chart.defaults.font.family='Prompt';
+  S.charts[id] = new Chart($('#chart-'+id),{ type,
+    data:{ labels, datasets:datasets.map((d,i)=>({ ...d, backgroundColor:PALETTE[i]+(type==='radar'?'33':'cc'), borderColor:PALETTE[i], borderWidth:2, borderRadius:8, pointBackgroundColor:PALETTE[i] })) },
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:1200,easing:'easeOutQuart'},
+      scales: type==='radar'
+        ? { r:{ min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,.1)'},angleLines:{color:'rgba(255,255,255,.1)'},pointLabels:{font:{size:11}} } }
+        : { y:{ min:0,max:100,grid:{color:'rgba(255,255,255,.06)'} }, x:{ grid:{display:false} } } } });
+}
+async function loadAdmin(){
+  show('admin');
+  const sel=$('#wardFilter');
+  if(sel.options.length<=1) sel.innerHTML='<option value="">ทุกหอผู้ป่วย</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  try{
+    const d = await api('adminStats',{ ward:sel.value }), s=d.summary;
+    $('#stats').innerHTML = [['👥 ผู้ใช้งาน',s.users],['📝 เข้าประเมิน',`${s.participants} (${s.participation}%)`],['🔁 จำนวนครั้ง',s.attempts],['🏅 อัตราผ่าน',s.passRate+'%'],['📊 คะแนนเฉลี่ย',s.avgPct+'%']]
+      .map(([k,v],i)=>`<div class="stat glass" style="animation:viewIn .5s ${i*.07}s backwards"><small>${k}</small><b>${v}</b></div>`).join('');
+    drawChart('ward','bar',d.byWard.map(w=>w.ward),[{label:'ร้อยละการเข้าประเมิน',data:d.byWard.map(w=>w.participation)},{label:'คะแนนเฉลี่ย (%)',data:d.byWard.map(w=>w.avgPct)}]);
+    drawChart('cat','radar',d.byCategory.map(c=>c.category),[{label:'ร้อยละตอบถูก',data:d.byCategory.map(c=>c.correctRate)}]);
+    $('#missBody').innerHTML = d.missed.slice(0,10).map((m,i)=>`<tr><td>${i+1}</td><td style="white-space:normal;min-width:320px">${esc(m.question)}</td><td>${esc(m.category)}</td><td>${m.attempts}</td><td><span class="tag ${m.missRate>=30?'no':'ok'}">${m.missRate}%</span></td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>';
+    S.adminRows = d.recent;
+    $('#resBody').innerHTML = d.recent.map(r=>`<tr><td>${fmtDate(r.submittedAt)}</td><td>${esc(r.fullName)}</td><td>${esc(r.ward)}</td><td>${r.score}/${r.total}</td><td>${r.percent}%</td><td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td><td>${esc(r.certId||'-')}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="muted">ยังไม่มีข้อมูล</td></tr>';
+  }catch(e){ toast(e.message,true); }
+}
+function exportCSV(){
+  const head=['วันที่','ชื่อ-สกุล','ตำแหน่ง','หอผู้ป่วย','คะแนน','เต็ม','ร้อยละ','ผล','เลขที่ประกาศนียบัตร'];
+  const rows=(S.adminRows||[]).map(r=>[new Date(r.submittedAt).toLocaleString('th-TH'),r.fullName,r.position,r.ward,r.score,r.total,r.percent,r.passed?'ผ่าน':'ไม่ผ่าน',r.certId]);
+  const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='IC-results.csv'; a.click();
+}
+
+/* ================= VERIFY ================= */
+async function doVerify(){
+  const id=$('#verifyInput').value.trim(); if(!id) return;
+  try{
+    const r=await api('verifyCert',{ certId:id });
+    $('#verifyResult').innerHTML = r.valid
+      ? `<div class="glass vres">✅ <b>ประกาศนียบัตรถูกต้อง</b><br>${esc(r.fullName)} • ${esc(r.position)} • ${esc(r.ward)}<br>คะแนน ${r.percent}% • ออกให้เมื่อ ${fmtDate(r.submittedAt)}<br><small class="muted">เลขที่ ${esc(r.certId)}</small></div>`
+      : `<div class="glass vres no">❌ ไม่พบประกาศนียบัตรเลขที่นี้ในระบบ</div>`;
+  }catch(e){ toast(e.message,true); }
+}
+
+/* ================= EVENTS & INIT ================= */
+function bindEvents(){
+  $('.tab').forEach(t=>t.onclick=()=>{
+    const reg=t.dataset.tab==='register';
+    $('.tab').forEach(x=>x.classList.toggle('active',x===t)); $('.tabs').classList.toggle('reg',reg);
+    $('#formLogin').classList.toggle('hidden',reg); $('#formRegister').classList.toggle('hidden',!reg);
+  });
+  $('#formLogin').onsubmit = async e => { e.preventDefault();
+    try{ const d=await api('login',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('ยินดีต้อนรับ '+d.user.fullName); enterApp(); }catch(err){ toast(err.message,true); } };
+  $('#formRegister').onsubmit = async e => { e.preventDefault();
+    try{ const d=await api('register',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('สร้างบัญชีสำเร็จ 🎉'); enterApp(); }catch(err){ toast(err.message,true); } };
+
+  $('[data-nav]').forEach(b=>b.onclick=()=>{
+    if(S.view==='quiz' && !confirm('ออกจากแบบทดสอบ? คำตอบที่ทำไว้จะไม่ถูกบันทึก')) return;
+    stopTimer();
+    const v=b.dataset.nav;
+    if(v==='home'){ renderHome(); show('home'); } else if(v==='history') loadHistory(); else if(v==='admin') loadAdmin();
+  });
+  $('#btnLogout').onclick=()=>{ if(confirm('ออกจากระบบ?')) logout(); };
+  $('#btnStart').onclick=startQuiz; $('#btnRetry').onclick=startQuiz;
+  $('#btnPrev').onclick=()=>go(-1); $('#btnNext').onclick=()=>go(1);
+  $('#btnCert').onclick=()=>downloadCert({...S.user, percent:S.result.percent, certId:S.result.certId, date:S.result.submittedAt});
+  $('#modalClose').onclick=closeModal; $('#modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
+  $('#linkVerify').onclick=e=>{ e.preventDefault(); show('verify'); };
+  $('#formVerify').onsubmit=e=>{ e.preventDefault(); doVerify(); };
+  $('#btnVerifyBack').onclick=()=>{ window.history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
+  $('#wardFilter').onchange=loadAdmin; $('#btnRefresh').onclick=loadAdmin; $('#btnCSV').onclick=exportCSV;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') closeModal();
+    if(S.view!=='quiz') return;
+    const n='1234'.indexOf(e.key); if(n>=0) $('#qCard .choice')[n]?.click();
+    if(e.key==='ArrowRight' && S.quiz.i<S.quiz.qs.length-1) go(1);
+    if(e.key==='ArrowLeft') go(-1);
+  });
+  window.addEventListener('beforeunload',e=>{ if(S.view==='quiz'){ e.preventDefault(); e.returnValue=''; } });
+}
+
+async function init(){
+  bindEvents();
+  const sess=JSON.parse(localStorage.getItem('ic_session')||'null');
+  if(sess){ S.token=sess.token; S.user=sess.user; }
+  try{ S.cfg=await api('config'); }
+  catch(e){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: '+e.message,true); S.cfg={orgName:'',passPercent:80,perTest:20,wards:[]}; }
+  $('#wardSelect').innerHTML='<option value="">-- เลือก --</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  $('#orgName').textContent=S.cfg.orgName;
+  const v=new URLSearchParams(location.search).get('verify');
+  if(v){ show('verify'); $('#verifyInput').value=v; doVerify(); return; }
+  S.user ? enterApp() : show('auth');
+}
+init();
+})();
+</script>
+</body>
+</html>
