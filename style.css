@@ -1,0 +1,369 @@
+/* ================= CONFIG ================= */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwnC68RulLn9VmUthq1T73sboVSBUPGhU-hsXan2kvvY0rFedz7hm4GX-Ywr9r24p3_/exec';
+const LETTERS = ['ก','ข','ค','ง','จ'];
+const PALETTE = ['#22d3ee','#a78bfa','#34d399','#fbbf24'];
+
+/* ใส่ YouTube Video ID (ส่วนหลัง v= ในลิงก์) ใน youtubeId */
+const MODULES = [
+ { id:1, icon:'🧼', color:'#22d3ee', title:'Hand Hygiene & Standard Precautions', th:'สุขอนามัยของมือและมาตรการมาตรฐาน',
+   html:`<h4>5 Moments of Hand Hygiene (WHO)</h4>
+   <table><tr><th>จังหวะ</th><th>ตัวอย่างหน้างาน</th></tr>
+   <tr><td>1. ก่อนสัมผัสผู้ป่วย</td><td>ก่อนวัด V/S, ก่อนพยุงลุกนั่ง, ก่อนตรวจร่างกาย</td></tr>
+   <tr><td>2. ก่อนทำหัตถการสะอาด/ปลอดเชื้อ ⚡ (ตอบผิดบ่อย)</td><td>ก่อนทำแผล, ก่อนฉีดยา/เปิดข้อต่อ IV line, ก่อนใส่สายสวนปัสสาวะ, ก่อนดูดเสมหะ</td></tr>
+   <tr><td>3. หลังสัมผัสสารคัดหลั่ง</td><td>หลังเทถุงปัสสาวะ, หลังดูดเสมหะ, หลังทำแผล, หลังถอดถุงมือ</td></tr>
+   <tr><td>4. หลังสัมผัสผู้ป่วย</td><td>หลังวัด V/S, หลังเปลี่ยนเสื้อผ้าผู้ป่วย, หลังตรวจร่างกาย</td></tr>
+   <tr><td>5. หลังสัมผัสสิ่งแวดล้อมรอบตัวผู้ป่วย</td><td>หลังจับราวเตียง, ปรับเตียง, จับเสาน้ำเกลือ, ปุ่มเรียกพยาบาล (แม้ไม่ได้จับตัวผู้ป่วย)</td></tr></table>
+   <h4>ล้างมือ 7 ขั้นตอน (ขั้นละ 5 ครั้ง สลับทั้ง 2 ข้าง)</h4>
+   <ol><li>ฝ่ามือถูฝ่ามือ</li><li>ฝ่ามือถูหลังมือ และนิ้วถูซอกนิ้ว</li><li>ฝ่ามือถูฝ่ามือ และนิ้วถูซอกนิ้ว (ประสานนิ้ว)</li>
+   <li>หลังนิ้วมือถูฝ่ามือ (นิ้วล็อกกัน)</li><li>ถูนิ้วหัวแม่มือโดยรอบด้วยฝ่ามือ</li><li>ปลายนิ้วมือถูวนที่ฝ่ามือ</li><li>ถูรอบข้อมือ</li></ol>
+   <h4>Alcohol Hand Rub หรือ น้ำ + สบู่?</h4>
+   <ul><li>ใช้ Alcohol hand rub เป็นหลัก (20–30 วินาที)</li>
+   <li>ต้องใช้น้ำ + สบู่ (40–60 วินาที) เมื่อมือเปื้อนที่มองเห็นได้ หรือดูแลผู้ป่วย C. difficile เพราะแอลกอฮอล์ไม่ทำลายสปอร์</li></ul>
+   <h4>Standard Precautions</h4>
+   <ul><li>ถือว่าเลือด สารคัดหลั่ง เยื่อบุ และผิวหนังที่ไม่สมบูรณ์ของผู้ป่วยทุกรายมีโอกาสแพร่เชื้อ โดยไม่ต้องรอผลแล็บ</li>
+   <li>Cough etiquette: ไอจามใส่ทิชชูแล้วทิ้งทันทีและล้างมือ หรือไอใส่ข้อพับแขน</li></ul>`,
+   videos:[{title:'การล้างมืออย่างถูกวิธี 7 ขั้นตอน — กรมอนามัย',youtubeId:''},{title:'ล้างมือ 7 ขั้นตอน — กองโรคติดต่อทั่วไป กรมควบคุมโรค',youtubeId:''},{title:'7 Steps of Hand Hygiene — IC-TUH',youtubeId:''}] },
+ { id:2, icon:'😷', color:'#a78bfa', title:'PPE & Transmission-Based Precautions', th:'อุปกรณ์ป้องกันและการแยกผู้ป่วย',
+   html:`<h4>เลือกมาตรการตามการแพร่เชื้อ</h4>
+   <table><tr><th>ประเภท</th><th>ตัวอย่างโรค</th><th>มาตรการหลัก</th></tr>
+   <tr><td>Airborne</td><td>TB, หัด, อีสุกอีใส</td><td>ห้องความดันลบ + N95 (Fit/Seal check)</td></tr>
+   <tr><td>Droplet</td><td>Influenza, ไอกรน</td><td>Surgical mask ในระยะ 1–2 เมตร, ผู้ป่วยสวม mask เมื่อออกนอกห้อง (ทำ AGP ใช้ N95)</td></tr>
+   <tr><td>Contact</td><td>MRSA, CRE, VRE, C. difficile</td><td>Gown + ถุงมือ, แยกอุปกรณ์เฉพาะราย</td></tr></table>
+   <div class="tip">💡 งานที่เสี่ยงต่อการกระเด็น (ทำแผลใหญ่, Suction) ให้เพิ่ม Surgical mask + Face shield/Goggle เสมอ</div>
+   <h4>ลำดับการใส่ (Donning)</h4><ol><li>ล้างมือ</li><li>Gown/Coverall</li><li>Mask/N95</li><li>Goggles/Face shield</li><li>ถุงมือ (ดึงขอบทับปลายแขนเสื้อ)</li></ol>
+   <h4>ลำดับการถอด (Doffing) — ช่วงเสี่ยงปนเปื้อนที่สุด!</h4>
+   <ol><li>ถอดถุงมือ</li><li>ล้างมือ</li><li>ถอด Gown (ม้วนด้านนอกเข้าด้านใน)</li><li>ล้างมือ</li><li>ถอด Face shield/Goggles</li><li>ถอด Mask (จับที่สาย)</li><li>ล้างมือปิดท้าย</li></ol>`,
+   videos:[{title:'ขั้นตอนการใส่และถอด PPE แบบ Coverall — กองการพยาบาล',youtubeId:''},{title:'ขั้นตอนการใส่ PPE — Ramathibodi Channel',youtubeId:''},{title:'Airborne PPE set — Siriraj Channel',youtubeId:''}] },
+ { id:3, icon:'💉', color:'#34d399', title:'Aseptic Technique & Line Care', th:'เทคนิคปลอดเชื้อและการดูแลสายต่างๆ',
+   html:`<h4>Sterile Field</h4><ul><li>ทำความสะอาดจากบริเวณสะอาดมากไปสะอาดน้อย</li><li>ห้ามใช้น้ำยาฆ่าเชื้อที่เปิดทิ้งข้ามวันหรือไม่ได้ลงวันที่เปิด</li></ul>
+   <h4>CAUTI Bundle</h4><ul><li>ถุงปัสสาวะอยู่ต่ำกว่าระดับกระเพาะปัสสาวะเสมอ และห้ามแตะพื้น</li><li>คงระบบปิด (Closed drainage) ไม่ปลดข้อต่อโดยไม่จำเป็น</li><li>ประเมินทุกวันและถอดเมื่อหมดข้อบ่งชี้</li></ul>
+   <h4>CLABSI Bundle</h4><ul><li>เตรียมผิวด้วย 2% Chlorhexidine in 70% Alcohol และรอให้แห้งสนิท</li><li>Scrub the hub ด้วย 70% Alcohol อย่างน้อย 10–15 วินาที ก่อนฉีดยาทุกครั้ง</li><li>ประเมินแผลทุกเวร ไม่เปลี่ยนสายตามรอบเวลา และถอดเมื่อไม่จำเป็น</li></ul>`,
+   videos:[] },
+ { id:4, icon:'🚨', color:'#fb7185', title:'Safety & Waste Management', th:'อาชีวอนามัยและการจัดการขยะ',
+   html:`<h4>เมื่อถูกเข็มตำ (Needle-stick Injury)</h4><ol><li>ล้างด้วยน้ำสะอาดและสบู่ ให้น้ำไหลผ่านทันที <b>ห้ามบีบเค้นแผล</b></li><li>รายงานหัวหน้าเวร / IC ทันที</li><li>ประเมินผู้ป่วยต้นทาง ตรวจเลือด และพิจารณาให้ PEP โดยเร็ว (ภายใน 2 ชม. ดีที่สุด)</li><li>เขียนรายงานอุบัติการณ์</li></ol>
+   <h4>Sharps Safety</h4><ul><li>ห้ามสวมปลอกเข็มด้วยสองมือ ถ้าจำเป็นใช้ One-handed scoop</li><li>ทิ้งทันที ณ จุดใช้งาน และเปลี่ยนกล่องเมื่อเต็ม 3/4</li></ul>
+   <h4>ขยะติดเชื้อ (ถุงแดง)</h4><ul><li>เฉพาะขยะที่ปนเปื้อนเลือด/สารคัดหลั่ง เช่น ก๊อซชุ่มหนอง สาย Suction</li><li>ทิชชูเช็ดมือ ขวดน้ำเกลือที่ไม่ปนเปื้อน = ขยะทั่วไป/รีไซเคิล</li></ul>
+   <h4>Environmental Cleaning</h4><ul><li>เช็ด High-touch surfaces ด้วยน้ำยาฆ่าเชื้อตามมาตรฐานอย่างน้อยวันละ 1–2 ครั้ง หรือเมื่อสกปรก</li></ul>`,
+   videos:[] },
+ { id:5, icon:'🧫', color:'#fbbf24', title:'Bundle of Care & ASP', th:'แนวปฏิบัติแบบชุดและการใช้ยาต้านจุลชีพ',
+   html:`<h4>Bundle of Care</h4><ul><li>ชุดแนวปฏิบัติเชิงประจักษ์ 3–5 ข้อ ต้องทำ <b>ครบทุกข้อ (All-or-none)</b> จึงลดการติดเชื้อได้</li></ul>
+   <h4>HAP Bundle</h4><ul><li>Oral care อย่างน้อยวันละ 2 ครั้ง</li><li>ศีรษะสูง 30–45° ขณะให้อาหารและหลังอาหาร 1 ชม.</li><li>Early mobility — หลีกเลี่ยง Complete bed rest โดยไม่จำเป็น</li><li>Deep breathing &amp; Effective coughing</li></ul>
+   <h4>Antimicrobial Stewardship</h4><ul><li>เก็บ Culture ด้วยเทคนิคปลอดเชื้อ <b>ก่อน</b> ให้ยาปฏิชีวนะมื้อแรก</li><li>ให้ยาตรงเวลา ห้ามปรับขนาดยาเอง</li></ul>
+   <h4>เมื่อพบเชื้อดื้อยา (CRE/VRSA)</h4><ul><li>เริ่ม Contact Precautions ทันที ติดป้าย แยกห้อง/กั้นอาณาเขต และแจ้งทีม IC</li></ul>`,
+   videos:[] }
+];
+
+/* ================= HELPERS ================= */
+const S = { token:null, user:null, cfg:null, quiz:null, result:null, charts:{}, view:'', hist:[] };
+const $ = s => document.querySelector(s);
+const $ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const fmtDate = d => new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+const fmtTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+function loading(on, text='กำลังโหลด...'){ $('#loader').classList.toggle('hidden',!on); $('#loader p').textContent = text; }
+let toastT;
+function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',3500); }
+
+async function api(action, payload={}, silent=false){
+  if(!silent) loading(true);
+  try{
+    const r = await fetch(API_URL, { method:'POST', body: JSON.stringify({ action, payload, token:S.token }) });
+    const j = await r.json();
+    if(!j.ok){
+      if(j.error==='SESSION_EXPIRED'){ logout(true); throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
+      throw new Error(j.error);
+    }
+    return j.data;
+  } finally { if(!silent) loading(false); }
+}
+
+function show(view){
+  S.view = view;
+  $('.view').forEach(v=>v.classList.add('hidden'));
+  const el = $('#view-'+view); el.classList.remove('hidden');
+  el.style.animation='none'; void el.offsetHeight; el.style.animation='';
+  $('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
+  $('#topbar').classList.toggle('hidden', !S.user);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function setRing(el, pct){ const C=326.7; setTimeout(()=>el.style.strokeDashoffset = C - C*pct/100, 60); }
+function countUp(el, to, suf=''){
+  const t0=performance.now(), d=1300;
+  const step=t=>{ const p=Math.min(1,(t-t0)/d); el.textContent=Math.round(to*(1-Math.pow(1-p,3)))+suf; if(p<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ================= AUTH ================= */
+function saveSession(d){ S.token=d.token; S.user=d.user; localStorage.setItem('ic_session', JSON.stringify(d)); }
+function logout(silent){
+  if(!silent && S.token) api('logout',{},true).catch(()=>{});
+  S.token=null; S.user=null; localStorage.removeItem('ic_session'); stopTimer(); show('auth');
+}
+function enterApp(){
+  const u=S.user;
+  $('#uName').textContent=u.fullName; $('#uWard').textContent=`${u.position} • ${u.ward}`;
+  $('#avatar').textContent=String(u.fullName).trim().charAt(0);
+  $('.admin-only').forEach(e=>e.classList.toggle('hidden', u.role!=='admin'));
+  renderHome(); show('home');
+}
+
+/* ================= HOME & LESSONS ================= */
+const readKey = () => 'ic_read_'+S.user.userId;
+const getRead = () => JSON.parse(localStorage.getItem(readKey())||'[]');
+
+function renderHome(){
+  $('#hiName').textContent = S.user.fullName;
+  const read = getRead();
+  $('#moduleGrid').innerHTML = MODULES.map((m,i)=>`
+    <div class="module glass" style="--mc:${m.color};animation-delay:${i*.08}s" data-mod="${m.id}">
+      <span class="badge ${read.includes(m.id)?'done':''}">${read.includes(m.id)?'✓ อ่านแล้ว':'ยังไม่อ่าน'}</span>
+      <div class="ic">${m.icon}</div><h4>${i+1}. ${m.title}</h4><p>${m.th}</p></div>`).join('');
+  $('.module').forEach(el=>el.onclick=()=>openModule(+el.dataset.mod));
+  const pct = Math.round(read.length/MODULES.length*100);
+  $('#lessonPct').textContent = pct+'%'; setRing($('#lessonRing'), pct);
+  const ready = read.length >= MODULES.length;
+  $('#btnStart').disabled = !ready;
+  $('#quizInfo').textContent = `${S.cfg.perTest} ข้อ (สุ่มลำดับ) • เกณฑ์ผ่าน ${S.cfg.passPercent}% • ` +
+    (ready ? 'พร้อมเริ่มทำแบบทดสอบแล้ว' : 'กรุณาอ่านบทเรียนให้ครบ 5 หมวดก่อน');
+}
+
+function openModule(id){
+  const m = MODULES.find(x=>x.id===id);
+  const vids = m.videos.map(v => v.youtubeId
+    ? `<div><div class="video"><iframe src="https://www.youtube.com/embed/${esc(v.youtubeId)}" loading="lazy" allowfullscreen></iframe></div><small class="muted">${esc(v.title)}</small></div>`
+    : `<div class="video empty">ยังไม่ได้ใส่ YouTube ID<br>${esc(v.title)}</div>`).join('');
+  $('#modalBody').innerHTML = `<div class="lesson"><div class="qcat">หมวดที่ ${m.id}</div><h2>${m.icon} ${m.title}</h2><p class="muted">${m.th}</p>
+    ${m.html}${m.videos.length?`<h4>🎥 วิดีโอประกอบ</h4><div class="video-grid">${vids}</div>`:''}
+    <button class="btn primary w100" id="btnRead" style="margin-top:24px">✓ ทำความเข้าใจแล้ว</button></div>`;
+  $('#modal').classList.remove('hidden');
+  $('#btnRead').onclick = () => {
+    const r = getRead(); if(!r.includes(id)){ r.push(id); localStorage.setItem(readKey(), JSON.stringify(r)); }
+    closeModal(); renderHome(); toast(`บันทึกการเรียนหมวด ${id} แล้ว ✓`);
+  };
+}
+function closeModal(){ $('#modal').classList.add('hidden'); $('#modalBody').innerHTML=''; }
+
+/* ================= QUIZ ================= */
+function startTimer(){ stopTimer(); S.timer=setInterval(()=>{ S.quiz.sec++; $('#qTimer').textContent=fmtTime(S.quiz.sec); },1000); }
+function stopTimer(){ clearInterval(S.timer); }
+
+async function startQuiz(){
+  try{
+    const d = await api('startQuiz');
+    S.quiz = { attemptId:d.attemptId, qs:d.questions.map(q=>({...q, choices:shuffle(q.choices)})), answers:{}, i:0, sec:0 };
+    $('#qTotal').textContent = S.quiz.qs.length; $('#qTimer').textContent='00:00';
+    show('quiz'); renderQ(); startTimer();
+  }catch(e){ toast(e.message,true); }
+}
+
+function renderQ(){
+  const { qs, i, answers } = S.quiz, q = qs[i], c = $('#qCard');
+  c.innerHTML = `<div class="qcat">${esc(q.category)}</div><div class="qtext">${i+1}. ${esc(q.question)}</div>` +
+    q.choices.map((ch,k)=>`<button class="choice ${answers[q.id]===ch.key?'sel':''}" data-key="${ch.key}"><span class="lt">${LETTERS[k]}</span><span>${esc(ch.text)}</span></button>`).join('');
+  c.classList.remove('anim'); void c.offsetWidth; c.classList.add('anim');
+  c.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    answers[q.id]=b.dataset.key;
+    c.querySelectorAll('.choice').forEach(x=>x.classList.toggle('sel', x===b));
+    updateNav(); renderDots();
+    const idx=i; if(idx<qs.length-1) setTimeout(()=>{ if(S.view==='quiz' && S.quiz.i===idx) go(1); },380);
+  });
+  $('#qNo').textContent=i+1; updateNav(); renderDots();
+}
+function updateNav(){
+  const { qs, i, answers } = S.quiz;
+  $('#qBar').style.width = (Object.keys(answers).length/qs.length*100)+'%';
+  $('#btnPrev').disabled = i===0;
+  $('#btnNext').textContent = i===qs.length-1 ? 'ส่งคำตอบ ✓' : 'ถัดไป →';
+}
+function renderDots(){
+  const { qs, i, answers } = S.quiz;
+  $('#qDots').innerHTML = qs.map((q,k)=>`<button class="dot ${answers[q.id]?'ans':''} ${k===i?'cur':''}" data-k="${k}">${k+1}</button>`).join('');
+  $('#qDots .dot').forEach(d=>d.onclick=()=>{ S.quiz.i=+d.dataset.k; renderQ(); });
+}
+function go(d){
+  const q=S.quiz;
+  if(d>0 && q.i===q.qs.length-1) return submitQuiz();
+  q.i=Math.max(0,Math.min(q.qs.length-1,q.i+d)); renderQ();
+}
+async function submitQuiz(){
+  const q=S.quiz, left=q.qs.length-Object.keys(q.answers).length;
+  if(!confirm(left ? `ยังไม่ได้ตอบ ${left} ข้อ ต้องการส่งคำตอบหรือไม่?` : 'ยืนยันการส่งคำตอบ?')) return;
+  stopTimer();
+  try{ S.result = await api('submitQuiz',{ attemptId:q.attemptId, answers:q.answers }); renderResult(); }
+  catch(e){ toast(e.message,true); if(S.view==='quiz') startTimer(); }
+}
+
+/* ================= RESULT ================= */
+function renderResult(){
+  const r=S.result, qmap=Object.fromEntries(S.quiz.qs.map(q=>[q.id,q]));
+  show('result');
+  countUp($('#resPct'), r.percent, '%');
+  $('#resScore').textContent = `${r.score}/${r.total} คะแนน`;
+  const ring=$('#resultRing'); ring.style.transition='none'; ring.style.strokeDashoffset=326.7; void ring.offsetWidth; ring.style.transition='';
+  ring.style.stroke = r.passed ? 'var(--c3)' : 'var(--bad)'; setRing(ring, r.percent);
+  $('#resTitle').innerHTML = r.passed ? '🎉 ยินดีด้วย! คุณผ่านการประเมิน' : '💪 ยังไม่ผ่านเกณฑ์ ลองอีกครั้งนะ';
+  $('#resMsg').textContent = r.passed
+    ? `เกณฑ์ผ่าน ${r.passPercent}% • เลขที่ประกาศนียบัตร ${r.certId} • ใช้เวลา ${fmtTime(r.durationSec)}`
+    : `เกณฑ์ผ่าน ${r.passPercent}% — ทบทวนเฉลยด้านล่าง แล้วกดทำใหม่ได้ทันที`;
+  $('#btnCert').classList.toggle('hidden', !r.passed);
+
+  const cats={}; r.feedback.forEach(f=>{ const c=cats[f.category]||(cats[f.category]={n:0,ok:0}); c.n++; if(f.correct) c.ok++; });
+  $('#catBreak').innerHTML = Object.entries(cats).map(([k,v])=>{ const p=Math.round(v.ok/v.n*100);
+    return `<div class="cat-item glass"><small class="muted">${esc(k)}</small><div><b>${v.ok}/${v.n}</b> (${p}%)</div>
+      <div class="mini-bar"><i data-w="${p}" style="background:${p>=80?'var(--c3)':p>=50?'var(--gold)':'var(--bad)'}"></i></div></div>`; }).join('');
+  setTimeout(()=>$('#catBreak i').forEach(i=>i.style.width=i.dataset.w+'%'),80);
+
+  const fb=[...r.feedback].sort((a,b)=>a.correct-b.correct);
+  $('#review').innerHTML = fb.map((f,idx)=>{ const q=qmap[f.id]; return `
+    <div class="review-item glass ${f.correct?'':'wrong'}" style="animation-delay:${Math.min(idx*.05,1)}s">
+      <div class="qcat">${f.correct?'✅ ตอบถูก':'❌ ตอบผิด'} • ${esc(f.category)}</div>
+      <div class="qtext" style="font-size:1.05rem;margin:8px 0">${esc(q.question)}</div>
+      ${q.choices.map((ch,k)=>{ const right=ch.key===f.answer, picked=ch.key===f.selected&&!f.correct;
+        return `<div class="opt ${right?'right':''} ${picked?'picked':''}">${LETTERS[k]}. ${esc(ch.text)}${right?' ✓':''}${picked?' ✗ (คำตอบของคุณ)':''}</div>`; }).join('')}
+      ${!f.selected?'<div class="opt picked">— ไม่ได้ตอบข้อนี้ —</div>':''}
+      <div class="explain">💡 <b>เหตุผล:</b> ${esc(f.explanation)}</div></div>`; }).join('');
+
+  if(r.passed && window.confetti){
+    confetti({particleCount:160,spread:90,origin:{y:.6}});
+    setTimeout(()=>confetti({particleCount:100,angle:60,spread:70,origin:{x:0}}),400);
+    setTimeout(()=>confetti({particleCount:100,angle:120,spread:70,origin:{x:1}}),700);
+  }
+}
+
+/* ================= CERTIFICATE ================= */
+async function downloadCert(d){
+  loading(true,'กำลังสร้างประกาศนียบัตร...');
+  const wrap=$('#certWrap');
+  try{
+    $('#cOrg').textContent=S.cfg.orgName; $('#cName').textContent=d.fullName;
+    $('#cPos').textContent=`ตำแหน่ง ${d.position} • ${d.ward}`; $('#cScore').textContent=d.percent;
+    $('#cDate').textContent=fmtDate(d.date); $('#cId').textContent=d.certId;
+    $('#cSigner').textContent=S.cfg.signerName; $('#cSignerTitle').textContent=S.cfg.signerTitle;
+    const qr=$('#cQR'); qr.innerHTML='';
+    new QRCode(qr,{ text:`${location.origin}${location.pathname}?verify=${d.certId}`, width:96, height:96, correctLevel:QRCode.CorrectLevel.M });
+    await document.fonts.ready; await new Promise(r=>setTimeout(r,350));
+    wrap.style.left='0';
+    const canvas = await html2canvas($('#cert'),{ scale:2, backgroundColor:'#ffffff', width:1123, height:794, windowWidth:1200 });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,297,210);
+    pdf.save(`IC-Certificate-${d.certId}.pdf`);
+    toast('ดาวน์โหลดประกาศนียบัตรแล้ว 🏅');
+  }catch(e){ toast('สร้างไฟล์ไม่สำเร็จ: '+e.message,true); }
+  finally{ wrap.style.left='-10000px'; loading(false); }
+}
+
+/* ================= HISTORY ================= */
+async function loadHistory(){
+  show('history');
+  try{
+    S.hist = await api('history');
+    $('#histBody').innerHTML = S.hist.length ? S.hist.map((r,i)=>`<tr>
+      <td>${fmtDate(r.submittedAt)} ${new Date(r.submittedAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${r.score}/${r.total}</td><td><b>${r.percent}%</b></td><td>${fmtTime(+r.durationSec||0)}</td>
+      <td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td>
+      <td>${r.certId?`<button class="btn gold sm" data-h="${i}">🏅 ${esc(r.certId)}</button>`:'-'}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="muted">ยังไม่มีประวัติการทำแบบทดสอบ</td></tr>';
+    $('[data-h]').forEach(b=>b.onclick=()=>{ const r=S.hist[+b.dataset.h]; downloadCert({...S.user, percent:r.percent, certId:r.certId, date:r.submittedAt}); });
+  }catch(e){ toast(e.message,true); }
+}
+
+/* ================= ADMIN ================= */
+function drawChart(id,type,labels,datasets){
+  S.charts[id]?.destroy();
+  Chart.defaults.color='#8aa0bf'; Chart.defaults.font.family='Prompt';
+  S.charts[id] = new Chart($('#chart-'+id),{ type,
+    data:{ labels, datasets:datasets.map((d,i)=>({ ...d, backgroundColor:PALETTE[i]+(type==='radar'?'33':'cc'), borderColor:PALETTE[i], borderWidth:2, borderRadius:8, pointBackgroundColor:PALETTE[i] })) },
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:1200,easing:'easeOutQuart'},
+      scales: type==='radar'
+        ? { r:{ min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,.1)'},angleLines:{color:'rgba(255,255,255,.1)'},pointLabels:{font:{size:11}} } }
+        : { y:{ min:0,max:100,grid:{color:'rgba(255,255,255,.06)'} }, x:{ grid:{display:false} } } } });
+}
+async function loadAdmin(){
+  show('admin');
+  const sel=$('#wardFilter');
+  if(sel.options.length<=1) sel.innerHTML='<option value="">ทุกหอผู้ป่วย</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  try{
+    const d = await api('adminStats',{ ward:sel.value }), s=d.summary;
+    $('#stats').innerHTML = [['👥 ผู้ใช้งาน',s.users],['📝 เข้าประเมิน',`${s.participants} (${s.participation}%)`],['🔁 จำนวนครั้ง',s.attempts],['🏅 อัตราผ่าน',s.passRate+'%'],['📊 คะแนนเฉลี่ย',s.avgPct+'%']]
+      .map(([k,v],i)=>`<div class="stat glass" style="animation:viewIn .5s ${i*.07}s backwards"><small>${k}</small><b>${v}</b></div>`).join('');
+    drawChart('ward','bar',d.byWard.map(w=>w.ward),[{label:'ร้อยละการเข้าประเมิน',data:d.byWard.map(w=>w.participation)},{label:'คะแนนเฉลี่ย (%)',data:d.byWard.map(w=>w.avgPct)}]);
+    drawChart('cat','radar',d.byCategory.map(c=>c.category),[{label:'ร้อยละตอบถูก',data:d.byCategory.map(c=>c.correctRate)}]);
+    $('#missBody').innerHTML = d.missed.slice(0,10).map((m,i)=>`<tr><td>${i+1}</td><td style="white-space:normal;min-width:320px">${esc(m.question)}</td><td>${esc(m.category)}</td><td>${m.attempts}</td><td><span class="tag ${m.missRate>=30?'no':'ok'}">${m.missRate}%</span></td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>';
+    S.adminRows = d.recent;
+    $('#resBody').innerHTML = d.recent.map(r=>`<tr><td>${fmtDate(r.submittedAt)}</td><td>${esc(r.fullName)}</td><td>${esc(r.ward)}</td><td>${r.score}/${r.total}</td><td>${r.percent}%</td><td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td><td>${esc(r.certId||'-')}</td></tr>`).join('')
+      || '<tr><td colspan="7" class="muted">ยังไม่มีข้อมูล</td></tr>';
+  }catch(e){ toast(e.message,true); }
+}
+function exportCSV(){
+  const head=['วันที่','ชื่อ-สกุล','ตำแหน่ง','หอผู้ป่วย','คะแนน','เต็ม','ร้อยละ','ผล','เลขที่ประกาศนียบัตร'];
+  const rows=(S.adminRows||[]).map(r=>[new Date(r.submittedAt).toLocaleString('th-TH'),r.fullName,r.position,r.ward,r.score,r.total,r.percent,r.passed?'ผ่าน':'ไม่ผ่าน',r.certId]);
+  const csv=[head,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='IC-results.csv'; a.click();
+}
+
+/* ================= VERIFY ================= */
+async function doVerify(){
+  const id=$('#verifyInput').value.trim(); if(!id) return;
+  try{
+    const r=await api('verifyCert',{ certId:id });
+    $('#verifyResult').innerHTML = r.valid
+      ? `<div class="glass vres">✅ <b>ประกาศนียบัตรถูกต้อง</b><br>${esc(r.fullName)} • ${esc(r.position)} • ${esc(r.ward)}<br>คะแนน ${r.percent}% • ออกให้เมื่อ ${fmtDate(r.submittedAt)}<br><small class="muted">เลขที่ ${esc(r.certId)}</small></div>`
+      : `<div class="glass vres no">❌ ไม่พบประกาศนียบัตรเลขที่นี้ในระบบ</div>`;
+  }catch(e){ toast(e.message,true); }
+}
+
+/* ================= EVENTS & INIT ================= */
+function bindEvents(){
+  $('.tab').forEach(t=>t.onclick=()=>{
+    const reg=t.dataset.tab==='register';
+    $('.tab').forEach(x=>x.classList.toggle('active',x===t)); $('.tabs').classList.toggle('reg',reg);
+    $('#formLogin').classList.toggle('hidden',reg); $('#formRegister').classList.toggle('hidden',!reg);
+  });
+  $('#formLogin').onsubmit = async e => { e.preventDefault();
+    try{ const d=await api('login',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('ยินดีต้อนรับ '+d.user.fullName); enterApp(); }catch(err){ toast(err.message,true); } };
+  $('#formRegister').onsubmit = async e => { e.preventDefault();
+    try{ const d=await api('register',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('สร้างบัญชีสำเร็จ 🎉'); enterApp(); }catch(err){ toast(err.message,true); } };
+
+  $('[data-nav]').forEach(b=>b.onclick=()=>{
+    if(S.view==='quiz' && !confirm('ออกจากแบบทดสอบ? คำตอบที่ทำไว้จะไม่ถูกบันทึก')) return;
+    stopTimer();
+    const v=b.dataset.nav;
+    if(v==='home'){ renderHome(); show('home'); } else if(v==='history') loadHistory(); else if(v==='admin') loadAdmin();
+  });
+  $('#btnLogout').onclick=()=>{ if(confirm('ออกจากระบบ?')) logout(); };
+  $('#btnStart').onclick=startQuiz; $('#btnRetry').onclick=startQuiz;
+  $('#btnPrev').onclick=()=>go(-1); $('#btnNext').onclick=()=>go(1);
+  $('#btnCert').onclick=()=>downloadCert({...S.user, percent:S.result.percent, certId:S.result.certId, date:S.result.submittedAt});
+  $('#modalClose').onclick=closeModal; $('#modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
+  $('#linkVerify').onclick=e=>{ e.preventDefault(); show('verify'); };
+  $('#formVerify').onsubmit=e=>{ e.preventDefault(); doVerify(); };
+  $('#btnVerifyBack').onclick=()=>{ history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
+  $('#wardFilter').onchange=loadAdmin; $('#btnRefresh').onclick=loadAdmin; $('#btnCSV').onclick=exportCSV;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') closeModal();
+    if(S.view!=='quiz') return;
+    const n='1234'.indexOf(e.key); if(n>=0) $('#qCard .choice')[n]?.click();
+    if(e.key==='ArrowRight' && S.quiz.i<S.quiz.qs.length-1) go(1);
+    if(e.key==='ArrowLeft') go(-1);
+  });
+  window.addEventListener('beforeunload',e=>{ if(S.view==='quiz'){ e.preventDefault(); e.returnValue=''; } });
+}
+
+async function init(){
+  bindEvents();
+  const sess=JSON.parse(localStorage.getItem('ic_session')||'null');
+  if(sess){ S.token=sess.token; S.user=sess.user; }
+  try{ S.cfg=await api('config'); }
+  catch(e){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: '+e.message,true); S.cfg={orgName:'',passPercent:80,perTest:20,wards:[]}; }
+  $('#wardSelect').innerHTML='<option value="">-- เลือก --</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  $('#orgName').textContent=S.cfg.orgName;
+  const v=new URLSearchParams(location.search).get('verify');
+  if(v){ show('verify'); $('#verifyInput').value=v; doVerify(); return; }
+  S.user ? enterApp() : show('auth');
+}
+init();

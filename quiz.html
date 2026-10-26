@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IC e-Learning | Infection Control Competency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><div class="grid"></div></div>
+<div id="loader" class="loader hidden"><div class="spinner"></div><p>กำลังโหลด...</p></div>
+<div id="toast" class="toast"></div>
+
+<header id="topbar" class="topbar hidden">
+  <div class="brand"><div class="logo">IC</div><div><b>IC e-Learning</b><small id="orgName"></small></div></div>
+  <nav>
+    <button data-nav="home" class="nav-btn">หน้าหลัก</button>
+    <button data-nav="history" class="nav-btn">ประวัติ</button>
+    <button data-nav="admin" class="nav-btn admin-only hidden">Dashboard</button>
+  </nav>
+  <div class="user"><div class="avatar" id="avatar"></div><div class="uinfo"><b id="uName"></b><small id="uWard"></small></div>
+    <button id="btnLogout" class="icon-btn" title="ออกจากระบบ">⏻</button></div>
+</header>
+
+<main>
+<!-- AUTH -->
+<section id="view-auth" class="view hidden">
+  <div class="auth-wrap">
+    <div>
+      <div class="pill">Infection Control Competency</div>
+      <h1>เรียนรู้ • ประเมิน •<br><span class="grad">รับประกาศนียบัตร</span></h1>
+      <p class="muted">ระบบ e-Learning &amp; Micro-Assessment สมรรถนะการป้องกันและควบคุมการติดเชื้อสำหรับพยาบาลวิชาชีพ</p>
+      <ul class="feat"><li>📚 Micro-learning 5 หมวดความรู้หลัก IC</li><li>⚡ เฉลยพร้อมเหตุผลทันที (Instant Feedback)</li><li>🏅 ประกาศนียบัตร PDF พร้อม QR ตรวจสอบ</li></ul>
+    </div>
+    <div class="card glass auth-card">
+      <div class="tabs"><span class="tab-ink"></span><button class="tab active" data-tab="login">เข้าสู่ระบบ</button><button class="tab" data-tab="register">ลงทะเบียน</button></div>
+      <form id="formLogin" class="form">
+        <label>ชื่อผู้ใช้<input name="username" required autocomplete="username"></label>
+        <label>รหัสผ่าน<input name="password" type="password" required autocomplete="current-password"></label>
+        <button class="btn primary w100">เข้าสู่ระบบ</button>
+      </form>
+      <form id="formRegister" class="form hidden">
+        <label>ชื่อ-นามสกุล<input name="fullName" required></label>
+        <div class="row2">
+          <label>ตำแหน่ง<input name="position" value="พยาบาลวิชาชีพ" required></label>
+          <label>หอผู้ป่วย<select name="ward" id="wardSelect" required></select></label>
+        </div>
+        <label>ชื่อผู้ใช้ (อังกฤษ/ตัวเลข ≥4 ตัว)<input name="username" pattern="[A-Za-z0-9_.]{4,}" required></label>
+        <label>รหัสผ่าน (≥6 ตัว)<input name="password" type="password" minlength="6" required></label>
+        <button class="btn primary w100">สร้างบัญชี</button>
+      </form>
+      <a href="#" id="linkVerify" class="muted small">🔎 ตรวจสอบประกาศนียบัตร</a>
+    </div>
+  </div>
+</section>
+
+<!-- HOME -->
+<section id="view-home" class="view hidden">
+  <div class="hero-row">
+    <div><h2>สวัสดี, <span id="hiName" class="grad"></span> 👋</h2><p class="muted">ทบทวนบทเรียนให้ครบ 5 หมวด แล้วเริ่มทำแบบทดสอบได้เลย</p></div>
+    <div class="ring-wrap"><svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="lessonRing"/></svg>
+      <div class="ring-text"><b id="lessonPct">0%</b><small>บทเรียน</small></div></div>
+  </div>
+  <div id="moduleGrid" class="module-grid"></div>
+  <div class="card glass cta">
+    <div><h3 style="margin:0 0 4px">📝 แบบทดสอบสมรรถนะ IC</h3><p class="muted" id="quizInfo"></p></div>
+    <button id="btnStart" class="btn primary lg">เริ่มทำแบบทดสอบ →</button>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section id="view-quiz" class="view hidden">
+  <div class="quiz-top">
+    <div>ข้อ <b id="qNo">1</b>/<span id="qTotal"></span></div>
+    <div class="progress"><div id="qBar"></div></div>
+    <div class="timer">⏱ <span id="qTimer">00:00</span></div>
+  </div>
+  <div id="qCard" class="card glass qcard"></div>
+  <div class="quiz-nav">
+    <button id="btnPrev" class="btn ghost">← ก่อนหน้า</button>
+    <div id="qDots" class="dots"></div>
+    <button id="btnNext" class="btn primary">ถัดไป →</button>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="view-result" class="view hidden">
+  <div class="card glass result-hero">
+    <div class="ring-wrap big"><svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="resultRing"/></svg>
+      <div class="ring-text"><b id="resPct">0%</b><small id="resScore"></small></div></div>
+    <div style="flex:1;min-width:260px">
+      <h2 id="resTitle"></h2><p id="resMsg" class="muted"></p>
+      <div class="btns">
+        <button id="btnCert" class="btn gold">🏅 ดาวน์โหลดประกาศนียบัตร</button>
+        <button id="btnRetry" class="btn ghost">↻ ทำใหม่</button>
+        <button data-nav="home" class="btn ghost">หน้าหลัก</button>
+      </div>
+    </div>
+  </div>
+  <div id="catBreak" class="cat-break"></div>
+  <h3>📖 เฉลยและเหตุผล (ข้อที่ตอบผิดแสดงก่อน)</h3>
+  <div id="review"></div>
+</section>
+
+<!-- HISTORY -->
+<section id="view-history" class="view hidden">
+  <h2>📜 ประวัติการประเมิน</h2><p class="muted">ดาวน์โหลดประกาศนียบัตรย้อนหลังได้จากรายการที่ผ่านเกณฑ์</p>
+  <div class="card glass table-wrap" style="margin-top:16px"><table class="data">
+    <thead><tr><th>วันที่</th><th>คะแนน</th><th>ร้อยละ</th><th>เวลา</th><th>ผล</th><th>ประกาศนียบัตร</th></tr></thead>
+    <tbody id="histBody"></tbody></table></div>
+</section>
+
+<!-- ADMIN -->
+<section id="view-admin" class="view hidden">
+  <div class="toolbar">
+    <div><h2>📊 IC Competency Dashboard</h2><p class="muted">ข้อมูล Real-time จาก Google Sheets</p></div>
+    <div class="btns" style="margin:0"><select id="wardFilter"><option value="">ทุกหอผู้ป่วย</option></select>
+      <button id="btnRefresh" class="btn ghost">↻ รีเฟรช</button><button id="btnCSV" class="btn ghost">⬇ CSV</button></div>
+  </div>
+  <div id="stats" class="stats"></div>
+  <div class="charts">
+    <div class="card glass"><h4>ภาพรวมรายหอผู้ป่วย</h4><div class="chart-box"><canvas id="chart-ward"></canvas></div></div>
+    <div class="card glass"><h4>ร้อยละตอบถูกรายหมวด</h4><div class="chart-box"><canvas id="chart-cat"></canvas></div></div>
+  </div>
+  <h3>🎯 ข้อที่ตอบผิดบ่อย — ใช้วางแผน Bedside Coaching</h3>
+  <div class="card glass table-wrap"><table class="data">
+    <thead><tr><th>#</th><th>คำถาม</th><th>หมวด</th><th>จำนวนครั้ง</th><th>% ตอบผิด</th></tr></thead><tbody id="missBody"></tbody></table></div>
+  <h3>🗂 ผลการประเมินล่าสุด</h3>
+  <div class="card glass table-wrap"><table class="data">
+    <thead><tr><th>วันที่</th><th>ชื่อ-สกุล</th><th>หอผู้ป่วย</th><th>คะแนน</th><th>ร้อยละ</th><th>ผล</th><th>เลขที่</th></tr></thead><tbody id="resBody"></tbody></table></div>
+</section>
+
+<!-- VERIFY -->
+<section id="view-verify" class="view hidden">
+  <div class="verify-wrap">
+    <h2>🔎 ตรวจสอบประกาศนียบัตร</h2>
+    <form id="formVerify" class="card glass verify-form"><input id="verifyInput" placeholder="เลขที่ เช่น IC2506-AB12CD"><button class="btn primary">ตรวจสอบ</button></form>
+    <div id="verifyResult"></div>
+    <button id="btnVerifyBack" class="btn ghost" style="margin-top:16px">← กลับ</button>
+  </div>
+</section>
+</main>
+
+<!-- MODAL -->
+<div id="modal" class="modal hidden"><div class="modal-card glass"><button class="icon-btn close" id="modalClose">✕</button><div id="modalBody"></div></div></div>
+
+<!-- CERTIFICATE TEMPLATE -->
+<div id="certWrap" class="cert-wrap"><div id="cert" class="cert"><div class="cert-border"><div class="cert-inner">
+  <div class="cert-seal">IC<br>PASSED</div>
+  <div class="cert-org" id="cOrg"></div>
+  <div class="cert-title">ประกาศนียบัตร</div>
+  <div class="cert-sub">Certificate of Competency</div>
+  <p>ขอมอบไว้เพื่อแสดงว่า</p>
+  <div class="cert-name" id="cName"></div>
+  <p id="cPos"></p>
+  <p>ได้ผ่านการเรียนรู้และประเมินสมรรถนะด้านการป้องกันและควบคุมการติดเชื้อในโรงพยาบาล<br>(IC Common Competency) ด้วยคะแนนร้อยละ <b id="cScore"></b></p>
+  <p>ให้ไว้ ณ วันที่ <span id="cDate"></span></p>
+  <div class="cert-foot">
+    <div class="qr" id="cQR"></div>
+    <div class="sign"><div class="line"></div><div id="cSigner"></div><small id="cSignerTitle"></small></div>
+    <div class="cid">เลขที่ประกาศนียบัตร<br><b id="cId"></b><br><small>สแกน QR เพื่อตรวจสอบ</small></div>
+  </div>
+</div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
