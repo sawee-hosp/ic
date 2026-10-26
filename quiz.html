@@ -361,7 +361,6 @@ table.data th{color:var(--muted);font-weight:500}
 <script>
 (() => {
 'use strict';
-/* กันโค้ดทำงานซ้ำ หากสคริปต์ถูกโหลด 2 รอบ */
 if (window.__IC_ELEARNING_LOADED__) return;
 window.__IC_ELEARNING_LOADED__ = true;
 
@@ -370,7 +369,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwnC68RulLn9VmUthq1T73s
 const LETTERS = ['ก','ข','ค','ง','จ'];
 const PALETTE = ['#22d3ee','#a78bfa','#34d399','#fbbf24'];
 
-/* ใส่ YouTube Video ID (ส่วนหลัง v= ในลิงก์) ใน youtubeId */
 const MODULES = [
  { id:1, icon:'🧼', color:'#22d3ee', title:'Hand Hygiene & Standard Precautions', th:'สุขอนามัยของมือและมาตรการมาตรฐาน',
    html:`<h4>5 Moments of Hand Hygiene (WHO)</h4>
@@ -422,16 +420,16 @@ const MODULES = [
 
 /* ================= HELPERS ================= */
 const S = { token:null, user:null, cfg:null, quiz:null, result:null, charts:{}, view:'', hist:[], timer:null, adminRows:[] };
-const $ = s => document.querySelector(s);
-const $ = s => [...document.querySelectorAll(s)];
+const sel = s => document.querySelector(s);
+const selAll = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const fmtDate = d => new Date(d).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
 const fmtTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 
-function loading(on, text='กำลังโหลด...'){ $('#loader').classList.toggle('hidden',!on); $('#loader p').textContent = text; }
+function loading(on, text='กำลังโหลด...'){ sel('#loader').classList.toggle('hidden',!on); sel('#loader p').textContent = text; }
 let toastT;
-function toast(msg, err=false){ const t=$('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',3500); }
+function toast(msg, err=false){ const t=sel('#toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',3500); }
 
 async function api(action, payload={}, silent=false){
   if(!silent) loading(true);
@@ -448,11 +446,11 @@ async function api(action, payload={}, silent=false){
 
 function show(view){
   S.view = view;
-  $('.view').forEach(v=>v.classList.add('hidden'));
-  const el = $('#view-'+view); el.classList.remove('hidden');
+  selAll('.view').forEach(v=>v.classList.add('hidden'));
+  const el = sel('#view-'+view); el.classList.remove('hidden');
   el.style.animation='none'; void el.offsetHeight; el.style.animation='';
-  $('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
-  $('#topbar').classList.toggle('hidden', !S.user);
+  selAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
+  sel('#topbar').classList.toggle('hidden', !S.user);
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 function setRing(el, pct){ const C=326.7; setTimeout(()=>el.style.strokeDashoffset = C - C*pct/100, 60); }
@@ -470,9 +468,9 @@ function logout(silent){
 }
 function enterApp(){
   const u=S.user;
-  $('#uName').textContent=u.fullName; $('#uWard').textContent=`${u.position} • ${u.ward}`;
-  $('#avatar').textContent=String(u.fullName).trim().charAt(0);
-  $('.admin-only').forEach(e=>e.classList.toggle('hidden', u.role!=='admin'));
+  sel('#uName').textContent=u.fullName; sel('#uWard').textContent=`${u.position} • ${u.ward}`;
+  sel('#avatar').textContent=String(u.fullName).trim().charAt(0);
+  selAll('.admin-only').forEach(e=>e.classList.toggle('hidden', u.role!=='admin'));
   renderHome(); show('home');
 }
 
@@ -481,18 +479,18 @@ const readKey = () => 'ic_read_'+S.user.userId;
 const getRead = () => JSON.parse(localStorage.getItem(readKey())||'[]');
 
 function renderHome(){
-  $('#hiName').textContent = S.user.fullName;
+  sel('#hiName').textContent = S.user.fullName;
   const read = getRead();
-  $('#moduleGrid').innerHTML = MODULES.map((m,i)=>`
+  sel('#moduleGrid').innerHTML = MODULES.map((m,i)=>`
     <div class="module glass" style="--mc:${m.color};animation-delay:${i*.08}s" data-mod="${m.id}">
       <span class="badge ${read.includes(m.id)?'done':''}">${read.includes(m.id)?'✓ อ่านแล้ว':'ยังไม่อ่าน'}</span>
       <div class="ic">${m.icon}</div><h4>${i+1}. ${m.title}</h4><p>${m.th}</p></div>`).join('');
-  $('.module').forEach(el=>el.onclick=()=>openModule(+el.dataset.mod));
+  selAll('.module').forEach(el=>el.onclick=()=>openModule(+el.dataset.mod));
   const pct = Math.round(read.length/MODULES.length*100);
-  $('#lessonPct').textContent = pct+'%'; setRing($('#lessonRing'), pct);
+  sel('#lessonPct').textContent = pct+'%'; setRing(sel('#lessonRing'), pct);
   const ready = read.length >= MODULES.length;
-  $('#btnStart').disabled = !ready;
-  $('#quizInfo').textContent = `${S.cfg.perTest} ข้อ (สุ่มลำดับ) • เกณฑ์ผ่าน ${S.cfg.passPercent}% • ` +
+  sel('#btnStart').disabled = !ready;
+  sel('#quizInfo').textContent = `${S.cfg.perTest} ข้อ (สุ่มลำดับ) • เกณฑ์ผ่าน ${S.cfg.passPercent}% • ` +
     (ready ? 'พร้อมเริ่มทำแบบทดสอบแล้ว' : 'กรุณาอ่านบทเรียนให้ครบ 5 หมวดก่อน');
 }
 
@@ -501,32 +499,32 @@ function openModule(id){
   const vids = m.videos.map(v => v.youtubeId
     ? `<div><div class="video"><iframe src="https://www.youtube.com/embed/${esc(v.youtubeId)}" loading="lazy" allowfullscreen></iframe></div><small class="muted">${esc(v.title)}</small></div>`
     : `<div class="video empty">ยังไม่ได้ใส่ YouTube ID<br>${esc(v.title)}</div>`).join('');
-  $('#modalBody').innerHTML = `<div class="lesson"><div class="qcat">หมวดที่ ${m.id}</div><h2>${m.icon} ${m.title}</h2><p class="muted">${m.th}</p>
+  sel('#modalBody').innerHTML = `<div class="lesson"><div class="qcat">หมวดที่ ${m.id}</div><h2>${m.icon} ${m.title}</h2><p class="muted">${m.th}</p>
     ${m.html}${m.videos.length?`<h4>🎥 วิดีโอประกอบ</h4><div class="video-grid">${vids}</div>`:''}
     <button class="btn primary w100" id="btnRead" style="margin-top:24px">✓ ทำความเข้าใจแล้ว</button></div>`;
-  $('#modal').classList.remove('hidden');
-  $('#btnRead').onclick = () => {
+  sel('#modal').classList.remove('hidden');
+  sel('#btnRead').onclick = () => {
     const r = getRead(); if(!r.includes(id)){ r.push(id); localStorage.setItem(readKey(), JSON.stringify(r)); }
     closeModal(); renderHome(); toast(`บันทึกการเรียนหมวด ${id} แล้ว ✓`);
   };
 }
-function closeModal(){ $('#modal').classList.add('hidden'); $('#modalBody').innerHTML=''; }
+function closeModal(){ sel('#modal').classList.add('hidden'); sel('#modalBody').innerHTML=''; }
 
 /* ================= QUIZ ================= */
-function startTimer(){ stopTimer(); S.timer=setInterval(()=>{ S.quiz.sec++; $('#qTimer').textContent=fmtTime(S.quiz.sec); },1000); }
+function startTimer(){ stopTimer(); S.timer=setInterval(()=>{ S.quiz.sec++; sel('#qTimer').textContent=fmtTime(S.quiz.sec); },1000); }
 function stopTimer(){ clearInterval(S.timer); }
 
 async function startQuiz(){
   try{
     const d = await api('startQuiz');
     S.quiz = { attemptId:d.attemptId, qs:d.questions.map(q=>({...q, choices:shuffle(q.choices)})), answers:{}, i:0, sec:0 };
-    $('#qTotal').textContent = S.quiz.qs.length; $('#qTimer').textContent='00:00';
+    sel('#qTotal').textContent = S.quiz.qs.length; sel('#qTimer').textContent='00:00';
     show('quiz'); renderQ(); startTimer();
   }catch(e){ toast(e.message,true); }
 }
 
 function renderQ(){
-  const { qs, i, answers } = S.quiz, q = qs[i], c = $('#qCard');
+  const { qs, i, answers } = S.quiz, q = qs[i], c = sel('#qCard');
   c.innerHTML = `<div class="qcat">${esc(q.category)}</div><div class="qtext">${i+1}. ${esc(q.question)}</div>` +
     q.choices.map((ch,k)=>`<button class="choice ${answers[q.id]===ch.key?'sel':''}" data-key="${ch.key}"><span class="lt">${LETTERS[k]}</span><span>${esc(ch.text)}</span></button>`).join('');
   c.classList.remove('anim'); void c.offsetWidth; c.classList.add('anim');
@@ -536,18 +534,18 @@ function renderQ(){
     updateNav(); renderDots();
     const idx=i; if(idx<qs.length-1) setTimeout(()=>{ if(S.view==='quiz' && S.quiz.i===idx) go(1); },380);
   });
-  $('#qNo').textContent=i+1; updateNav(); renderDots();
+  sel('#qNo').textContent=i+1; updateNav(); renderDots();
 }
 function updateNav(){
   const { qs, i, answers } = S.quiz;
-  $('#qBar').style.width = (Object.keys(answers).length/qs.length*100)+'%';
-  $('#btnPrev').disabled = i===0;
-  $('#btnNext').textContent = i===qs.length-1 ? 'ส่งคำตอบ ✓' : 'ถัดไป →';
+  sel('#qBar').style.width = (Object.keys(answers).length/qs.length*100)+'%';
+  sel('#btnPrev').disabled = i===0;
+  sel('#btnNext').textContent = i===qs.length-1 ? 'ส่งคำตอบ ✓' : 'ถัดไป →';
 }
 function renderDots(){
   const { qs, i, answers } = S.quiz;
-  $('#qDots').innerHTML = qs.map((q,k)=>`<button class="dot ${answers[q.id]?'ans':''} ${k===i?'cur':''}" data-k="${k}">${k+1}</button>`).join('');
-  $('#qDots .dot').forEach(d=>d.onclick=()=>{ S.quiz.i=+d.dataset.k; renderQ(); });
+  sel('#qDots').innerHTML = qs.map((q,k)=>`<button class="dot ${answers[q.id]?'ans':''} ${k===i?'cur':''}" data-k="${k}">${k+1}</button>`).join('');
+  selAll('#qDots .dot').forEach(d=>d.onclick=()=>{ S.quiz.i=+d.dataset.k; renderQ(); });
 }
 function go(d){
   const q=S.quiz;
@@ -566,24 +564,24 @@ async function submitQuiz(){
 function renderResult(){
   const r=S.result, qmap=Object.fromEntries(S.quiz.qs.map(q=>[q.id,q]));
   show('result');
-  countUp($('#resPct'), r.percent, '%');
-  $('#resScore').textContent = `${r.score}/${r.total} คะแนน`;
-  const ring=$('#resultRing'); ring.style.transition='none'; ring.style.strokeDashoffset=326.7; void ring.offsetWidth; ring.style.transition='';
+  countUp(sel('#resPct'), r.percent, '%');
+  sel('#resScore').textContent = `${r.score}/${r.total} คะแนน`;
+  const ring=sel('#resultRing'); ring.style.transition='none'; ring.style.strokeDashoffset=326.7; void ring.offsetWidth; ring.style.transition='';
   ring.style.stroke = r.passed ? 'var(--c3)' : 'var(--bad)'; setRing(ring, r.percent);
-  $('#resTitle').innerHTML = r.passed ? '🎉 ยินดีด้วย! คุณผ่านการประเมิน' : '💪 ยังไม่ผ่านเกณฑ์ ลองอีกครั้งนะ';
-  $('#resMsg').textContent = r.passed
+  sel('#resTitle').innerHTML = r.passed ? '🎉 ยินดีด้วย! คุณผ่านการประเมิน' : '💪 ยังไม่ผ่านเกณฑ์ ลองอีกครั้งนะ';
+  sel('#resMsg').textContent = r.passed
     ? `เกณฑ์ผ่าน ${r.passPercent}% • เลขที่ประกาศนียบัตร ${r.certId} • ใช้เวลา ${fmtTime(r.durationSec)}`
     : `เกณฑ์ผ่าน ${r.passPercent}% — ทบทวนเฉลยด้านล่าง แล้วกดทำใหม่ได้ทันที`;
-  $('#btnCert').classList.toggle('hidden', !r.passed);
+  sel('#btnCert').classList.toggle('hidden', !r.passed);
 
   const cats={}; r.feedback.forEach(f=>{ const c=cats[f.category]||(cats[f.category]={n:0,ok:0}); c.n++; if(f.correct) c.ok++; });
-  $('#catBreak').innerHTML = Object.entries(cats).map(([k,v])=>{ const p=Math.round(v.ok/v.n*100);
+  sel('#catBreak').innerHTML = Object.entries(cats).map(([k,v])=>{ const p=Math.round(v.ok/v.n*100);
     return `<div class="cat-item glass"><small class="muted">${esc(k)}</small><div><b>${v.ok}/${v.n}</b> (${p}%)</div>
       <div class="mini-bar"><i data-w="${p}" style="background:${p>=80?'var(--c3)':p>=50?'var(--gold)':'var(--bad)'}"></i></div></div>`; }).join('');
-  setTimeout(()=>$('#catBreak i').forEach(i=>i.style.width=i.dataset.w+'%'),80);
+  setTimeout(()=>selAll('#catBreak i').forEach(i=>i.style.width=i.dataset.w+'%'),80);
 
   const fb=[...r.feedback].sort((a,b)=>a.correct-b.correct);
-  $('#review').innerHTML = fb.map((f,idx)=>{ const q=qmap[f.id]; return `
+  sel('#review').innerHTML = fb.map((f,idx)=>{ const q=qmap[f.id]; return `
     <div class="review-item glass ${f.correct?'':'wrong'}" style="animation-delay:${Math.min(idx*.05,1)}s">
       <div class="qcat">${f.correct?'✅ ตอบถูก':'❌ ตอบผิด'} • ${esc(f.category)}</div>
       <div class="qtext" style="font-size:1.05rem;margin:8px 0">${esc(q.question)}</div>
@@ -602,17 +600,17 @@ function renderResult(){
 /* ================= CERTIFICATE ================= */
 async function downloadCert(d){
   loading(true,'กำลังสร้างประกาศนียบัตร...');
-  const wrap=$('#certWrap');
+  const wrap=sel('#certWrap');
   try{
-    $('#cOrg').textContent=S.cfg.orgName; $('#cName').textContent=d.fullName;
-    $('#cPos').textContent=`ตำแหน่ง ${d.position} • ${d.ward}`; $('#cScore').textContent=d.percent;
-    $('#cDate').textContent=fmtDate(d.date); $('#cId').textContent=d.certId;
-    $('#cSigner').textContent=S.cfg.signerName; $('#cSignerTitle').textContent=S.cfg.signerTitle;
-    const qr=$('#cQR'); qr.innerHTML='';
+    sel('#cOrg').textContent=S.cfg.orgName; sel('#cName').textContent=d.fullName;
+    sel('#cPos').textContent=`ตำแหน่ง ${d.position} • ${d.ward}`; sel('#cScore').textContent=d.percent;
+    sel('#cDate').textContent=fmtDate(d.date); sel('#cId').textContent=d.certId;
+    sel('#cSigner').textContent=S.cfg.signerName; sel('#cSignerTitle').textContent=S.cfg.signerTitle;
+    const qr=sel('#cQR'); qr.innerHTML='';
     new QRCode(qr,{ text:`${location.origin}${location.pathname}?verify=${d.certId}`, width:96, height:96, correctLevel:QRCode.CorrectLevel.M });
     await document.fonts.ready; await new Promise(r=>setTimeout(r,350));
     wrap.style.left='0';
-    const canvas = await html2canvas($('#cert'),{ scale:2, backgroundColor:'#ffffff', width:1123, height:794, windowWidth:1200 });
+    const canvas = await html2canvas(sel('#cert'),{ scale:2, backgroundColor:'#ffffff', width:1123, height:794, windowWidth:1200 });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
     pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,297,210);
@@ -627,13 +625,13 @@ async function loadHistory(){
   show('history');
   try{
     S.hist = await api('history');
-    $('#histBody').innerHTML = S.hist.length ? S.hist.map((r,i)=>`<tr>
+    sel('#histBody').innerHTML = S.hist.length ? S.hist.map((r,i)=>`<tr>
       <td>${fmtDate(r.submittedAt)} ${new Date(r.submittedAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</td>
       <td>${r.score}/${r.total}</td><td><b>${r.percent}%</b></td><td>${fmtTime(+r.durationSec||0)}</td>
       <td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td>
       <td>${r.certId?`<button class="btn gold sm" data-h="${i}">🏅 ${esc(r.certId)}</button>`:'-'}</td></tr>`).join('')
       : '<tr><td colspan="6" class="muted">ยังไม่มีประวัติการทำแบบทดสอบ</td></tr>';
-    $('[data-h]').forEach(b=>b.onclick=()=>{ const r=S.hist[+b.dataset.h]; downloadCert({...S.user, percent:r.percent, certId:r.certId, date:r.submittedAt}); });
+    selAll('[data-h]').forEach(b=>b.onclick=()=>{ const r=S.hist[+b.dataset.h]; downloadCert({...S.user, percent:r.percent, certId:r.certId, date:r.submittedAt}); });
   }catch(e){ toast(e.message,true); }
 }
 
@@ -641,7 +639,7 @@ async function loadHistory(){
 function drawChart(id,type,labels,datasets){
   if(S.charts[id]) S.charts[id].destroy();
   Chart.defaults.color='#8aa0bf'; Chart.defaults.font.family='Prompt';
-  S.charts[id] = new Chart($('#chart-'+id),{ type,
+  S.charts[id] = new Chart(sel('#chart-'+id),{ type,
     data:{ labels, datasets:datasets.map((d,i)=>({ ...d, backgroundColor:PALETTE[i]+(type==='radar'?'33':'cc'), borderColor:PALETTE[i], borderWidth:2, borderRadius:8, pointBackgroundColor:PALETTE[i] })) },
     options:{ responsive:true, maintainAspectRatio:false, animation:{duration:1200,easing:'easeOutQuart'},
       scales: type==='radar'
@@ -650,18 +648,18 @@ function drawChart(id,type,labels,datasets){
 }
 async function loadAdmin(){
   show('admin');
-  const sel=$('#wardFilter');
-  if(sel.options.length<=1) sel.innerHTML='<option value="">ทุกหอผู้ป่วย</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  const selWard=sel('#wardFilter');
+  if(selWard.options.length<=1) selWard.innerHTML='<option value="">ทุกหอผู้ป่วย</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
   try{
-    const d = await api('adminStats',{ ward:sel.value }), s=d.summary;
-    $('#stats').innerHTML = [['👥 ผู้ใช้งาน',s.users],['📝 เข้าประเมิน',`${s.participants} (${s.participation}%)`],['🔁 จำนวนครั้ง',s.attempts],['🏅 อัตราผ่าน',s.passRate+'%'],['📊 คะแนนเฉลี่ย',s.avgPct+'%']]
+    const d = await api('adminStats',{ ward:selWard.value }), s=d.summary;
+    sel('#stats').innerHTML = [['👥 ผู้ใช้งาน',s.users],['📝 เข้าประเมิน',`${s.participants} (${s.participation}%)`],['🔁 จำนวนครั้ง',s.attempts],['🏅 อัตราผ่าน',s.passRate+'%'],['📊 คะแนนเฉลี่ย',s.avgPct+'%']]
       .map(([k,v],i)=>`<div class="stat glass" style="animation:viewIn .5s ${i*.07}s backwards"><small>${k}</small><b>${v}</b></div>`).join('');
     drawChart('ward','bar',d.byWard.map(w=>w.ward),[{label:'ร้อยละการเข้าประเมิน',data:d.byWard.map(w=>w.participation)},{label:'คะแนนเฉลี่ย (%)',data:d.byWard.map(w=>w.avgPct)}]);
     drawChart('cat','radar',d.byCategory.map(c=>c.category),[{label:'ร้อยละตอบถูก',data:d.byCategory.map(c=>c.correctRate)}]);
-    $('#missBody').innerHTML = d.missed.slice(0,10).map((m,i)=>`<tr><td>${i+1}</td><td style="white-space:normal;min-width:320px">${esc(m.question)}</td><td>${esc(m.category)}</td><td>${m.attempts}</td><td><span class="tag ${m.missRate>=30?'no':'ok'}">${m.missRate}%</span></td></tr>`).join('')
+    sel('#missBody').innerHTML = d.missed.slice(0,10).map((m,i)=>`<tr><td>${i+1}</td><td style="white-space:normal;min-width:320px">${esc(m.question)}</td><td>${esc(m.category)}</td><td>${m.attempts}</td><td><span class="tag ${m.missRate>=30?'no':'ok'}">${m.missRate}%</span></td></tr>`).join('')
       || '<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>';
     S.adminRows = d.recent;
-    $('#resBody').innerHTML = d.recent.map(r=>`<tr><td>${fmtDate(r.submittedAt)}</td><td>${esc(r.fullName)}</td><td>${esc(r.ward)}</td><td>${r.score}/${r.total}</td><td>${r.percent}%</td><td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td><td>${esc(r.certId||'-')}</td></tr>`).join('')
+    sel('#resBody').innerHTML = d.recent.map(r=>`<tr><td>${fmtDate(r.submittedAt)}</td><td>${esc(r.fullName)}</td><td>${esc(r.ward)}</td><td>${r.score}/${r.total}</td><td>${r.percent}%</td><td><span class="tag ${r.passed?'ok':'no'}">${r.passed?'ผ่าน':'ไม่ผ่าน'}</span></td><td>${esc(r.certId||'-')}</td></tr>`).join('')
       || '<tr><td colspan="7" class="muted">ยังไม่มีข้อมูล</td></tr>';
   }catch(e){ toast(e.message,true); }
 }
@@ -675,10 +673,10 @@ function exportCSV(){
 
 /* ================= VERIFY ================= */
 async function doVerify(){
-  const id=$('#verifyInput').value.trim(); if(!id) return;
+  const id=sel('#verifyInput').value.trim(); if(!id) return;
   try{
     const r=await api('verifyCert',{ certId:id });
-    $('#verifyResult').innerHTML = r.valid
+    sel('#verifyResult').innerHTML = r.valid
       ? `<div class="glass vres">✅ <b>ประกาศนียบัตรถูกต้อง</b><br>${esc(r.fullName)} • ${esc(r.position)} • ${esc(r.ward)}<br>คะแนน ${r.percent}% • ออกให้เมื่อ ${fmtDate(r.submittedAt)}<br><small class="muted">เลขที่ ${esc(r.certId)}</small></div>`
       : `<div class="glass vres no">❌ ไม่พบประกาศนียบัตรเลขที่นี้ในระบบ</div>`;
   }catch(e){ toast(e.message,true); }
@@ -686,35 +684,35 @@ async function doVerify(){
 
 /* ================= EVENTS & INIT ================= */
 function bindEvents(){
-  $('.tab').forEach(t=>t.onclick=()=>{
+  selAll('.tab').forEach(t=>t.onclick=()=>{
     const reg=t.dataset.tab==='register';
-    $('.tab').forEach(x=>x.classList.toggle('active',x===t)); $('.tabs').classList.toggle('reg',reg);
-    $('#formLogin').classList.toggle('hidden',reg); $('#formRegister').classList.toggle('hidden',!reg);
+    selAll('.tab').forEach(x=>x.classList.toggle('active',x===t)); sel('.tabs').classList.toggle('reg',reg);
+    sel('#formLogin').classList.toggle('hidden',reg); sel('#formRegister').classList.toggle('hidden',!reg);
   });
-  $('#formLogin').onsubmit = async e => { e.preventDefault();
+  sel('#formLogin').onsubmit = async e => { e.preventDefault();
     try{ const d=await api('login',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('ยินดีต้อนรับ '+d.user.fullName); enterApp(); }catch(err){ toast(err.message,true); } };
-  $('#formRegister').onsubmit = async e => { e.preventDefault();
+  sel('#formRegister').onsubmit = async e => { e.preventDefault();
     try{ const d=await api('register',Object.fromEntries(new FormData(e.target))); saveSession(d); toast('สร้างบัญชีสำเร็จ 🎉'); enterApp(); }catch(err){ toast(err.message,true); } };
 
-  $('[data-nav]').forEach(b=>b.onclick=()=>{
+  selAll('[data-nav]').forEach(b=>b.onclick=()=>{
     if(S.view==='quiz' && !confirm('ออกจากแบบทดสอบ? คำตอบที่ทำไว้จะไม่ถูกบันทึก')) return;
     stopTimer();
     const v=b.dataset.nav;
     if(v==='home'){ renderHome(); show('home'); } else if(v==='history') loadHistory(); else if(v==='admin') loadAdmin();
   });
-  $('#btnLogout').onclick=()=>{ if(confirm('ออกจากระบบ?')) logout(); };
-  $('#btnStart').onclick=startQuiz; $('#btnRetry').onclick=startQuiz;
-  $('#btnPrev').onclick=()=>go(-1); $('#btnNext').onclick=()=>go(1);
-  $('#btnCert').onclick=()=>downloadCert({...S.user, percent:S.result.percent, certId:S.result.certId, date:S.result.submittedAt});
-  $('#modalClose').onclick=closeModal; $('#modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
-  $('#linkVerify').onclick=e=>{ e.preventDefault(); show('verify'); };
-  $('#formVerify').onsubmit=e=>{ e.preventDefault(); doVerify(); };
-  $('#btnVerifyBack').onclick=()=>{ window.history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
-  $('#wardFilter').onchange=loadAdmin; $('#btnRefresh').onclick=loadAdmin; $('#btnCSV').onclick=exportCSV;
+  sel('#btnLogout').onclick=()=>{ if(confirm('ออกจากระบบ?')) logout(); };
+  sel('#btnStart').onclick=startQuiz; sel('#btnRetry').onclick=startQuiz;
+  sel('#btnPrev').onclick=()=>go(-1); sel('#btnNext').onclick=()=>go(1);
+  sel('#btnCert').onclick=()=>downloadCert({...S.user, percent:S.result.percent, certId:S.result.certId, date:S.result.submittedAt});
+  sel('#modalClose').onclick=closeModal; sel('#modal').onclick=e=>{ if(e.target.id==='modal') closeModal(); };
+  sel('#linkVerify').onclick=e=>{ e.preventDefault(); show('verify'); };
+  sel('#formVerify').onsubmit=e=>{ e.preventDefault(); doVerify(); };
+  sel('#btnVerifyBack').onclick=()=>{ window.history.replaceState(null,'',location.pathname); S.user?enterApp():show('auth'); };
+  sel('#wardFilter').onchange=loadAdmin; sel('#btnRefresh').onclick=loadAdmin; sel('#btnCSV').onclick=exportCSV;
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape') closeModal();
     if(S.view!=='quiz') return;
-    const n='1234'.indexOf(e.key); if(n>=0) $('#qCard .choice')[n]?.click();
+    const n='1234'.indexOf(e.key); if(n>=0) selAll('#qCard .choice')[n]?.click();
     if(e.key==='ArrowRight' && S.quiz.i<S.quiz.qs.length-1) go(1);
     if(e.key==='ArrowLeft') go(-1);
   });
@@ -727,10 +725,10 @@ async function init(){
   if(sess){ S.token=sess.token; S.user=sess.user; }
   try{ S.cfg=await api('config'); }
   catch(e){ toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: '+e.message,true); S.cfg={orgName:'',passPercent:80,perTest:20,wards:[]}; }
-  $('#wardSelect').innerHTML='<option value="">-- เลือก --</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
-  $('#orgName').textContent=S.cfg.orgName;
+  sel('#wardSelect').innerHTML='<option value="">-- เลือก --</option>'+S.cfg.wards.map(w=>`<option>${esc(w)}</option>`).join('');
+  sel('#orgName').textContent=S.cfg.orgName;
   const v=new URLSearchParams(location.search).get('verify');
-  if(v){ show('verify'); $('#verifyInput').value=v; doVerify(); return; }
+  if(v){ show('verify'); sel('#verifyInput').value=v; doVerify(); return; }
   S.user ? enterApp() : show('auth');
 }
 init();
